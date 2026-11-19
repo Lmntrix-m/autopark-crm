@@ -137,7 +137,7 @@
   </div>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwilfJr-651feoIGkI18wuyKRbE0-GV1IORQ_3KBafxlNlofHOeYD4BVjc4xluRs76K/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxjqMGkJBR045NHEBrVlgEWOYeCuqmMqOmTMwMJFkR0UKG90HNYVtuktVdDfcwS27x5YQ/exec';
 
     const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     if (tg) { tg.ready(); tg.expand(); }
@@ -449,7 +449,6 @@
       list.innerHTML = '';
       const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
 
-      // Сохраняем исходный порядок строк листа «Автопарк и Тарифы» (1. К707ТТ124 и далее)
       const enriched = allCars.map((c, idx) => ({
         car: c,
         order: idx + 1,
