@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Автопарк CRM</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: var(--tg-theme-bg-color, #f4f4f9);
+      --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+      --text: var(--tg-theme-text-color, #222222);
+      --hint: var(--tg-theme-hint-color, #888888);
+      --btn: var(--tg-theme-button-color, #2481cc);
+      --btn-text: var(--tg-theme-button-text-color, #ffffff);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 12px; padding-bottom: 40px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
+    .header h1 { font-size: 18px; font-weight: 700; flex: 1; }
+    .header-right { display: flex; align-items: center; gap: 6px; }
+    .role-badge { font-size: 12px; padding: 4px 10px; border-radius: 12px; background: var(--btn); color: var(--btn-text); font-weight: 600; }
+    .btn-refresh { border: none; background: var(--card-bg); color: var(--text); width: 30px; height: 30px; border-radius: 50%; font-size: 16px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+    .stat-box { background: var(--card-bg); padding: 10px 6px; border-radius: 10px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .stat-val { font-size: 18px; font-weight: 700; }
+    .stat-lbl { font-size: 11px; color: var(--hint); margin-top: 2px; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .tab { flex: 1; padding: 10px; border: none; border-radius: 10px; background: var(--card-bg); color: var(--text); font-weight: 600; font-size: 14px; cursor: pointer; }
+    .tab.active { background: var(--btn); color: var(--btn-text); }
+
+    .filters { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 10px; }
+    .chip { padding: 6px 12px; border-radius: 16px; border: 1px solid rgba(128,128,128,0.25); background: var(--card-bg); color: var(--text); font-size: 12px; white-space: nowrap; cursor: pointer; }
+    .chip.active { background: var(--btn); color: var(--btn-text); border-color: var(--btn); }
+
+    .card { background: var(--card-bg); border-radius: 12px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .plate { font-weight: 700; font-size: 16px; }
+    .status-pill { font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 8px; }
+    .st-free { background: #e6f4ea; color: #1e8e3e; }
+    .st-rented { background: #fce8e6; color: #d93025; }
+    .st-booked { background: #fef7e0; color: #f29900; }
+    .st-service { background: #e8eaed; color: #5f6368; }
+
+    .model { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+    .meta { font-size: 12px; color: var(--hint); margin-bottom: 8px; }
+    .actions { display: flex; gap: 6px; margin-top: 8px; }
+    select { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid rgba(128,128,128,0.3); background: var(--bg); color: var(--text); font-size: 13px; }
+    .btn-save { padding: 8px 12px; border: none; border-radius: 8px; background: var(--btn); color: var(--btn-text); font-weight: 600; font-size: 13px; cursor: pointer; }
+
+    .msg { padding: 16px; border-radius: 10px; background: var(--card-bg); text-align: center; font-size: 14px; margin-bottom: 10px; }
+    .error { color: #d93025; border: 1px solid #f5c2c7; background: #f8d7da; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1 id="userName">Автопарк CRM</h1>
+    <div class="header-right">
+      <button class="btn-refresh" onclick="loadInitial()" title="Обновить">↻</button>
+      <span id="userRole" class="role-badge">...</span>
+    </div>
+  </div>
+
+  <div id="statusMsg" class="msg">Загрузка данных автопарка...</div>
+
+  <div id="appContent" class="hidden">
+    <div class="stats">
+      <div class="stat-box"><div class="stat-val" id="stFree">0</div><div class="stat-lbl">Свободны</div></div>
+      <div class="stat-box"><div class="stat-val" id="stRented">0</div><div class="stat-lbl">В аренде</div></div>
+      <div class="stat-box"><div class="stat-val" id="stBooked">0</div><div class="stat-lbl">Бронь</div></div>
+      <div class="stat-box"><div class="stat-val" id="stService">0</div><div class="stat-lbl">На ТО</div></div>
+    </div>
+
+    <div class="tabs" id="navTabs">
+      <button class="tab active" onclick="switchTab('fleet')">Автомобили</button>
+      <button class="tab hidden" id="tabDriversBtn" onclick="switchTab('drivers')">Водители</button>
+    </div>
+
+    <div id="fleetSection">
+      <div class="filters">
+        <button class="chip active" onclick="filterCars('all', this)">Все</button>
+        <button class="chip" onclick="filterCars('свободен', this)">Свободны</button>
+        <button class="chip" onclick="filterCars('в аренде', this)">В аренде</button>
+        <button class="chip" onclick="filterCars('бронь', this)">Бронь</button>
+        <button class="chip" onclick="filterCars('на то', this)">На ТО</button>
+      </div>
+      <div id="carsList"></div>
+    </div>
+
+    <div id="driversSection" class="hidden">
+      <div id="driversList"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwilfJr-651feoIGkI18wuyKRbE0-GV1IORQ_3KBafxlNlofHOeYD4BVjc4xluRs76K/exec';
+
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (tg) { tg.ready(); tg.expand(); }
+
+    const initData = (tg && tg.initData) ? tg.initData : '';
+    let allCars = [];
+    let currentUser = null;
+    let currentFilter = 'all';
+
+    async function callApi(action, extraParams = {}) {
+      const params = new URLSearchParams({
+        action: action,
+        initData: initData,
+        _t: String(Date.now()),
+        ...extraParams
+      });
+      const res = await fetch(API_URL + '?' + params.toString(), {
+        method: 'GET',
+        credentials: 'omit',
+        redirect: 'follow'
+      });
+      const text = await res.text();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (e) {
+        throw new Error('Сервер вернул некорректный ответ. Убедитесь, что в Apps Script выпущена «Новая версия» с доступом «Все».');
+      }
+      if (!json.ok) throw new Error(json.error || 'Ошибка сервера');
+      return json.data;
+    }
+
+    function showError(err) {
+      const box = document.getElementById('statusMsg');
+      box.className = 'msg error';
+      box.classList.remove('hidden');
+      box.textContent = (err && err.message) ? err.message : String(err);
+    }
+
+    function fmtUnit(val, unit) {
+      const s = String(val || '').trim();
+      if (!s) return '—';
+      return s.toLowerCase().includes(unit.toLowerCase()) ? s : s + ' ' + unit;
+    }
+
+    function statusClass(s) {
+      const v = String(s || '').toLowerCase().trim();
+      if (v === 'свободен') return 'st-free';
+      if (v === 'в аренде') return 'st-rented';
+      if (v === 'бронь') return 'st-booked';
+      return 'st-service';
+    }
+
+    async function loadInitial() {
+      const box = document.getElementById('statusMsg');
+      box.className = 'msg';
+      box.textContent = 'Загрузка данных автопарка...';
+      box.classList.remove('hidden');
+
+      try {
+        const data = await callApi('init');
+        box.classList.add('hidden');
+        document.getElementById('appContent').classList.remove('hidden');
+
+        currentUser = data.user;
+        allCars = data.cars || [];
+
+        document.getElementById('userName').textContent = currentUser.name || 'Автопарк CRM';
+        document.getElementById('userRole').textContent = currentUser.role;
+
+        document.getElementById('stFree').textContent = data.counts.free;
+        document.getElementById('stRented').textContent = data.counts.rented;
+        document.getElementById('stBooked').textContent = data.counts.booked;
+        document.getElementById('stService').textContent = data.counts.service;
+
+        if (currentUser.role === 'admin') {
+          document.getElementById('tabDriversBtn').classList.remove('hidden');
+        }
+        renderCars();
+      } catch (err) {
+        showError(err);
+      }
+    }
+
+    function filterCars(filter, btn) {
+      currentFilter = filter;
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      renderCars();
+    }
+
+    function renderCars() {
+      const list = document.getElementById('carsList');
+      list.innerHTML = '';
+      const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
+
+      const filtered = allCars.filter(c => {
+        if (currentFilter === 'all') return true;
+        return String(c.status || '').toLowerCase().trim() === currentFilter;
+      });
+
+      if (!filtered.length) {
+        list.innerHTML = '<div class="msg">Нет автомобилей с выбранным статусом</div>';
+        return;
+      }
+
+      filtered.forEach((c, idx) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const selectId = 'st_sel_' + idx;
+
+        let editHtml = '';
+        if (canEdit) {
+          const statuses = ['Свободен', 'В аренде', 'Бронь', 'На ТО'];
+          const opts = statuses.map(s => `<option value="${s}" ${s === c.status ? 'selected' : ''}>${s}</option>`).join('');
+          editHtml = `
+            <div class="actions">
+              <select id="${selectId}">${opts}</select>
+              <button class="btn-save">Сохранить</button>
+            </div>`;
+        }
+
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="plate">${c.plate}</span>
+            <span class="status-pill ${statusClass(c.status)}">${c.status || '—'}</span>
+          </div>
+          <div class="model">${c.model || ''} (${c.year || ''} г., ${c.color || ''})</div>
+          <div class="meta">Тариф: ${fmtUnit(c.dailyRate, '₽')}/сут • Депозит: ${fmtUnit(c.deposit, '₽')} • Лимит: ${fmtUnit(c.mileageLimit, 'км')}</div>
+          ${editHtml}
+        `;
+
+        if (canEdit) {
+          const btn = card.querySelector('.btn-save');
+          btn.addEventListener('click', () => changeStatus(c.plate, selectId, btn));
+        }
+        list.appendChild(card);
+      });
+    }
+
+    async function changeStatus(plate, selectId, btn) {
+      const newStatus = document.getElementById(selectId).value;
+      const oldText = btn.textContent;
+      btn.textContent = '...';
+      btn.disabled = true;
+
+      try {
+        await callApi('setStatus', { plate: plate, status: newStatus });
+        btn.textContent = oldText;
+        btn.disabled = false;
+        await loadInitial();
+      } catch (err) {
+        btn.textContent = oldText;
+        btn.disabled = false;
+        showError(err);
+      }
+    }
+
+    function switchTab(tab) {
+      const tabs = document.querySelectorAll('.tab');
+      tabs[0].classList.toggle('active', tab === 'fleet');
+      tabs[1].classList.toggle('active', tab === 'drivers');
+      document.getElementById('fleetSection').classList.toggle('hidden', tab !== 'fleet');
+      document.getElementById('driversSection').classList.toggle('hidden', tab !== 'drivers');
+
+      if (tab === 'drivers') loadDrivers();
+    }
+
+    async function loadDrivers() {
+      const list = document.getElementById('driversList');
+      list.innerHTML = '<div class="msg">Загрузка списка водителей...</div>';
+      try {
+        const drivers = await callApi('drivers');
+        list.innerHTML = '';
+        if (!drivers || !drivers.length) {
+          list.innerHTML = '<div class="msg">Список водителей пуст</div>';
+          return;
+        }
+        drivers.forEach(d => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="card-top">
+              <span class="plate">${d.name || 'Без имени'}</span>
+              <span class="status-pill st-service">${d.plate || '—'}</span>
+            </div>
+            <div class="model">${d.car || ''}</div>
+            <div class="meta">Тел: ${d.phone || '—'} • Гражданство: ${d.nationality || '—'} • Дней аренды: ${d.rentDays || '—'}</div>
+          `;
+          list.appendChild(card);
+        });
+      } catch (err) {
+        showError(err);
+      }
+    }
+
+    window.onload = loadInitial;
+  </script>
+</body>
+</html>
