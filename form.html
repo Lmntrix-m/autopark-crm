@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Анкета водителя — Аренда авто (Красноярск)</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #f3f5f9;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #cbd5e1;
+      --primary: #1d4ed8;
+      --primary-hover: #1e40af;
+      --ok-bg: #ecfdf5;
+      --ok-border: #6ee7b7;
+      --ok-text: #065f46;
+      --err-bg: #fef2f2;
+      --err-border: #fca5a5;
+      --err-text: #991b1b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 14px 12px 48px; -webkit-text-size-adjust: 100%; }
+    .container { max-width: 540px; margin: 0 auto; }
+
+    .hero { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: #fff; border-radius: 16px; padding: 18px 16px; margin-bottom: 14px; box-shadow: 0 4px 14px rgba(30, 58, 138, 0.18); }
+    .hero h1 { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
+    .hero p { font-size: 13px; opacity: 0.92; line-height: 1.4; }
+
+    .card { background: var(--card); border-radius: 14px; padding: 16px 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06); }
+    .sec-title { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; }
+
+    .field { margin-bottom: 13px; }
+    .field:last-child { margin-bottom: 0; }
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #334155; }
+    .req { color: #dc2626; }
+    .hint { font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+
+    input[type="text"], input[type="tel"], input[type="number"], select, textarea {
+      width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 10px;
+      font-size: 15px; color: var(--text); background: #fff; outline: none; transition: border-color 0.15s;
+      -webkit-appearance: none; appearance: none;
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23475569' viewBox='0 0 16 16'%3E%3Cpath d='M4.646 6.646a.5.5 0 0 1 .708 0L8 9.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12); }
+
+    .check-row { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 13px; line-height: 1.4; }
+    .check-row input[type="checkbox"] { width: 20px; height: 20px; margin-top: 1px; accent-color: var(--primary); flex-shrink: 0; }
+
+    .upload-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+      padding: 12px; border: 1.5px dashed #93c5fd; border-radius: 10px; background: #eff6ff;
+      color: #1d4ed8; font-weight: 600; font-size: 14px; cursor: pointer; text-align: center;
+    }
+    .upload-btn:active { background: #dbeafe; }
+    .file-input { display: none; }
+
+    .previews { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+    .thumb { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1; aspect-ratio: 4/3; background: #f8fafc; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb-del {
+      position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%;
+      border: none; background: rgba(15, 23, 42, 0.78); color: #fff; font-size: 15px; line-height: 1; cursor: pointer;
+    }
+
+    details.opd-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; font-size: 12px; color: #475569; }
+    details.opd-box summary { font-weight: 600; color: #1e293b; cursor: pointer; }
+    details.opd-box p { margin-top: 8px; line-height: 1.45; }
+
+    .btn-submit {
+      width: 100%; padding: 14px; border: none; border-radius: 12px; background: var(--primary);
+      color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+    }
+    .btn-submit:disabled { opacity: 0.65; cursor: not-allowed; }
+
+    .alert { padding: 14px; border-radius: 12px; font-size: 14px; line-height: 1.45; margin-bottom: 12px; }
+    .alert-err { background: var(--err-bg); border: 1px solid var(--err-border); color: var(--err-text); }
+    .alert-ok { background: var(--ok-bg); border: 1px solid var(--ok-border); color: var(--ok-text); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="hero">
+    <h1>Анкета водителя — Аренда ТС</h1>
+    <p>г. Красноярск • Honda Fit / Honda Insight<br>Заполните данные и прикрепите фото документов для оформления договора.</p>
+  </div>
+
+  <div id="errorBox" class="alert alert-err hidden"></div>
+
+  <div id="successBox" class="card hidden">
+    <div class="alert alert-ok" style="margin-bottom: 12px;">
+      <strong>✅ Анкета успешно отправлена!</strong><br>
+      Ваши данные и фотографии переданы на проверку. Договор аренды и Акт приёма-передачи сформированы.
+    </div>
+    <div id="successDetails" style="font-size: 14px; line-height: 1.6; color: #1e293b; margin-bottom: 14px;"></div>
+    <button type="button" class="btn-submit" onclick="resetForm()">Заполнить ещё одну анкету</button>
+  </div>
+
+  <form id="driverForm" novalidate>
+    <div class="card">
+      <div class="sec-title">1. Личные данные водителя</div>
+
+      <div class="field">
+        <label>ФИО водителя (полностью) <span class="req">*</span></label>
+        <input type="text" id="fio" placeholder="Иванов Иван Иванович" required>
+      </div>
+
+      <div class="field">
+        <label>Гражданство <span class="req">*</span></label>
+        <select id="citizenship" required>
+          <option value="РФ (Российская Федерация)">РФ (Российская Федерация)</option>
+          <option value="Кыргызская Республика (Кыргызстан)">Кыргызская Республика (Кыргызстан)</option>
+          <option value="Республика Таджикистан">Республика Таджикистан</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Контактный телефон (WhatsApp / Telegram) <span class="req">*</span></label>
+        <input type="tel" id="phone" placeholder="+7 (900) 000-00-00" required>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">2. Паспорт, адрес и водительское удостоверение</div>
+
+      <div class="field">
+        <label>Паспорт (серия, номер, ИНН / перевод) <span class="req">*</span></label>
+        <input type="text" id="passportNum" placeholder="0415 123456" required>
+      </div>
+
+      <div class="field">
+        <label>Кем и когда выдан паспорт <span class="req">*</span></label>
+        <input type="text" id="passportIssued" placeholder="ГУ МВД России по Красноярскому краю, 12.05.2020" required>
+      </div>
+
+      <div class="field">
+        <label>Адрес регистрации в г. Красноярске (прописка / мигр. учет) <span class="req">*</span></label>
+        <input type="text" id="regAddress" placeholder="г. Красноярск, ул. ..., д. ..., кв. ..." required>
+      </div>
+
+      <div class="field">
+        <label class="check-row" style="font-weight: 500; margin-bottom: 6px;">
+          <input type="checkbox" id="sameAddress" checked onchange="toggleFactAddress()">
+          <span>Фактический адрес проживания совпадает с регистрацией</span>
+        </label>
+        <div id="factAddressWrap" class="hidden">
+          <input type="text" id="factAddress" placeholder="Фактический адрес проживания в г. Красноярске">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Водительское удостоверение (серия, номер и дата выдачи) <span class="req">*</span></label>
+        <input type="text" id="vuDetailsRaw" placeholder="99 12 345678, выдано 20.08.2020" required>
+      </div>
+
+      <div class="field">
+        <label>Год начала водительского стажа по ВУ <span class="req">*</span></label>
+        <input type="number" id="vuStartYear" min="1970" max="2026" placeholder="Например: 2018" required>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">3. Автомобиль и срок аренды</div>
+
+      <div class="field">
+        <label>Выберите свободный автомобиль <span class="req">*</span></label>
+        <select id="carSelection" required>
+          <option value="">Загрузка свободных автомобилей...</option>
+        </select>
+        <div class="hint" id="carsHint">Обновляем список свободных ТС из базы автопарка...</div>
+      </div>
+
+      <div class="field">
+        <label>Планируемый срок аренды</label>
+        <select id="durationRaw">
+          <option value="365 суток (1 год — стандартный договор)">365 суток (1 год — стандартный договор)</option>
+          <option value="180 суток (6 месяцев)">180 суток (6 месяцев)</option>
+          <option value="120 суток (4 месяца)">120 суток (4 месяца)</option>
+          <option value="90 суток (3 месяца)">90 суток (3 месяца)</option>
+          <option value="60 суток (2 месяца)">60 суток (2 месяца)</option>
+          <option value="30 суток (1 месяц)">30 суток (1 месяц)</option>
+          <option value="14 суток (2 недели)">14 суток (2 недели)</option>
+          <option value="7 суток (1 неделя)">7 суток (1 неделя)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">4. Фотографии документов</div>
+
+      <div class="field">
+        <label>Фото водительского удостоверения (с двух сторон) <span class="req">*</span></label>
+        <label class="upload-btn" for="vuInput">📷 Сделать фото или выбрать ВУ</label>
+        <input class="file-input" type="file" id="vuInput" accept="image/*" multiple onchange="handleFiles('vu', this)">
+        <div class="previews" id="vuPreviews"></div>
+      </div>
+
+      <div class="field">
+        <label>Фото паспорта (главный разворот) / миграционной карты <span class="req">*</span></label>
+        <label class="upload-btn" for="passInput">🛂 Сделать фото или выбрать паспорт</label>
+        <input class="file-input" type="file" id="passInput" accept="image/*" multiple onchange="handleFiles('pass', this)">
+        <div class="previews" id="passPreviews"></div>
+      </div>
+
+      <div class="field">
+        <label>Фото прописки / регистрации (если на отдельной странице)</label>
+        <label class="upload-btn" for="regInput">🏠 Добавить фото прописки (необязательно)</label>
+        <input class="file-input" type="file" id="regInput" accept="image/*" multiple onchange="handleFiles('reg', this)">
+        <div class="previews" id="regPreviews"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">5. Согласие на обработку персональных данных</div>
+
+      <details class="opd-box">
+        <summary>Прочитать условия согласия (ФЗ № 152-ФЗ)</summary>
+        <p>Я свободно, своей волей и в своем интересе даю согласие Арендодателю (ИП / самозанятый Айдаров И.М., г. Красноярск) на обработку и передачу моих персональных данных и копий документов (включая ФИО, паспортные данные, ВУ, адреса, телефоны, фото документов и данные спутникового мониторинга GPS/ГЛОНАСС арендованного ТС) в органы ГИБДД (ЦАФАП), МВД, ФССП, суды и страховые компании (ОСАГО/КАСКО) в целях заключения и исполнения договора аренды ТС и обжалования/перерегистрации штрафов ПДД в течение срока аренды и 3 лет после возврата ТС.</p>
+      </details>
+
+      <label class="check-row">
+        <input type="checkbox" id="opdConsent" required>
+        <span><strong>Да, я даю согласие</strong> на обработку и передачу моих персональных данных (в ГИБДД, страховые компании, МВД, суды) и спутниковый мониторинг ТС по ФЗ № 152-ФЗ <span class="req">*</span></span>
+      </label>
+    </div>
+
+    <button type="submit" class="btn-submit" id="submitBtn">Отправить анкету и оформить договор</button>
+  </form>
+
+</div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwilfJr-651feoIGkI18wuyKRbE0-GV1IORQ_3KBafxlNlofHOeYD4BVjc4xluRs76K/exec';
+
+  const FALLBACK_CARS = [
+    'К707ТТ124 — Honda Fit (Fit-01, 1 500 ₽/сут)',
+    'Н304ХЕ124 — Honda Fit (Fit-02, 1 500 ₽/сут)',
+    'Н837УА124 — Honda Fit (Fit-03, 1 500 ₽/сут)',
+    'О727УН124 — Honda Fit (Fit-04, 1 500 ₽/сут)',
+    'О798АН124 — Honda Fit (Fit-05, 1 500 ₽/сут)',
+    'Р380УЕ124 — Honda Fit (Fit-06, 1 500 ₽/сут)',
+    'Р386УЕ124 — Honda Fit (Fit-07, 1 500 ₽/сут)',
+    'С916УЕ124 — Honda Fit (Fit-08, 1 500 ₽/сут)',
+    'У461ТТ124 — Honda Fit (Fit-09, 1 500 ₽/сут)',
+    'Х265АР224 — Honda Fit (Fit-10, 1 500 ₽/сут)',
+    'Х264АР224 — Honda Insight (Insight-01, 1 800 ₽/сут)'
+  ];
+
+  const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  const photoStore = { vu: [], pass: [], reg: [] };
+
+  function toggleFactAddress() {
+    const same = document.getElementById('sameAddress').checked;
+    document.getElementById('factAddressWrap').classList.toggle('hidden', same);
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('errorBox');
+    box.textContent = msg;
+    box.classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function hideError() {
+    document.getElementById('errorBox').classList.add('hidden');
+  }
+
+  // Сжатие фото через Canvas до 1600px (JPEG 0.82) — быстро загружается даже по слабому LTE
+  function compressImageFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Не удалось прочитать файл: ' + file.name));
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Неподдерживаемый формат изображения: ' + file.name));
+        img.onload = () => {
+          const maxDim = 1600;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w >= h) {
+              h = Math.round(h * maxDim / w);
+              w = maxDim;
+            } else {
+              w = Math.round(w * maxDim / h);
+              h = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          const base64 = dataUrl.split(',')[1];
+          resolve({
+            name: file.name,
+            mimeType: 'image/jpeg',
+            dataUrl: dataUrl,
+            base64: base64
+          });
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleFiles(group, inputEl) {
+    const files = Array.from(inputEl.files || []);
+    if (!files.length) return;
+    hideError();
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    const prevBtnText = btn.textContent;
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        if (photoStore[group].length >= 4) break;
+        btn.textContent = `Обработка фото (${i + 1} из ${files.length})...`;
+        const compressed = await compressImageFile(files[i]);
+        photoStore[group].push(compressed);
+      }
+      renderPreviews(group);
+    } catch (err) {
+      showError(err.message || 'Ошибка при обработке фотографии.');
+    } finally {
+      inputEl.value = '';
+      btn.disabled = false;
+      btn.textContent = prevBtnText;
+    }
+  }
+
+  function removePhoto(group, idx) {
+    photoStore[group].splice(idx, 1);
+    renderPreviews(group);
+  }
+
+  function renderPreviews(group) {
+    const wrap = document.getElementById(group + 'Previews');
+    wrap.innerHTML = '';
+    photoStore[group].forEach((item, idx) => {
+      const div = document.createElement('div');
+      div.className = 'thumb';
+      div.innerHTML = `<img src="${item.dataUrl}" alt="Фото"><button type="button" class="thumb-del" title="Удалить">×</button>`;
+      div.querySelector('.thumb-del').addEventListener('click', () => removePhoto(group, idx));
+      wrap.appendChild(div);
+    });
+  }
+
+  // JSONP-вызов (работает во всех браузерах iOS Safari, Honor, Android без ограничений CORS)
+  function callGetJsonp(paramsObj) {
+    return new Promise((resolve, reject) => {
+      const cbName = '__formJsonp_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+      const script = document.createElement('script');
+      let done = false;
+
+      const cleanup = () => {
+        if (script.parentNode) script.parentNode.removeChild(script);
+        try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+      };
+
+      const timer = setTimeout(() => {
+        if (done) return;
+        done = true;
+        cleanup();
+        reject(new Error('Таймаут запроса'));
+      }, 10000);
+
+      window[cbName] = (res) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        cleanup();
+        resolve(res);
+      };
+
+      script.onerror = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        cleanup();
+        reject(new Error('Ошибка сети'));
+      };
+
+      const qs = new URLSearchParams({ ...paramsObj, callback: cbName, _t: String(Date.now()) });
+      script.src = API_URL + '?' + qs.toString();
+      document.head.appendChild(script);
+    });
+  }
+
+  function populateCarsSelect(items, isLive) {
+    const sel = document.getElementById('carSelection');
+    const hint = document.getElementById('carsHint');
+    sel.innerHTML = '<option value="">— Выберите автомобиль —</option>';
+    items.forEach(item => {
+      const opt = document.createElement('option');
+      if (typeof item === 'string') {
+        opt.value = item;
+        opt.textContent = item;
+      } else {
+        opt.value = item.label;
+        opt.textContent = item.label;
+      }
+      sel.appendChild(opt);
+    });
+    hint.textContent = isLive
+      ? `Доступно свободных автомобилей: ${items.length} шт.`
+      : 'Показан базовый список автомобилей автопарка.';
+  }
+
+  async function loadFreeCars() {
+    populateCarsSelect(FALLBACK_CARS, false);
+    try {
+      const res = await callGetJsonp({ action: 'publicCars' });
+      if (res && res.ok && res.data && Array.isArray(res.data.cars) && res.data.cars.length > 0) {
+        populateCarsSelect(res.data.cars, true);
+      }
+    } catch (e) {
+      // Оставляем базовый список, если сеть временно недоступна
+    }
+  }
+
+  async function waitForSubmissionConfirmation(subId) {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await new Promise(r => setTimeout(r, 2000));
+      try {
+        const chk = await callGetJsonp({ action: 'checkSubmission', subId: subId });
+        if (chk && chk.ok && chk.data && chk.data.found) {
+          return chk.data.result || {};
+        }
+      } catch (e) {}
+    }
+    return null;
+  }
+
+  document.getElementById('driverForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideError();
+
+    const fio = document.getElementById('fio').value.trim();
+    const citizenship = document.getElementById('citizenship').value;
+    const phone = document.getElementById('phone').value.trim();
+    const passportNum = document.getElementById('passportNum').value.trim();
+    const passportIssued = document.getElementById('passportIssued').value.trim();
+    const regAddress = document.getElementById('regAddress').value.trim();
+    const sameAddr = document.getElementById('sameAddress').checked;
+    const factAddress = sameAddr ? regAddress : document.getElementById('factAddress').value.trim();
+    const vuDetailsRaw = document.getElementById('vuDetailsRaw').value.trim();
+    const vuStartYear = document.getElementById('vuStartYear').value.trim();
+    const carSelection = document.getElementById('carSelection').value;
+    const durationRaw = document.getElementById('durationRaw').value;
+    const opdConsent = document.getElementById('opdConsent').checked;
+
+    if (!fio) return showError('Пожалуйста, укажите ФИО водителя.');
+    if (!phone) return showError('Пожалуйста, укажите контактный телефон.');
+    if (!passportNum || !passportIssued) return showError('Заполните серию, номер и кем выдан паспорт.');
+    if (!regAddress) return showError('Укажите адрес регистрации.');
+    if (!vuDetailsRaw || !vuStartYear) return showError('Укажите реквизиты водительского удостоверения и год начала стажа.');
+    if (!carSelection) return showError('Выберите автомобиль из списка.');
+    if (photoStore.vu.length === 0) return showError('Прикрепите хотя бы одно фото водительского удостоверения.');
+    if (photoStore.pass.length === 0) return showError('Прикрепите хотя бы одно фото паспорта или миграционной карты.');
+    if (!opdConsent) return showError('Необходимо дать согласие на обработку персональных данных (152-ФЗ).');
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Отправка анкеты и фотографий...';
+
+    const subId = 'sub_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const payload = {
+      action: 'submitDriverForm',
+      submissionId: subId,
+      fio,
+      citizenship,
+      phone,
+      passportNum,
+      passportIssued,
+      regAddress,
+      factAddress: factAddress || regAddress,
+      vuDetailsRaw,
+      vuStartYear,
+      carSelection,
+      durationRaw,
+      opdConsent: true,
+      vuPhotos: photoStore.vu.map(p => ({ mimeType: p.mimeType, base64: p.base64 })),
+      passportPhotos: photoStore.pass.map(p => ({ mimeType: p.mimeType, base64: p.base64 })),
+      regPhotos: photoStore.reg.map(p => ({ mimeType: p.mimeType, base64: p.base64 }))
+    };
+
+    try {
+      let resultData = null;
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          credentials: 'omit',
+          redirect: 'follow',
+          body: JSON.stringify(payload)
+        });
+        const text = await res.text();
+        const json = JSON.parse(text);
+        if (!json.ok) throw new Error(json.error || 'Ошибка сохранения анкеты');
+        resultData = json.data;
+      } catch (fetchErr) {
+        // Если встроенный браузер WhatsApp/iOS заблокировал чтение ответа после редиректа Google,
+        // проверяем факт обработки заявки через резервный JSONP-канал
+        btn.textContent = 'Подтверждаем сохранение...';
+        resultData = await waitForSubmissionConfirmation(subId);
+        if (!resultData) {
+          throw new Error(fetchErr.message || 'Не удалось связаться с сервером. Проверьте интернет и попробуйте снова.');
+        }
+      }
+
+      document.getElementById('driverForm').classList.add('hidden');
+      document.getElementById('successBox').classList.remove('hidden');
+      document.getElementById('successDetails').innerHTML =
+        `<strong>Договор №:</strong> ${resultData.contractNo || '—'}<br>` +
+        `<strong>Автомобиль:</strong> ${resultData.plate || carSelection}<br>` +
+        `<strong>Водитель:</strong> ${resultData.driverName || fio}<br>` +
+        `<strong>Срок:</strong> ${resultData.days || '365'} сут. (с ${resultData.startDate || 'сегодня'} по ${resultData.endDate || '—'})`;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      showError(err.message || 'Произошла ошибка при отправке анкеты.');
+      btn.disabled = false;
+      btn.textContent = 'Отправить анкету и оформить договор';
+    }
+  });
+
+  function resetForm() {
+    document.getElementById('driverForm').reset();
+    photoStore.vu = [];
+    photoStore.pass = [];
+    photoStore.reg = [];
+    renderPreviews('vu');
+    renderPreviews('pass');
+    renderPreviews('reg');
+    toggleFactAddress();
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = false;
+    btn.textContent = 'Отправить анкету и оформить договор';
+    document.getElementById('successBox').classList.add('hidden');
+    document.getElementById('driverForm').classList.remove('hidden');
+    loadFreeCars();
+  }
+
+  window.onload = loadFreeCars;
+</script>
+</body>
+</html>
