@@ -16,19 +16,27 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); padding: 12px; padding-bottom: 40px; -webkit-text-size-adjust: 100%; }
+
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
-    .header h1 { font-size: 18px; font-weight: 700; flex: 1; }
-    .header-right { display: flex; align-items: center; gap: 6px; }
-    .role-badge { font-size: 12px; padding: 4px 10px; border-radius: 12px; background: var(--btn); color: var(--btn-text); font-weight: 600; }
-    .btn-refresh { -webkit-appearance: none; appearance: none; border: none; background: var(--card-bg); color: var(--text); width: 30px; height: 30px; border-radius: 50%; font-size: 16px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .header h1 { font-size: 16px; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .header-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .btn-new-form {
+      -webkit-appearance: none; appearance: none; display: inline-flex; align-items: center;
+      padding: 6px 10px; border: none; border-radius: 12px; background: #16a34a; color: #ffffff;
+      font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap; cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+    .btn-new-form:active { opacity: 0.85; }
+    .role-badge { font-size: 12px; padding: 4px 9px; border-radius: 12px; background: var(--btn); color: var(--btn-text); font-weight: 600; white-space: nowrap; }
+    .btn-refresh { -webkit-appearance: none; appearance: none; border: none; background: var(--card-bg); color: var(--text); width: 30px; height: 30px; border-radius: 50%; font-size: 16px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0; }
 
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
     .stat-box { background: var(--card-bg); padding: 10px 6px; border-radius: 10px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
     .stat-val { font-size: 18px; font-weight: 700; }
     .stat-lbl { font-size: 11px; color: var(--hint); margin-top: 2px; }
 
-    .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
-    .tab { -webkit-appearance: none; appearance: none; flex: 1; padding: 10px; border: none; border-radius: 10px; background: var(--card-bg); color: var(--text); font-weight: 600; font-size: 14px; cursor: pointer; }
+    .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+    .tab { -webkit-appearance: none; appearance: none; flex: 1; padding: 10px 6px; border: none; border-radius: 10px; background: var(--card-bg); color: var(--text); font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; }
     .tab.active { background: var(--btn); color: var(--btn-text); }
 
     .filters { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; margin-bottom: 10px; }
@@ -36,19 +44,32 @@
     .chip.active { background: var(--btn); color: var(--btn-text); border-color: var(--btn); }
 
     .card { background: var(--card-bg); border-radius: 12px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-    .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
     .plate { font-weight: 700; font-size: 16px; }
-    .status-pill { font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 8px; }
+    .status-pill { font-size: 11.5px; font-weight: 600; padding: 3px 8px; border-radius: 8px; white-space: nowrap; }
     .st-free { background: #e6f4ea; color: #1e8e3e; }
     .st-rented { background: #fce8e6; color: #d93025; }
-    .st-booked { background: #fef7e0; color: #f29900; }
+    .st-booked { background: #fef7e0; color: #b45309; }
     .st-service { background: #e8eaed; color: #5f6368; }
 
     .model { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
-    .meta { font-size: 12px; color: var(--hint); margin-bottom: 8px; }
+    .meta { font-size: 12.5px; color: var(--hint); margin-bottom: 8px; line-height: 1.4; }
+    .meta strong { color: var(--text); }
+
     .actions { display: flex; gap: 6px; margin-top: 8px; }
-    select { -webkit-appearance: none; appearance: none; flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(128,128,128,0.3); background: var(--bg); color: var(--text); font-size: 13px; }
+    .osago-edit { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+    .osago-edit .btn-save { grid-column: span 2; }
+    select, .field-input {
+      -webkit-appearance: none; appearance: none; width: 100%; min-width: 0; padding: 8px 10px;
+      border-radius: 8px; border: 1px solid rgba(128,128,128,0.3); background: var(--bg); color: var(--text); font-size: 13px;
+    }
+    select { flex: 1; }
     .btn-save { -webkit-appearance: none; appearance: none; padding: 8px 12px; border: none; border-radius: 8px; background: var(--btn); color: var(--btn-text); font-weight: 600; font-size: 13px; cursor: pointer; }
+    .btn-return {
+      -webkit-appearance: none; appearance: none; width: 100%; padding: 9px 12px; margin-top: 6px;
+      border: none; border-radius: 8px; background: #dc2626; color: #ffffff; font-weight: 600; font-size: 13px; cursor: pointer;
+    }
+    .btn-save:disabled, .btn-return:disabled { opacity: 0.6; cursor: not-allowed; }
 
     .msg { padding: 16px; border-radius: 10px; background: var(--card-bg); text-align: center; font-size: 14px; margin-bottom: 10px; }
     .error { color: #d93025; border: 1px solid #f5c2c7; background: #f8d7da; }
@@ -60,6 +81,7 @@
   <div class="header">
     <h1 id="userName">Автопарк CRM</h1>
     <div class="header-right">
+      <a href="form.html" class="btn-new-form" title="Открыть анкету водителя">+ Новая анкета</a>
       <button class="btn-refresh" onclick="loadInitial()" title="Обновить">↻</button>
       <span id="userRole" class="role-badge">...</span>
     </div>
@@ -76,8 +98,9 @@
     </div>
 
     <div class="tabs" id="navTabs">
-      <button class="tab active" onclick="switchTab('fleet')">Автомобили</button>
-      <button class="tab hidden" id="tabDriversBtn" onclick="switchTab('drivers')">Водители</button>
+      <button class="tab active" data-tab="fleet" onclick="switchTab('fleet')">Автомобили</button>
+      <button class="tab hidden" id="tabDriversBtn" data-tab="drivers" onclick="switchTab('drivers')">Водители</button>
+      <button class="tab" id="tabOsagoBtn" data-tab="osago" onclick="switchTab('osago')">Страховки</button>
     </div>
 
     <div id="fleetSection">
@@ -92,7 +115,22 @@
     </div>
 
     <div id="driversSection" class="hidden">
+      <div class="filters">
+        <button class="chip active" onclick="filterDrivers('all', this)">Все</button>
+        <button class="chip" onclick="filterDrivers('ездит', this)">Ездит</button>
+        <button class="chip" onclick="filterDrivers('сдал', this)">Сдал</button>
+      </div>
       <div id="driversList"></div>
+    </div>
+
+    <div id="osagoSection" class="hidden">
+      <div class="filters">
+        <button class="chip active" onclick="filterOsago('all', this)">Все</button>
+        <button class="chip" onclick="filterOsago('expiring', this)">Истекают (≤30 дн.)</button>
+        <button class="chip" onclick="filterOsago('expired', this)">Просрочены</button>
+        <button class="chip" onclick="filterOsago('nodate', this)">Без срока</button>
+      </div>
+      <div id="osagoList"></div>
     </div>
   </div>
 
@@ -103,9 +141,31 @@
     if (tg) { tg.ready(); tg.expand(); }
 
     let allCars = [];
+    let allDrivers = [];
     let currentUser = null;
     let currentFilter = 'all';
+    let currentDriverFilter = 'all';
+    let currentOsagoFilter = 'all';
+    let currentTab = 'fleet';
     let preferJsonp = false;
+
+    function askConfirm(message) {
+      return new Promise(resolve => {
+        if (tg && typeof tg.showConfirm === 'function') {
+          tg.showConfirm(message, ok => resolve(!!ok));
+        } else {
+          resolve(window.confirm(message));
+        }
+      });
+    }
+
+    function notifyUser(message) {
+      if (tg && typeof tg.showAlert === 'function') {
+        tg.showAlert(message);
+      } else {
+        window.alert(message);
+      }
+    }
 
     function resolveInitData() {
       if (tg && tg.initData) {
@@ -137,9 +197,9 @@
       return params.toString();
     }
 
-    async function callApiFetch(action, extraParams) {
+    async function callApiFetch(action, extraParams, timeoutMs) {
       const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      const timer = controller ? setTimeout(() => controller.abort(), 7000) : null;
+      const timer = controller ? setTimeout(() => controller.abort(), timeoutMs || 8000) : null;
       try {
         const res = await fetch(API_URL + '?' + buildQueryParams(action, extraParams), {
           method: 'GET',
@@ -160,7 +220,7 @@
       }
     }
 
-    function callApiJsonp(action, extraParams) {
+    function callApiJsonp(action, extraParams, timeoutMs) {
       return new Promise((resolve, reject) => {
         const cbName = '__crmJsonpCb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
         const script = document.createElement('script');
@@ -176,7 +236,7 @@
           settled = true;
           cleanup();
           reject(new Error('Превышено время ожидания ответа сервера (JSONP). Проверьте доступ «Все» в Google Apps Script.'));
-        }, 12000);
+        }, timeoutMs || 15000);
 
         window[cbName] = (json) => {
           if (settled) return;
@@ -199,18 +259,17 @@
       });
     }
 
-    async function callApi(action, extraParams = {}) {
+    async function callApi(action, extraParams = {}, timeoutMs = 10000) {
       let json = null;
       if (!preferJsonp) {
         try {
-          json = await callApiFetch(action, extraParams);
+          json = await callApiFetch(action, extraParams, timeoutMs);
         } catch (e) {
-          // Если iOS Safari заблокировал кросс-доменный редирект fetch, переключаемся на JSONP
           preferJsonp = true;
         }
       }
       if (!json) {
-        json = await callApiJsonp(action, extraParams);
+        json = await callApiJsonp(action, extraParams, Math.max(timeoutMs, 15000));
       }
       if (!json || typeof json !== 'object') {
         throw new Error('Сервер вернул пустой ответ.');
@@ -228,6 +287,10 @@
       box.textContent = (err && err.message) ? err.message : String(err);
     }
 
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     function fmtUnit(val, unit) {
       const s = String(val || '').trim();
       if (!s) return '—';
@@ -240,6 +303,39 @@
       if (v === 'в аренде') return 'st-rented';
       if (v === 'бронь') return 'st-booked';
       return 'st-service';
+    }
+
+    function parseExpiryInfo(rawStr) {
+      const s = String(rawStr || '').trim();
+      if (!s) return { state: 'nodate', daysLeft: null, label: 'Срок не указан', pillClass: 'st-service', iso: '', ru: '' };
+
+      let y, m, d;
+      const ruMatch = s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+      const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (ruMatch) {
+        d = Number(ruMatch[1]); m = Number(ruMatch[2]); y = Number(ruMatch[3]);
+      } else if (isoMatch) {
+        y = Number(isoMatch[1]); m = Number(isoMatch[2]); d = Number(isoMatch[3]);
+      } else {
+        return { state: 'nodate', daysLeft: null, label: s, pillClass: 'st-service', iso: '', ru: s };
+      }
+
+      const expDate = new Date(y, m - 1, d);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const daysLeft = Math.round((expDate.getTime() - today.getTime()) / 86400000);
+
+      const pad = n => String(n).padStart(2, '0');
+      const iso = `${y}-${pad(m)}-${pad(d)}`;
+      const ru = `${pad(d)}.${pad(m)}.${y}`;
+
+      if (daysLeft < 0) {
+        return { state: 'expired', daysLeft, label: `Просрочен (${Math.abs(daysLeft)} дн.)`, pillClass: 'st-rented', iso, ru };
+      }
+      if (daysLeft <= 30) {
+        return { state: 'expiring', daysLeft, label: daysLeft === 0 ? 'Истекает сегодня' : `Истекает (${daysLeft} дн.)`, pillClass: 'st-booked', iso, ru };
+      }
+      return { state: 'active', daysLeft, label: `Действует (${daysLeft} дн.)`, pillClass: 'st-free', iso, ru };
     }
 
     async function loadInitial() {
@@ -264,10 +360,13 @@
         document.getElementById('stBooked').textContent = data.counts.booked;
         document.getElementById('stService').textContent = data.counts.service;
 
-        if (currentUser.role === 'admin') {
+        if (currentUser.role === 'admin' || currentUser.role === 'manager') {
           document.getElementById('tabDriversBtn').classList.remove('hidden');
         }
+
         renderCars();
+        renderOsago();
+        if (currentTab === 'drivers') loadDrivers();
       } catch (err) {
         showError(err);
       }
@@ -275,9 +374,23 @@
 
     function filterCars(filter, btn) {
       currentFilter = filter;
-      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('#fleetSection .chip').forEach(c => c.classList.remove('active'));
       if (btn) btn.classList.add('active');
       renderCars();
+    }
+
+    function filterDrivers(filter, btn) {
+      currentDriverFilter = filter;
+      document.querySelectorAll('#driversSection .chip').forEach(c => c.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      renderDrivers();
+    }
+
+    function filterOsago(filter, btn) {
+      currentOsagoFilter = filter;
+      document.querySelectorAll('#osagoSection .chip').forEach(c => c.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      renderOsago();
     }
 
     function renderCars() {
@@ -313,17 +426,90 @@
 
         card.innerHTML = `
           <div class="card-top">
-            <span class="plate">${c.plate}</span>
-            <span class="status-pill ${statusClass(c.status)}">${c.status || '—'}</span>
+            <span class="plate">${escapeHtml(c.plate)}</span>
+            <span class="status-pill ${statusClass(c.status)}">${escapeHtml(c.status || '—')}</span>
           </div>
-          <div class="model">${c.model || ''} (${c.year || ''} г., ${c.color || ''})</div>
-          <div class="meta">Тариф: ${fmtUnit(c.dailyRate, '₽')}/сут • Депозит: ${fmtUnit(c.deposit, '₽')} • Лимит: ${fmtUnit(c.mileageLimit, 'км')}</div>
+          <div class="model">${escapeHtml(c.model || '')} (${escapeHtml(c.year || '')} г., ${escapeHtml(c.color || '')})</div>
+          <div class="meta">Тариф: ${escapeHtml(fmtUnit(c.dailyRate, '₽'))}/сут • Депозит: ${escapeHtml(fmtUnit(c.deposit, '₽'))} • Лимит: ${escapeHtml(fmtUnit(c.mileageLimit, 'км'))}</div>
           ${editHtml}
         `;
 
         if (canEdit) {
           const btn = card.querySelector('.btn-save');
           btn.addEventListener('click', () => changeStatus(c.plate, selectId, btn));
+        }
+        list.appendChild(card);
+      });
+    }
+
+    function renderOsago() {
+      const list = document.getElementById('osagoList');
+      list.innerHTML = '';
+      const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
+
+      const enriched = allCars.map(c => ({
+        car: c,
+        info: parseExpiryInfo(c.osagoExpiry)
+      }));
+
+      const orderMap = { expired: 0, expiring: 1, active: 2, nodate: 3 };
+      enriched.sort((a, b) => {
+        const diff = orderMap[a.info.state] - orderMap[b.info.state];
+        if (diff !== 0) return diff;
+        if (a.info.daysLeft !== null && b.info.daysLeft !== null) {
+          return a.info.daysLeft - b.info.daysLeft;
+        }
+        return String(a.car.plate || '').localeCompare(String(b.car.plate || ''));
+      });
+
+      const filtered = enriched.filter(item => {
+        if (currentOsagoFilter === 'all') return true;
+        return item.info.state === currentOsagoFilter;
+      });
+
+      if (!filtered.length) {
+        list.innerHTML = '<div class="msg">Нет страховок по выбранному фильтру</div>';
+        return;
+      }
+
+      filtered.forEach((item, idx) => {
+        const c = item.car;
+        const info = item.info;
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const polId = 'osago_pol_' + idx;
+        const expId = 'osago_exp_' + idx;
+        const codePart = c.code ? ` • ${c.code}` : '';
+        const policyText = c.osagoPolicy || 'Не указан';
+        const expiryText = info.ru || 'Не указан';
+
+        let editHtml = '';
+        if (canEdit) {
+          editHtml = `
+            <div class="osago-edit">
+              <input type="text" id="${polId}" class="field-input" value="${escapeHtml(c.osagoPolicy || '')}" placeholder="Номер полиса ОСАГО">
+              <input type="date" id="${expId}" class="field-input" value="${escapeHtml(info.iso)}">
+              <button class="btn-save">Сохранить ОСАГО</button>
+            </div>`;
+        }
+
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="plate">${escapeHtml(c.plate)}</span>
+            <span class="status-pill ${info.pillClass}">${escapeHtml(info.label)}</span>
+          </div>
+          <div class="model">${escapeHtml(c.model || '')}${escapeHtml(codePart)} (${escapeHtml(c.status || '—')})</div>
+          <div class="meta">
+            Полис: <strong>${escapeHtml(policyText)}</strong><br>
+            Действует до: <strong>${escapeHtml(expiryText)}</strong>
+          </div>
+          ${editHtml}
+        `;
+
+        if (canEdit) {
+          const btn = card.querySelector('.btn-save');
+          btn.addEventListener('click', () => saveOsago(c.plate, polId, expId, btn));
         }
         list.appendChild(card);
       });
@@ -347,40 +533,125 @@
       }
     }
 
+    async function saveOsago(plate, polId, expId, btn) {
+      const policy = document.getElementById(polId).value.trim();
+      const expiry = document.getElementById(expId).value.trim();
+      const oldText = btn.textContent;
+      btn.textContent = 'Сохранение...';
+      btn.disabled = true;
+
+      try {
+        await callApi('setOsago', { plate: plate, policy: policy, expiry: expiry });
+        btn.textContent = oldText;
+        btn.disabled = false;
+        await loadInitial();
+      } catch (err) {
+        btn.textContent = oldText;
+        btn.disabled = false;
+        showError(err);
+      }
+    }
+
     function switchTab(tab) {
-      const tabs = document.querySelectorAll('.tab');
-      tabs[0].classList.toggle('active', tab === 'fleet');
-      tabs[1].classList.toggle('active', tab === 'drivers');
+      currentTab = tab;
+      document.querySelectorAll('#navTabs .tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+      });
       document.getElementById('fleetSection').classList.toggle('hidden', tab !== 'fleet');
       document.getElementById('driversSection').classList.toggle('hidden', tab !== 'drivers');
+      document.getElementById('osagoSection').classList.toggle('hidden', tab !== 'osago');
 
       if (tab === 'drivers') loadDrivers();
+      if (tab === 'osago') renderOsago();
     }
 
     async function loadDrivers() {
       const list = document.getElementById('driversList');
       list.innerHTML = '<div class="msg">Загрузка списка водителей...</div>';
       try {
-        const drivers = await callApi('drivers');
-        list.innerHTML = '';
-        if (!drivers || !drivers.length) {
-          list.innerHTML = '<div class="msg">Список водителей пуст</div>';
-          return;
-        }
-        drivers.forEach(d => {
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
-            <div class="card-top">
-              <span class="plate">${d.name || 'Без имени'}</span>
-              <span class="status-pill st-service">${d.plate || '—'}</span>
-            </div>
-            <div class="model">${d.car || ''}</div>
-            <div class="meta">Тел: ${d.phone || '—'} • Гражданство: ${d.nationality || '—'} • Дней аренды: ${d.rentDays || '—'}</div>
-          `;
-          list.appendChild(card);
-        });
+        allDrivers = (await callApi('drivers')) || [];
+        renderDrivers();
       } catch (err) {
+        showError(err);
+      }
+    }
+
+    function renderDrivers() {
+      const list = document.getElementById('driversList');
+      list.innerHTML = '';
+
+      if (!allDrivers.length) {
+        list.innerHTML = '<div class="msg">Список водителей пуст</div>';
+        return;
+      }
+
+      const sorted = [...allDrivers].sort((a, b) => {
+        const aRet = String(a.rentalStatus || '').toLowerCase() === 'сдал' ? 1 : 0;
+        const bRet = String(b.rentalStatus || '').toLowerCase() === 'сдал' ? 1 : 0;
+        return aRet - bRet;
+      });
+
+      const filtered = sorted.filter(d => {
+        const st = String(d.rentalStatus || 'ездит').toLowerCase().trim();
+        if (currentDriverFilter === 'all') return true;
+        return st === currentDriverFilter;
+      });
+
+      if (!filtered.length) {
+        list.innerHTML = '<div class="msg">Нет водителей с выбранным статусом</div>';
+        return;
+      }
+
+      const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
+
+      filtered.forEach(d => {
+        const statusText = String(d.rentalStatus || 'Ездит').trim();
+        const isReturned = statusText.toLowerCase() === 'сдал';
+        const pillClass = isReturned ? 'st-service' : 'st-free';
+
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const actionBtnHtml = (!isReturned && canEdit && d.row)
+          ? '<button class="btn-return">🔓 Сдал авто (Акт возврата)</button>'
+          : '';
+
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="plate">${escapeHtml(d.name || 'Без имени')}</span>
+            <span class="status-pill ${pillClass}">${escapeHtml(statusText)}</span>
+          </div>
+          <div class="model"><strong>${escapeHtml(d.plate || '—')}</strong> • ${escapeHtml(d.car || '')}</div>
+          <div class="meta">Тел: ${escapeHtml(d.phone || '—')} • Гражданство: ${escapeHtml(d.nationality || '—')} • Дней аренды: ${escapeHtml(d.rentDays || '—')}</div>
+          ${actionBtnHtml}
+        `;
+
+        if (!isReturned && canEdit && d.row) {
+          const btn = card.querySelector('.btn-return');
+          btn.addEventListener('click', () => returnDriverCar(d, btn));
+        }
+
+        list.appendChild(card);
+      });
+    }
+
+    async function returnDriverCar(driver, btn) {
+      const ok = await askConfirm(
+        `Оформить возврат авто ${driver.plate || ''} от водителя ${driver.name || ''}?\n\nБудет сформирован PDF Акта возврата в Telegram, а машина перейдёт в статус «Свободен».`
+      );
+      if (!ok) return;
+
+      const oldText = btn.textContent;
+      btn.textContent = 'Формируем Акт возврата...';
+      btn.disabled = true;
+
+      try {
+        await callApi('returnCar', { row: driver.row }, 30000);
+        notifyUser(`✅ Автомобиль ${driver.plate} сдан! PDF Акта возврата отправлен в Telegram, статус обновлён на «Свободен».`);
+        await loadInitial();
+      } catch (err) {
+        btn.textContent = oldText;
+        btn.disabled = false;
         showError(err);
       }
     }
