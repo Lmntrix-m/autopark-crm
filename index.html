@@ -68,12 +68,17 @@
     }
     select { flex: 1; }
     .btn-save { -webkit-appearance: none; appearance: none; padding: 8px 10px; border: none; border-radius: 8px; background: var(--btn); color: var(--btn-text); font-weight: 600; font-size: 12.5px; cursor: pointer; }
+    .btn-copy { -webkit-appearance: none; appearance: none; padding: 8px 10px; border: 1px solid rgba(128,128,128,0.3); border-radius: 8px; background: var(--bg); color: var(--text); font-weight: 600; font-size: 12.5px; cursor: pointer; }
     .btn-oil-done { -webkit-appearance: none; appearance: none; padding: 8px 10px; border: none; border-radius: 8px; background: #16a34a; color: #ffffff; font-weight: 600; font-size: 12.5px; cursor: pointer; }
     .btn-return {
       -webkit-appearance: none; appearance: none; width: 100%; padding: 9px 12px; margin-top: 6px;
       border: none; border-radius: 8px; background: #dc2626; color: #ffffff; font-weight: 600; font-size: 13px; cursor: pointer;
     }
-    .btn-save:disabled, .btn-oil-done:disabled, .btn-return:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-save:disabled, .btn-copy:disabled, .btn-oil-done:disabled, .btn-return:disabled { opacity: 0.6; cursor: not-allowed; }
+    .summary-fallback {
+      width: 100%; min-height: 115px; margin-top: 8px; padding: 8px; border-radius: 8px;
+      border: 1px solid rgba(128,128,128,0.3); background: var(--bg); color: var(--text); font-size: 12px; line-height: 1.4;
+    }
 
     .msg { padding: 16px; border-radius: 10px; background: var(--card-bg); text-align: center; font-size: 14px; margin-bottom: 10px; }
     .error { color: #d93025; border: 1px solid #f5c2c7; background: #f8d7da; }
@@ -198,6 +203,31 @@
       } else {
         window.alert(message);
       }
+    }
+
+    async function copyToClipboard(text) {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (e) {}
+      }
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        ta.setSelectionRange(0, ta.value.length);
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (ok) return true;
+      } catch (e) {}
+      return false;
     }
 
     function resolveInitData() {
@@ -364,35 +394,16 @@
       const daysLeft = Math.round((expDate.getTime() - today.getTime()) / 86400000);
 
       const pad = n => String(n).padStart(2, '0');
-      const iso = `${y}-${pad(m)}-${pad(d)}`;
-      const ru = `${pad(d)}.${pad(m)}.${y}`;
+      const iso = `${y}-${pad(m)}-${pad(d)}`; const ru = `${pad(d)}.${pad(m)}.${y}`;
 
       if (daysLeft < 0) {
-        return { state: 'expired', daysLeft, label: `Просрочен (${Math.abs(daysLeft)} дн.)`, pillClass: 'st-rented', iso, ru };
+        return { state: 'expired', daysLeft, label: `Просрочен (${Math.abs(daysLeft)} дн.)`, pillClass: 'st-rented', iso, ru }; } if (daysLeft <= 30) { return { state: 'expiring', daysLeft, label: daysLeft === 0 ? 'Истекает сегодня' : `Истекает (${daysLeft} дн.)`, pillClass: 'st-booked', iso, ru };
       }
-      if (daysLeft <= 30) {
-        return { state: 'expiring', daysLeft, label: daysLeft === 0 ? 'Истекает сегодня' : `Истекает (${daysLeft} дн.)`, pillClass: 'st-booked', iso, ru };
-      }
-      return { state: 'active', daysLeft, label: `Действует (${daysLeft} дн.)`, pillClass: 'st-free', iso, ru };
-    }
-
-    function parseOilInfo(car) {
-      const cur = (car.currentMileage !== null && car.currentMileage !== undefined && car.currentMileage !== '') ? Number(car.currentMileage) : null;
-      const last = (car.lastOilMileage !== null && car.lastOilMileage !== undefined && car.lastOilMileage !== '') ? Number(car.lastOilMileage) : null;
-      const next = last !== null ? (last + OIL_INTERVAL_KM) : null;
-      const rem = (cur !== null && next !== null) ? (next - cur) : null;
-
-      if (rem === null) {
-        return { state: 'nodata', cur, last, next, rem: null, label: 'Нет пробега', pillClass: 'st-service' };
-      }
-      if (rem <= 0) {
-        const lbl = rem === 0 ? 'Пора менять!' : `Перекат +${Math.abs(rem).toLocaleString('ru-RU')} км`;
+      return { state: 'active', daysLeft, label: `Действует (${daysLeft} дн.)`, pillClass: 'st-free', iso, ru }; }  function parseOilInfo(car) { const cur = (car.currentMileage !== null && car.currentMileage !== undefined && car.currentMileage !== '') ? Number(car.currentMileage) : null; const last = (car.lastOilMileage !== null && car.lastOilMileage !== undefined && car.lastOilMileage !== '') ? Number(car.lastOilMileage) : null; const next = last !== null ? (last + OIL_INTERVAL_KM) : null; const rem = (cur !== null && next !== null) ? (next - cur) : null;  if (rem === null) { return { state: 'nodata', cur, last, next, rem: null, label: 'Нет пробега', pillClass: 'st-service' }; } if (rem <= 0) { const lbl = rem === 0 ? 'Пора менять!' : `Перекат +${Math.abs(rem).toLocaleString('ru-RU')} км`;
         return { state: 'overdue', cur, last, next, rem, label: lbl, pillClass: 'st-rented' };
       }
       if (rem <= OIL_WARN_KM) {
-        return { state: 'soon', cur, last, next, rem, label: `Скоро (${rem.toLocaleString('ru-RU')} км)`, pillClass: 'st-booked' };
-      }
-      return { state: 'ok', cur, last, next, rem, label: `Ост. ${rem.toLocaleString('ru-RU')} км`, pillClass: 'st-free' };
+        return { state: 'soon', cur, last, next, rem, label: `Скоро (${rem.toLocaleString('ru-RU')} км)`, pillClass: 'st-booked' }; } return { state: 'ok', cur, last, next, rem, label: `Ост. ${rem.toLocaleString('ru-RU')} км`, pillClass: 'st-free' };
     }
 
     async function loadInitial() {
@@ -502,435 +513,5 @@
             <span class="plate">${escapeHtml(c.plate)}</span>
             <span class="status-pill ${statusClass(c.status)}">${escapeHtml(c.status || '—')}</span>
           </div>
-          <div class="model">${escapeHtml(c.model || '')} (${escapeHtml(c.year || '')} г., ${escapeHtml(c.color || '')})</div>
-          <div class="meta">Тариф: ${escapeHtml(fmtUnit(c.dailyRate, '₽'))}/сут • Депозит: ${escapeHtml(fmtUnit(c.deposit, '₽'))} • Лимит: ${escapeHtml(fmtUnit(c.mileageLimit, 'км'))}</div>
-          ${editHtml}
-        `;
-
-        if (canEdit) {
-          const btn = card.querySelector('.btn-save');
-          btn.addEventListener('click', () => changeStatus(c.plate, selectId, btn));
-        }
-        list.appendChild(card);
-      });
-    }
-
-    function buildFilteredDocsList(expiryField, activeFilter) {
-      const enriched = allCars.map((c, idx) => ({
-        car: c,
-        order: idx + 1,
-        info: parseExpiryInfo(c[expiryField])
-      }));
-
-      if (activeFilter === 'urgent') {
-        const orderMap = { expired: 0, expiring: 1, active: 2, nodate: 3 };
-        return [...enriched].sort((a, b) => {
-          const diff = orderMap[a.info.state] - orderMap[b.info.state];
-          if (diff !== 0) return diff;
-          if (a.info.daysLeft !== null && b.info.daysLeft !== null) {
-            return a.info.daysLeft - b.info.daysLeft;
-          }
-          return a.order - b.order;
-        });
-      }
-      if (activeFilter !== 'all') {
-        return enriched.filter(item => item.info.state === activeFilter);
-      }
-      return enriched;
-    }
-
-    function renderOsago() {
-      const list = document.getElementById('osagoList');
-      list.innerHTML = '';
-      const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
-      const filtered = buildFilteredDocsList('osagoExpiry', currentOsagoFilter);
-
-      if (!filtered.length) {
-        list.innerHTML = '<div class="msg">Нет страховок по выбранному фильтру</div>';
-        return;
-      }
-
-      filtered.forEach((item, idx) => {
-        const c = item.car;
-        const info = item.info;
-        const card = document.createElement('div');
-        card.className = 'card';
-
-        const polId = 'osago_pol_' + idx;
-        const expId = 'osago_exp_' + idx;
-        const codePart = c.code ? ` • ${c.code}` : '';
-        const policyText = c.osagoPolicy || 'Не указан';
-        const expiryText = info.ru || 'Не указан';
-
-        let editHtml = '';
-        if (canEdit) {
-          editHtml = `
-            <div class="doc-edit">
-              <input type="text" id="${polId}" class="field-input" value="${escapeHtml(c.osagoPolicy || '')}" placeholder="Номер полиса ОСАГО">
-              <input type="date" id="${expId}" class="field-input" value="${escapeHtml(info.iso)}">
-              <button class="btn-save btn-full">Сохранить ОСАГО</button>
-            </div>`;
-        }
-
-        card.innerHTML = `
-          <div class="card-top">
-            <span class="plate"><span class="order-num">${item.order}.</span>${escapeHtml(c.plate)}</span>
-            <span class="status-pill ${info.pillClass}">${escapeHtml(info.label)}</span>
-          </div>
-          <div class="model">${escapeHtml(c.model || '')}${escapeHtml(codePart)} (${escapeHtml(c.status || '—')})</div>
-          <div class="meta">
-            Полис: <strong>${escapeHtml(policyText)}</strong><br>
-            Действует до: <strong>${escapeHtml(expiryText)}</strong>
-          </div>
-          ${editHtml}
-        `;
-
-        if (canEdit) {
-          const btn = card.querySelector('.btn-save');
-          btn.addEventListener('click', () => saveOsago(c.plate, polId, expId, btn));
-        }
-        list.appendChild(card);
-      });
-    }
-
-    function renderTo() {
-      const list = document.getElementById('toList');
-      list.innerHTML = '';
-      const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
-      const filtered = buildFilteredDocsList('toExpiry', currentToFilter);
-
-      if (!filtered.length) {
-        list.innerHTML = '<div class="msg">Нет техосмотров по выбранному фильтру</div>';
-        return;
-      }
-
-      filtered.forEach((item, idx) => {
-        const c = item.car;
-        const info = item.info;
-        const card = document.createElement('div');
-        card.className = 'card';
-
-        const numId = 'to_num_' + idx;
-        const expId = 'to_exp_' + idx;
-        const codePart = c.code ? ` • ${c.code}` : '';
-        const cardText = c.toNumber || 'Не указана';
-        const expiryText = info.ru || 'Не указан';
-
-        let editHtml = '';
-        if (canEdit) {
-          editHtml = `
-            <div class="doc-edit">
-              <input type="text" id="${numId}" class="field-input" value="${escapeHtml(c.toNumber || '')}" placeholder="Номер карты ТО (ЕАИСТО)">
-              <input type="date" id="${expId}" class="field-input" value="${escapeHtml(info.iso)}">
-              <button class="btn-save btn-full">Сохранить ТО</button>
-            </div>`;
-        }
-
-        card.innerHTML = `
-          <div class="card-top">
-            <span class="plate"><span class="order-num">${item.order}.</span>${escapeHtml(c.plate)}</span>
-            <span class="status-pill ${info.pillClass}">${escapeHtml(info.label)}</span>
-          </div>
-          <div class="model">${escapeHtml(c.model || '')}${escapeHtml(codePart)} (${escapeHtml(c.status || '—')})</div>
-          <div class="meta">
-            Диагностическая карта: <strong>${escapeHtml(cardText)}</strong><br>
-            Действует до: <strong>${escapeHtml(expiryText)}</strong>
-          </div>
-          ${editHtml}
-        `;
-
-        if (canEdit) {
-          const btn = card.querySelector('.btn-save');
-          btn.addEventListener('click', () => saveTo(c.plate, numId, expId, btn));
-        }
-        list.appendChild(card);
-      });
-    }
-
-    function renderOil() {
-      const list = document.getElementById('oilList');
-      list.innerHTML = '';
-      const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
-
-      const enriched = allCars.map((c, idx) => ({
-        car: c,
-        order: idx + 1,
-        info: parseOilInfo(c)
-      }));
-
-      let filtered = enriched;
-      if (currentOilFilter === 'urgent') {
-        const orderMap = { overdue: 0, soon: 1, ok: 2, nodata: 3 };
-        filtered = [...enriched].sort((a, b) => {
-          const diff = orderMap[a.info.state] - orderMap[b.info.state];
-          if (diff !== 0) return diff;
-          if (a.info.rem !== null && b.info.rem !== null) return a.info.rem - b.info.rem;
-          return a.order - b.order;
-        });
-      } else if (currentOilFilter !== 'all') {
-        filtered = enriched.filter(item => item.info.state === currentOilFilter);
-      }
-
-      if (!filtered.length) {
-        list.innerHTML = '<div class="msg">Нет автомобилей по выбранному фильтру</div>';
-        return;
-      }
-
-      filtered.forEach((item, idx) => {
-        const c = item.car;
-        const info = item.info;
-        const card = document.createElement('div');
-        card.className = 'card';
-
-        const curId = 'oil_cur_' + idx;
-        const lastId = 'oil_last_' + idx;
-        const codePart = c.code ? ` • ${c.code}` : '';
-
-        let editHtml = '';
-        if (canEdit) {
-          editHtml = `
-            <div class="doc-edit">
-              <div class="field-group">
-                <label class="field-lbl" for="${curId}">Текущий пробег (км)</label>
-                <input type="number" inputmode="numeric" id="${curId}" class="field-input" value="${info.cur !== null ? info.cur : ''}" placeholder="Напр. 245000">
-              </div>
-              <div class="field-group">
-                <label class="field-lbl" for="${lastId}">Замена масла (км)</label>
-                <input type="number" inputmode="numeric" id="${lastId}" class="field-input" value="${info.last !== null ? info.last : ''}" placeholder="Напр. 240000">
-              </div>
-              <button class="btn-save js-oil-save">Сохранить пробег</button>
-              <button class="btn-oil-done js-oil-done">🛢️ Заменил масло</button>
-            </div>`;
-        }
-
-        card.innerHTML = `
-          <div class="card-top">
-            <span class="plate"><span class="order-num">${item.order}.</span>${escapeHtml(c.plate)}</span>
-            <span class="status-pill ${info.pillClass}">${escapeHtml(info.label)}</span>
-          </div>
-          <div class="model">${escapeHtml(c.model || '')}${escapeHtml(codePart)} (${escapeHtml(c.status || '—')})</div>
-          <div class="meta">
-            Текущий пробег: <strong>${escapeHtml(fmtKm(info.cur))}</strong><br>
-            Последняя замена: <strong>${escapeHtml(fmtKm(info.last))}</strong> → След.: <strong>${escapeHtml(fmtKm(info.next))}</strong>
-          </div>
-          ${editHtml}
-        `;
-
-        if (canEdit) {
-          const saveBtn = card.querySelector('.js-oil-save');
-          const doneBtn = card.querySelector('.js-oil-done');
-          saveBtn.addEventListener('click', () => saveOil(c.plate, curId, lastId, false, saveBtn, doneBtn));
-          doneBtn.addEventListener('click', () => saveOil(c.plate, curId, lastId, true, doneBtn, saveBtn));
-        }
-        list.appendChild(card);
-      });
-    }
-
-    async function changeStatus(plate, selectId, btn) {
-      const newStatus = document.getElementById(selectId).value;
-      const oldText = btn.textContent;
-      btn.textContent = '...';
-      btn.disabled = true;
-
-      try {
-        await callApi('setStatus', { plate: plate, status: newStatus });
-        btn.textContent = oldText;
-        btn.disabled = false;
-        await loadInitial();
-      } catch (err) {
-        btn.textContent = oldText;
-        btn.disabled = false;
-        showError(err);
-      }
-    }
-
-    async function saveOsago(plate, polId, expId, btn) {
-      const policy = document.getElementById(polId).value.trim();
-      const expiry = document.getElementById(expId).value.trim();
-      const oldText = btn.textContent;
-      btn.textContent = 'Сохранение...';
-      btn.disabled = true;
-
-      try {
-        await callApi('setOsago', { plate: plate, policy: policy, expiry: expiry });
-        btn.textContent = oldText;
-        btn.disabled = false;
-        await loadInitial();
-      } catch (err) {
-        btn.textContent = oldText;
-        btn.disabled = false;
-        showError(err);
-      }
-    }
-
-    async function saveTo(plate, numId, expId, btn) {
-      const toNumber = document.getElementById(numId).value.trim();
-      const toExpiry = document.getElementById(expId).value.trim();
-      const oldText = btn.textContent;
-      btn.textContent = 'Сохранение...';
-      btn.disabled = true;
-
-      try {
-        await callApi('setTo', { plate: plate, toNumber: toNumber, toExpiry: toExpiry });
-        btn.textContent = oldText;
-        btn.disabled = false;
-        await loadInitial();
-      } catch (err) {
-        btn.textContent = oldText;
-        btn.disabled = false;
-        showError(err);
-      }
-    }
-
-    async function saveOil(plate, curId, lastId, markChanged, activeBtn, otherBtn) {
-      const curVal = document.getElementById(curId).value.trim();
-      const lastVal = document.getElementById(lastId).value.trim();
-
-      if (markChanged) {
-        const baseVal = curVal || lastVal;
-        if (!baseVal) {
-          notifyUser('Сначала введите текущий пробег автомобиля (км).');
-          return;
-        }
-        const ok = await askConfirm(
-          `Зафиксировать замену масла для ${plate} на пробеге ${Number(baseVal).toLocaleString('ru-RU')} км?\n\nСледующая замена автоматически установится на ${(Number(baseVal) + OIL_INTERVAL_KM).toLocaleString('ru-RU')} км.`
-        );
-        if (!ok) return;
-      }
-
-      const oldText = activeBtn.textContent;
-      activeBtn.textContent = 'Сохранение...';
-      activeBtn.disabled = true;
-      if (otherBtn) otherBtn.disabled = true;
-
-      try {
-        await callApi('setOil', {
-          plate: plate,
-          currentMileage: curVal,
-          lastOilMileage: lastVal,
-          markChanged: markChanged ? 'true' : 'false'
-        });
-        activeBtn.textContent = oldText;
-        activeBtn.disabled = false;
-        if (otherBtn) otherBtn.disabled = false;
-        await loadInitial();
-      } catch (err) {
-        activeBtn.textContent = oldText;
-        activeBtn.disabled = false;
-        if (otherBtn) otherBtn.disabled = false;
-        showError(err);
-      }
-    }
-
-    function switchTab(tab) {
-      currentTab = tab;
-      document.querySelectorAll('#navTabs .tab').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tab === tab);
-      });
-      document.getElementById('fleetSection').classList.toggle('hidden', tab !== 'fleet');
-      document.getElementById('driversSection').classList.toggle('hidden', tab !== 'drivers');
-      document.getElementById('osagoSection').classList.toggle('hidden', tab !== 'osago');
-      document.getElementById('toSection').classList.toggle('hidden', tab !== 'to');
-      document.getElementById('oilSection').classList.toggle('hidden', tab !== 'oil');
-
-      if (tab === 'drivers') loadDrivers();
-      if (tab === 'osago') renderOsago();
-      if (tab === 'to') renderTo();
-      if (tab === 'oil') renderOil();
-    }
-
-    async function loadDrivers() {
-      const list = document.getElementById('driversList');
-      list.innerHTML = '<div class="msg">Загрузка списка водителей...</div>';
-      try {
-        allDrivers = (await callApi('drivers')) || [];
-        renderDrivers();
-      } catch (err) {
-        showError(err);
-      }
-    }
-
-    function renderDrivers() {
-      const list = document.getElementById('driversList');
-      list.innerHTML = '';
-
-      if (!allDrivers.length) {
-        list.innerHTML = '<div class="msg">Список водителей пуст</div>';
-        return;
-      }
-
-      const sorted = [...allDrivers].sort((a, b) => {
-        const aRet = String(a.rentalStatus || '').toLowerCase() === 'сдал' ? 1 : 0;
-        const bRet = String(b.rentalStatus || '').toLowerCase() === 'сдал' ? 1 : 0;
-        return aRet - bRet;
-      });
-
-      const filtered = sorted.filter(d => {
-        const st = String(d.rentalStatus || 'ездит').toLowerCase().trim();
-        if (currentDriverFilter === 'all') return true;
-        return st === currentDriverFilter;
-      });
-
-      if (!filtered.length) {
-        list.innerHTML = '<div class="msg">Нет водителей с выбранным статусом</div>';
-        return;
-      }
-
-      const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
-
-      filtered.forEach(d => {
-        const statusText = String(d.rentalStatus || 'Ездит').trim();
-        const isReturned = statusText.toLowerCase() === 'сдал';
-        const pillClass = isReturned ? 'st-service' : 'st-free';
-
-        const card = document.createElement('div');
-        card.className = 'card';
-
-        const actionBtnHtml = (!isReturned && canEdit && d.row)
-          ? '<button class="btn-return">🔓 Сдал авто (Акт возврата)</button>'
-          : '';
-
-        card.innerHTML = `
-          <div class="card-top">
-            <span class="plate">${escapeHtml(d.name || 'Без имени')}</span>
-            <span class="status-pill ${pillClass}">${escapeHtml(statusText)}</span>
-          </div>
-          <div class="model"><strong>${escapeHtml(d.plate || '—')}</strong> • ${escapeHtml(d.car || '')}</div>
-          <div class="meta">Тел: ${escapeHtml(d.phone || '—')} • Гражданство: ${escapeHtml(d.nationality || '—')} • Дней аренды: ${escapeHtml(d.rentDays || '—')}</div>
-          ${actionBtnHtml}
-        `;
-
-        if (!isReturned && canEdit && d.row) {
-          const btn = card.querySelector('.btn-return');
-          btn.addEventListener('click', () => returnDriverCar(d, btn));
-        }
-
-        list.appendChild(card);
-      });
-    }
-
-    async function returnDriverCar(driver, btn) {
-      const ok = await askConfirm(
-        `Оформить возврат авто ${driver.plate || ''} от водителя ${driver.name || ''}?\n\nБудет сформирован PDF Акта возврата в Telegram, а машина перейдёт в статус «Свободен».`
-      );
-      if (!ok) return;
-
-      const oldText = btn.textContent;
-      btn.textContent = 'Формируем Акт возврата...';
-      btn.disabled = true;
-
-      try {
-        await callApi('returnCar', { row: driver.row }, 30000);
-        notifyUser(`✅ Автомобиль ${driver.plate} сдан! PDF Акта возврата отправлен в Telegram, статус обновлён на «Свободен».`);
-        await loadInitial();
-      } catch (err) {
-        btn.textContent = oldText;
-        btn.disabled = false;
-        showError(err);
-      }
-    }
-
-    window.onload = loadInitial;
-  </script>
-</body>
-</html>
+          <div class="model">${escapeHtml(c.model || '')} (${escapeHtml(c.year \vert{}\vert{} '')} г., ${escapeHtml(c.color || '')})</div>
+          <div class="meta">Тариф: ${escapeHtml(fmtUnit(c.dailyRate, '₽'))}/сут • Депозит: ${escapeHtml(fmtUnit(c.deposit, '₽'))} • Лимит: ${escape
