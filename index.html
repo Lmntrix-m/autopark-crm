@@ -76,7 +76,7 @@
     }
     .btn-save:disabled, .btn-copy:disabled, .btn-oil-done:disabled, .btn-return:disabled { opacity: 0.6; cursor: not-allowed; }
     .summary-fallback {
-      width: 100%; min-height: 115px; margin-top: 8px; padding: 8px; border-radius: 8px;
+      width: 100%; min-height: 150px; margin-top: 8px; padding: 8px; border-radius: 8px;
       border: 1px solid rgba(128,128,128,0.3); background: var(--bg); color: var(--text); font-size: 12px; line-height: 1.4;
     }
 
@@ -365,6 +365,32 @@
       return Number(n).toLocaleString('ru-RU') + ' км';
     }
 
+    function formatDriverExpText(expYearRaw) {
+      const s = String(expYearRaw || '').trim();
+      const m = s.match(/\b(19\d{2}|20\d{2})\b/);
+      if (!m) return s || 'не указан';
+      const y = Number(m[1]);
+      const nowYear = new Date().getFullYear();
+      const years = Math.max(0, nowYear - y);
+      const mod10 = years % 10;
+      const mod100 = years % 100;
+      let unit = 'лет';
+      if (mod10 === 1 && mod100 !== 11) unit = 'год';
+      else if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) unit = 'года';
+      return `с ${y} г. (${years} ${unit})`;
+    }
+
+    function cleanVuForSummary(vuRaw) {
+      let s = String(vuRaw || '').trim();
+      if (!s) return 'не указано';
+      s = s
+        .replace(/,?\s*стаж\s+с\s+\d{4}\s*г\.?/i, '')
+        .replace(/\(\s*\)/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+      return s || String(vuRaw || '').trim();
+    }
+
     function statusClass(s) {
       const v = String(s || '').toLowerCase().trim();
       if (v === 'свободен') return 'st-free';
@@ -587,6 +613,15 @@
         `Текущий полис: ${policyVal}${expiryRu ? ' (до ' + expiryRu + ')' : ''}`,
         'Собственник: Айдаров Ислам Мамурджанович (г. Красноярск)'
       ];
+
+      if (car.driverName) {
+        lines.push(`Водитель: ${car.driverName}`);
+        lines.push(`ВУ: ${cleanVuForSummary(car.driverVu)}`);
+        lines.push(`Стаж: ${formatDriverExpText(car.driverExpYear)}`);
+      } else {
+        lines.push('Водитель: не назначен');
+      }
+
       return lines.join('\n');
     }
 
@@ -642,6 +677,9 @@
         const frameText = c.frame || '—';
         const policyText = c.osagoPolicy || 'Не указан';
         const expiryText = info.ru || 'Не указан';
+        const driverLine = c.driverName
+          ? `<br>Водитель: <strong>${escapeHtml(c.driverName)}</strong>${c.driverExpYear ? ' (стаж ' + escapeHtml(formatDriverExpText(c.driverExpYear)) + ')' : ''}`
+          : '';
 
         let editHtml = '';
         if (canEdit) {
@@ -668,7 +706,7 @@
           <div class="meta">
             СТС: <strong>${escapeHtml(stsText)}</strong> • Кузов: <strong>${escapeHtml(frameText)}</strong><br>
             Полис: <strong>${escapeHtml(policyText)}</strong><br>
-            Действует до: <strong>${escapeHtml(expiryText)}</strong>
+            Действует до: <strong>${escapeHtml(expiryText)}</strong>${driverLine}
           </div>
           ${editHtml}
         `;
