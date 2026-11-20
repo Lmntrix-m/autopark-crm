@@ -2,6 +2,9 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Автопарк CRM</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -68,7 +71,7 @@
       font-size: 12.5px; color: var(--text); padding: 4px 2px; cursor: pointer;
     }
     .check-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--btn); flex-shrink: 0; }
-    .driver-docs-panel {
+    .expand-panel {
       margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(128,128,128,0.28);
     }
 
@@ -97,10 +100,19 @@
 </head>
 <body>
 
+  <datalist id="carModelsList">
+    <option value="Honda Fit">
+    <option value="Honda Insight">
+    <option value="Honda Freed">
+    <option value="Toyota Prius">
+    <option value="Toyota Aqua">
+    <option value="Toyota Corolla Fielder">
+  </datalist>
+
   <div class="header">
     <h1 id="userName">Автопарк CRM</h1>
     <div class="header-right">
-      <a href="form.html" class="btn-new-form" title="Открыть анкету водителя">+ Новая анкета</a>
+      <a href="form.html?v=20261120" class="btn-new-form" title="Открыть анкету водителя">+ Новая анкета</a>
       <button class="btn-refresh" onclick="loadInitial()" title="Обновить">↻</button>
       <span id="userRole" class="role-badge">...</span>
     </div>
@@ -375,6 +387,15 @@
       return Number(n).toLocaleString('ru-RU') + ' км';
     }
 
+    function dateStrToIso(rawStr) {
+      const s = String(rawStr || '').trim();
+      const ru = s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+      if (ru) return `${ru[3]}-${ru[2]}-${ru[1]}`;
+      const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+      return '';
+    }
+
     function parseDriverTimestamp(rawStr) {
       const s = String(rawStr || '').trim();
       const pad = n => String(n).padStart(2, '0');
@@ -568,9 +589,10 @@
       list.innerHTML = '';
       const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
 
-      const filtered = allCars.filter(c => {
+      const enriched = allCars.map((c, idx) => ({ car: c, order: idx + 1 }));
+      const filtered = enriched.filter(item => {
         if (currentFilter === 'all') return true;
-        return String(c.status || '').toLowerCase().trim() === currentFilter;
+        return String(item.car.status || '').toLowerCase().trim() === currentFilter;
       });
 
       if (!filtered.length) {
@@ -578,10 +600,14 @@
         return;
       }
 
-      filtered.forEach((c, idx) => {
+      filtered.forEach((item, idx) => {
+        const c = item.car;
         const card = document.createElement('div');
         card.className = 'card';
         const selectId = 'st_sel_' + idx;
+        const p = 'car_ed_' + idx + '_';
+        const stsDisplay = (c.sts || '—') + (c.stsDate ? (' от ' + c.stsDate) : '');
+        const stsDateIso = dateStrToIso(c.stsDate);
 
         let editHtml = '';
         if (canEdit) {
@@ -590,26 +616,145 @@
           editHtml = `
             <div class="actions">
               <select id="${selectId}">${opts}</select>
-              <button class="btn-save">Сохранить</button>
+              <button class="btn-save js-st-save">Сохранить</button>
+            </div>
+            <div class="actions">
+              <button class="btn-copy js-car-toggle" style="width:100%;">✏️ Изменить данные ТС (№, СТС, кузов, модель)</button>
+            </div>
+            <div class="expand-panel hidden js-car-panel">
+              <div class="doc-edit">
+                <div class="field-group">
+                  <label class="field-lbl" for="${p}plate">Гос. номер ТС</label>
+                  <input type="text" id="${p}plate" class="field-input" value="${escapeHtml(c.plate || '')}" placeholder="К707ТТ124">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${p}model">Название ТС (модель)</label>
+                  <input type="text" list="carModelsList" id="${p}model" class="field-input" value="${escapeHtml(c.model || '')}" placeholder="Honda Fit">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${p}sts">СТС (серия и №)</label>
+                  <input type="text" id="${p}sts" class="field-input" value="${escapeHtml(c.sts || '')}" placeholder="99 68 № 535952">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${p}stsDate">Дата выдачи СТС</label>
+                  <input type="date" id="${p}stsDate" class="field-input" value="${escapeHtml(stsDateIso)}">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${p}frame">Кузов / VIN (Frame)</label>
+                  <input type="text" id="${p}frame" class="field-input" value="${escapeHtml(c.frame || '')}" placeholder="GE7-1006368">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${p}code">№ в парке (Код)</label>
+                  <input type="text" id="${p}code" class="field-input" value="${escapeHtml(c.code || '')}" placeholder="Fit-01">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${p}year">Год выпуска</label>
+                  <input type="number" inputmode="numeric" id="${p}year" class="field-input" value="${escapeHtml(c.year || '')}" placeholder="2008">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${p}color">Цвет кузова</label>
+                  <input type="text" id="${p}color" class="field-input" value="${escapeHtml(c.color || '')}" placeholder="Серый">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${p}rate">Тариф (₽/сут)</label>
+                  <input type="number" inputmode="numeric" id="${p}rate" class="field-input" value="${escapeHtml(c.dailyRateRaw !== '' ? c.dailyRateRaw : '')}" placeholder="1500">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${p}dep">Залог (₽)</label>
+                  <input type="number" inputmode="numeric" id="${p}dep" class="field-input" value="${escapeHtml(c.depositRaw !== '' ? c.depositRaw : '0')}" placeholder="0">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${p}val">Оценка ТС (₽)</label>
+                  <input type="number" inputmode="numeric" id="${p}val" class="field-input" value="${escapeHtml(c.assessedValue !== '' ? c.assessedValue : '')}" placeholder="1000000">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${p}lim">Лимит (км/сут)</label>
+                  <input type="number" inputmode="numeric" id="${p}lim" class="field-input" value="${escapeHtml(c.mileageLimit || '')}" placeholder="300">
+                </div>
+                <button class="btn-oil-done btn-full js-car-save">💾 Сохранить ТС во всех документах</button>
+              </div>
             </div>`;
         }
 
         card.innerHTML = `
           <div class="card-top">
-            <span class="plate">${escapeHtml(c.plate)}</span>
+            <span class="plate"><span class="order-num">${item.order}.</span>${escapeHtml(c.plate)}</span>
             <span class="status-pill ${statusClass(c.status)}">${escapeHtml(c.status || '—')}</span>
           </div>
-          <div class="model">${escapeHtml(c.model || '')} (${escapeHtml(c.year || '')} г., ${escapeHtml(c.color || '')})</div>
-          <div class="meta">Тариф: ${escapeHtml(fmtUnit(c.dailyRate, '₽'))}/сут • Депозит: ${escapeHtml(fmtUnit(c.deposit, '₽'))} • Лимит: ${escapeHtml(fmtUnit(c.mileageLimit, 'км'))}</div>
+          <div class="model">${escapeHtml(c.model || '')}${c.code ? ' • ' + escapeHtml(c.code) : ''} (${escapeHtml(c.year || '—')} г., ${escapeHtml(c.color || '—')})</div>
+          <div class="meta">
+            Кузов: <strong>${escapeHtml(c.frame || '—')}</strong> • СТС: <strong>${escapeHtml(stsDisplay)}</strong><br>
+            Тариф: <strong>${escapeHtml(fmtUnit(c.dailyRate, '₽'))}/сут</strong> • Депозит: <strong>${escapeHtml(fmtUnit(c.deposit, '₽'))}</strong> • Лимит: ${escapeHtml(fmtUnit(c.mileageLimit, 'км'))}
+          </div>
           ${editHtml}
         `;
 
         if (canEdit) {
-          const btn = card.querySelector('.btn-save');
-          btn.addEventListener('click', () => changeStatus(c.plate, selectId, btn));
+          const stBtn = card.querySelector('.js-st-save');
+          stBtn.addEventListener('click', () => changeStatus(c.plate, selectId, stBtn));
+
+          const toggleBtn = card.querySelector('.js-car-toggle');
+          const panel = card.querySelector('.js-car-panel');
+          const saveCarBtn = card.querySelector('.js-car-save');
+
+          toggleBtn.addEventListener('click', () => {
+            panel.classList.toggle('hidden');
+          });
+          saveCarBtn.addEventListener('click', () => saveCarCard(c, p, saveCarBtn));
         }
         list.appendChild(card);
       });
+    }
+
+    async function saveCarCard(car, prefix, btn) {
+      const payload = {
+        row: car.row,
+        oldPlate: car.plate,
+        plate: document.getElementById(prefix + 'plate').value.trim().toUpperCase(),
+        model: document.getElementById(prefix + 'model').value.trim(),
+        sts: document.getElementById(prefix + 'sts').value.trim(),
+        stsDate: document.getElementById(prefix + 'stsDate').value.trim(),
+        frame: document.getElementById(prefix + 'frame').value.trim(),
+        code: document.getElementById(prefix + 'code').value.trim(),
+        year: document.getElementById(prefix + 'year').value.trim(),
+        color: document.getElementById(prefix + 'color').value.trim(),
+        dailyRate: document.getElementById(prefix + 'rate').value.trim(),
+        deposit: document.getElementById(prefix + 'dep').value.trim(),
+        assessedValue: document.getElementById(prefix + 'val').value.trim(),
+        mileageLimit: document.getElementById(prefix + 'lim').value.trim()
+      };
+
+      if (!payload.plate) {
+        notifyUser('Госномер автомобиля не может быть пустым.');
+        return;
+      }
+
+      const plateChanged = payload.plate !== String(car.plate || '').trim().toUpperCase();
+      if (plateChanged) {
+        const ok = await askConfirm(
+          `Изменить госномер с ${car.plate} на ${payload.plate}?\n\nНовый номер и все реквизиты сразу обновятся в таблице, Договоре, Актах, Жалобе, Претензии, Ответах водителей и анкетах.`
+        );
+        if (!ok) return;
+      }
+
+      const oldText = btn.textContent;
+      btn.textContent = 'Сохранение во всех листах...';
+      btn.disabled = true;
+
+      try {
+        await callApi('updateCarCard', payload, 25000);
+        if (tg && tg.HapticFeedback && typeof tg.HapticFeedback.notificationOccurred === 'function') {
+          tg.HapticFeedback.notificationOccurred('success');
+        }
+        notifyUser(`✅ Данные автомобиля ${payload.plate} обновлены во всех документах!`);
+        btn.textContent = oldText;
+        btn.disabled = false;
+        await loadInitial();
+      } catch (err) {
+        btn.textContent = oldText;
+        btn.disabled = false;
+        showError(err);
+      }
     }
 
     function buildFilteredDocsList(expiryField, activeFilter) {
@@ -645,12 +790,13 @@
         const parsed = parseExpiryInfo(expInput.value.trim());
         if (parsed.ru) expiryRu = parsed.ru;
       }
+      const stsFull = (car.sts || '—') + (car.stsDate ? (' от ' + car.stsDate + ' г.') : '');
 
       const lines = [
         'Расчёт / продление ОСАГО ТАКСИ:',
         `Авто: ${car.model || '—'}${car.year ? ' (' + car.year + ' г.)' : ''}, госномер ${car.plate || '—'}`,
         `Кузов/VIN: ${car.frame || '—'}`,
-        `СТС: ${car.sts || '—'}`,
+        `СТС: ${stsFull}`,
         `Текущий полис: ${policyVal}${expiryRu ? ' (до ' + expiryRu + ')' : ''}`,
         'Собственник: Айдаров Ислам Мамурджанович (г. Красноярск)'
       ];
@@ -714,7 +860,7 @@
         const polId = 'osago_pol_' + idx;
         const expId = 'osago_exp_' + idx;
         const codePart = c.code ? ` • ${c.code}` : '';
-        const stsText = c.sts || 'Не указан';
+        const stsText = (c.sts || 'Не указан') + (c.stsDate ? (' от ' + c.stsDate) : '');
         const frameText = c.frame || '—';
         const policyText = c.osagoPolicy || 'Не указан';
         const expiryText = info.ru || 'Не указан';
@@ -1069,7 +1215,7 @@
             <div class="actions">
               <button class="btn-copy js-docs-toggle" style="width:100%;">📅 Дата, № договора и 3 PDF</button>
             </div>
-            <div class="driver-docs-panel hidden js-docs-panel">
+            <div class="expand-panel hidden js-docs-panel">
               <div class="doc-edit">
                 <div class="field-group">
                   <label class="field-lbl" for="${dateId}">Дата выдачи</label>
