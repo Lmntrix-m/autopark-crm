@@ -75,6 +75,19 @@
       margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(128,128,128,0.28);
     }
 
+    .pay-summary {
+      padding: 8px 10px; border-radius: 8px; background: var(--bg); font-size: 12px; line-height: 1.45; margin-bottom: 8px;
+      border: 1px solid rgba(128,128,128,0.2);
+    }
+    .pay-subhead { font-size: 12px; font-weight: 700; margin: 10px 0 4px; color: var(--btn); }
+    .pay-history { margin-top: 8px; font-size: 12px; }
+    .pay-item {
+      display: flex; justify-content: space-between; gap: 8px; padding: 5px 0;
+      border-bottom: 1px solid rgba(128,128,128,0.14);
+    }
+    .pay-item:last-child { border-bottom: none; }
+    .pay-item-meta { color: var(--hint); font-size: 11px; }
+
     select, .field-input {
       -webkit-appearance: none; appearance: none; width: 100%; min-width: 0; padding: 8px 10px;
       border-radius: 8px; border: 1px solid rgba(128,128,128,0.3); background: var(--bg); color: var(--text); font-size: 13px;
@@ -112,7 +125,7 @@
   <div class="header">
     <h1 id="userName">Автопарк CRM</h1>
     <div class="header-right">
-      <a href="form.html?v=20261120" class="btn-new-form" title="Открыть анкету водителя">+ Новая анкета</a>
+      <a href="form.html?v=20261120_2" class="btn-new-form" title="Открыть анкету водителя">+ Новая анкета</a>
       <button class="btn-refresh" onclick="loadInitial()" title="Обновить">↻</button>
       <span id="userRole" class="role-badge">...</span>
     </div>
@@ -382,9 +395,27 @@
       return s.toLowerCase().includes(unit.toLowerCase()) ? s : s + ' ' + unit;
     }
 
+    function fmtMoney(n) {
+      return Math.round(Number(n) || 0).toLocaleString('ru-RU');
+    }
+
     function fmtKm(n) {
       if (n === null || n === undefined || n === '' || isNaN(Number(n))) return 'Не указан';
       return Number(n).toLocaleString('ru-RU') + ' км';
+    }
+
+    function todayIsoLocal() {
+      const d = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+
+    function diffDaysInclusive(isoFrom, isoTo) {
+      if (!isoFrom || !isoTo) return 1;
+      const f = isoFrom.split('-').map(Number);
+      const t = isoTo.split('-').map(Number);
+      const d = Math.round((Date.UTC(t[0], t[1] - 1, t[2]) - Date.UTC(f[0], f[1] - 1, f[2])) / 86400000);
+      return d >= 0 ? d + 1 : 1;
     }
 
     function dateStrToIso(rawStr) {
@@ -1167,6 +1198,12 @@
       }
     }
 
+    function findCarRateByPlate(plate) {
+      const target = String(plate || '').trim().toUpperCase();
+      const found = allCars.find(c => String(c.plate || '').trim().toUpperCase() === target);
+      return found && found.dailyRateRaw ? Number(found.dailyRateRaw) : 1500;
+    }
+
     function renderDrivers() {
       const list = document.getElementById('driversList');
       list.innerHTML = '';
@@ -1194,12 +1231,15 @@
       }
 
       const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
+      const todayIso = todayIsoLocal();
 
       filtered.forEach((d, idx) => {
         const statusText = String(d.rentalStatus || 'Ездит').trim();
         const isReturned = statusText.toLowerCase() === 'сдал';
         const pillClass = isReturned ? 'st-service' : 'st-free';
         const tsInfo = parseDriverTimestamp(d.timestamp);
+        const defaultRate = findCarRateByPlate(d.plate);
+        const defaultDays = diffDaysInclusive(tsInfo.dateIso, todayIso);
 
         const card = document.createElement('div');
         card.className = 'card';
@@ -1208,13 +1248,87 @@
         const timeId = 'drv_time_' + idx;
         const numId = 'drv_num_' + idx;
         const fileChkId = 'drv_file_' + idx;
+        const pp = 'pay_' + idx + '_';
 
-        let editDocsHtml = '';
+        let editBlocksHtml = '';
         if (canEdit && d.row) {
-          editDocsHtml = `
+          editBlocksHtml = `
             <div class="actions">
-              <button class="btn-copy js-docs-toggle" style="width:100%;">📅 Дата, № договора и 3 PDF</button>
+              <button class="btn-oil-done js-pay-toggle" style="flex:1;">💰 Оплата / Акт сверки</button>
+              <button class="btn-copy js-docs-toggle" style="flex:1;">📅 Дата, № и 3 PDF</button>
             </div>
+
+            <div class="expand-panel hidden js-pay-panel">
+              <div class="pay-summary js-pay-summary">Загрузка баланса и оплат...</div>
+              <div class="pay-subhead">1. Принять оплату (СБП / Наличные)</div>
+              <div class="doc-edit">
+                <div class="field-group">
+                  <label class="field-lbl" for="${pp}amount">Сумма (₽)</label>
+                  <input type="number" inputmode="numeric" id="${pp}amount" class="field-input" value="${defaultRate}" placeholder="1500">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${pp}method">Способ оплаты</label>
+                  <select id="${pp}method">
+                    <option value="СБП">СБП</option>
+                    <option value="Наличные">Наличные</option>
+                    <option value="Перевод на карту">Перевод на карту</option>
+                    <option value="Взаимозачёт">Взаимозачёт</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${pp}cat">Категория</label>
+                  <select id="${pp}cat">
+                    <option value="Аренда">Аренда</option>
+                    <option value="Залог">Залог</option>
+                    <option value="Штраф / Доплата">Штраф / Доплата</option>
+                    <option value="ОСАГО">ОСАГО</option>
+                    <option value="Возврат залога">Возврат залога</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${pp}date">Дата платежа</label>
+                  <input type="date" id="${pp}date" class="field-input" value="${todayIso}">
+                </div>
+                <div class="field-group full">
+                  <label class="field-lbl" for="${pp}check">Чек НПД / подтверждение</label>
+                  <select id="${pp}check">
+                    <option value="Чек НПД выдан">Чек НПД выдан</option>
+                    <option value="Ожидает чек НПД">Ожидает чек НПД</option>
+                    <option value="Расписка в мессенджере">Расписка в мессенджере</option>
+                  </select>
+                </div>
+                <div class="field-group full">
+                  <label class="field-lbl" for="${pp}comment">Комментарий / за какой день</label>
+                  <input type="text" id="${pp}comment" class="field-input" placeholder="Напр. За ${parseExpiryInfo(todayIso).ru}">
+                </div>
+                <button class="btn-oil-done js-pay-save">💰 Записать оплату</button>
+                <button class="btn-copy js-pay-receipt">📋 Расписка водителю</button>
+              </div>
+
+              <div class="pay-subhead">2. Выгрузить PDF Акт сверки в Telegram</div>
+              <div class="doc-edit">
+                <div class="field-group">
+                  <label class="field-lbl" for="${pp}from">Период с</label>
+                  <input type="date" id="${pp}from" class="field-input" value="${escapeHtml(tsInfo.dateIso)}">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${pp}to">Период по</label>
+                  <input type="date" id="${pp}to" class="field-input" value="${todayIso}">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${pp}days">Дней аренды</label>
+                  <input type="number" inputmode="numeric" id="${pp}days" class="field-input" value="${defaultDays}">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${pp}rate">Тариф (₽/сут)</label>
+                  <input type="number" inputmode="numeric" id="${pp}rate" class="field-input" value="${defaultRate}">
+                </div>
+                <button class="btn-save btn-full js-pay-pdf">📄 Выгрузить PDF Акт сверки в Telegram</button>
+              </div>
+
+              <div class="pay-history js-pay-history"></div>
+            </div>
+
             <div class="expand-panel hidden js-docs-panel">
               <div class="doc-edit">
                 <div class="field-group">
@@ -1253,19 +1367,57 @@
             Договор №: <strong>${escapeHtml(d.contractNo || '—')}</strong> • Выдача: <strong>${escapeHtml(tsInfo.ruDisplay)}</strong><br>
             Тел: ${escapeHtml(d.phone || '—')} • Гражданство: ${escapeHtml(d.nationality || '—')} • Срок: ${escapeHtml(d.rentDays || '365')} сут.
           </div>
-          ${editDocsHtml}
+          ${editBlocksHtml}
           ${actionBtnHtml}
         `;
 
         if (canEdit && d.row) {
-          const toggleBtn = card.querySelector('.js-docs-toggle');
-          const panel = card.querySelector('.js-docs-panel');
+          const payToggle = card.querySelector('.js-pay-toggle');
+          const payPanel = card.querySelector('.js-pay-panel');
+          const docsToggle = card.querySelector('.js-docs-toggle');
+          const docsPanel = card.querySelector('.js-docs-panel');
+
+          const methodSel = document.getElementById(pp + 'method');
+          const checkSel = document.getElementById(pp + 'check');
+          const fromInp = document.getElementById(pp + 'from');
+          const toInp = document.getElementById(pp + 'to');
+          const daysInp = document.getElementById(pp + 'days');
+
+          // При выборе «Наличные» автоматически подсказываем статус «Расписка в мессенджере»
+          methodSel.addEventListener('change', () => {
+            checkSel.value = methodSel.value === 'Наличные' ? 'Расписка в мессенджере' : 'Чек НПД выдан';
+          });
+          // Пересчитываем количество дней при изменении периода сверки
+          const recalcDays = () => {
+            if (fromInp.value && toInp.value) {
+              daysInp.value = diffDaysInclusive(fromInp.value, toInp.value);
+            }
+          };
+          fromInp.addEventListener('change', recalcDays);
+          toInp.addEventListener('change', recalcDays);
+
+          payToggle.addEventListener('click', () => {
+            docsPanel.classList.add('hidden');
+            const opening = payPanel.classList.contains('hidden');
+            payPanel.classList.toggle('hidden');
+            if (opening) loadDriverPayments(d, payPanel, pp);
+          });
+
+          docsToggle.addEventListener('click', () => {
+            payPanel.classList.add('hidden');
+            docsPanel.classList.toggle('hidden');
+          });
+
+          const paySaveBtn = card.querySelector('.js-pay-save');
+          const payReceiptBtn = card.querySelector('.js-pay-receipt');
+          const payPdfBtn = card.querySelector('.js-pay-pdf');
+
+          paySaveBtn.addEventListener('click', () => saveDriverPayment(d, pp, payPanel, paySaveBtn));
+          payReceiptBtn.addEventListener('click', () => copyDriverReceipt(d, pp, payReceiptBtn, payPanel));
+          payPdfBtn.addEventListener('click', () => exportDriverReconciliation(d, pp, payPdfBtn));
+
           const sendBtn = card.querySelector('.js-docs-send');
           const fileBtn = card.querySelector('.js-docs-file');
-
-          toggleBtn.addEventListener('click', () => {
-            panel.classList.toggle('hidden');
-          });
           sendBtn.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, true, sendBtn, fileBtn));
           fileBtn.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, false, fileBtn, sendBtn));
         }
@@ -1277,6 +1429,180 @@
 
         list.appendChild(card);
       });
+    }
+
+    function renderPaySummaryHtml(data, panel, pp) {
+      const sumBox = panel.querySelector('.js-pay-summary');
+      const histBox = panel.querySelector('.js-pay-history');
+      const t = data.totals || {};
+      const sbpAll = (t.sbp || 0) + (t.cardOrOther || 0);
+      const balColor = (t.rentBalance || 0) < 0 ? '#d93025' : '#1e8e3e';
+      const balText = (t.rentBalance || 0) < 0
+        ? `Долг: ${fmtMoney(Math.abs(t.rentBalance))} ₽`
+        : ((t.rentBalance || 0) > 0 ? `Аванс: +${fmtMoney(t.rentBalance)} ₽` : '0 ₽ (закрыто)');
+
+      sumBox.innerHTML =
+        `💳 СБП/карта: <strong>${fmtMoney(sbpAll)} ₽</strong> • 💵 Нал: <strong>${fmtMoney(t.cash || 0)} ₽</strong><br>` +
+        `📅 Аренда (${data.defaultDays || 0} дн.): оплачено <strong>${fmtMoney(t.paidRent || 0)} ₽</strong> из <strong>${fmtMoney(t.accruedRent || 0)} ₽</strong><br>` +
+        `🔒 Залог: <strong>${fmtMoney(t.depositBalance || 0)} ₽</strong> • Баланс: <strong style="color:${balColor};">${balText}</strong>`;
+
+      if (data.dailyRate) {
+        const rateInp = document.getElementById(pp + 'rate');
+        if (rateInp) rateInp.value = data.dailyRate;
+      }
+
+      const items = data.items || [];
+      if (!items.length) {
+        histBox.innerHTML = '<div class="pay-item-meta">По этому водителю ещё нет записей в «Журнале оплат».</div>';
+        return;
+      }
+
+      const top5 = items.slice(0, 6);
+      histBox.innerHTML = '<div class="pay-subhead">Последние платежи (' + items.length + ')</div>' +
+        top5.map(it => {
+          const sign = it.category === 'Возврат залога' ? '−' : '+';
+          return `<div class="pay-item">
+            <div>
+              <strong>${escapeHtml(it.dateRu)}</strong> • ${escapeHtml(it.category)} (${escapeHtml(it.method)})
+              ${it.comment ? `<div class="pay-item-meta">${escapeHtml(it.comment)}</div>` : ''}
+            </div>
+            <div style="font-weight:700;white-space:nowrap;">${sign}${fmtMoney(it.amount)} ₽</div>
+          </div>`;
+        }).join('');
+    }
+
+    async function loadDriverPayments(driver, panel, pp) {
+      const sumBox = panel.querySelector('.js-pay-summary');
+      sumBox.textContent = 'Загрузка баланса и истории оплат...';
+      try {
+        const data = await callApi('getPayments', {
+          row: driver.row,
+          driverName: driver.name,
+          plate: driver.plate,
+          contractNo: driver.contractNo || ''
+        }, 15000);
+        renderPaySummaryHtml(data, panel, pp);
+      } catch (err) {
+        sumBox.innerHTML = `<span style="color:#d93025;">Ошибка загрузки оплат: ${escapeHtml(err.message || err)}</span>`;
+      }
+    }
+
+    async function saveDriverPayment(driver, pp, panel, btn) {
+      const amount = document.getElementById(pp + 'amount').value.trim();
+      const method = document.getElementById(pp + 'method').value;
+      const category = document.getElementById(pp + 'cat').value;
+      const date = document.getElementById(pp + 'date').value;
+      const checkStatus = document.getElementById(pp + 'check').value;
+      const comment = document.getElementById(pp + 'comment').value.trim();
+
+      if (!amount || Number(amount) <= 0) {
+        notifyUser('Укажите сумму оплаты больше 0 ₽.');
+        return;
+      }
+
+      const oldText = btn.textContent;
+      btn.textContent = 'Записываем...';
+      btn.disabled = true;
+
+      try {
+        const res = await callApi('addPayment', {
+          row: driver.row,
+          driverName: driver.name,
+          plate: driver.plate,
+          contractNo: driver.contractNo || '',
+          amount: amount,
+          method: method,
+          category: category,
+          date: date,
+          checkStatus: checkStatus,
+          comment: comment
+        }, 20000);
+
+        if (tg && tg.HapticFeedback && typeof tg.HapticFeedback.notificationOccurred === 'function') {
+          tg.HapticFeedback.notificationOccurred('success');
+        }
+        document.getElementById(pp + 'comment').value = '';
+        if (res && res.summary) renderPaySummaryHtml(res.summary, panel, pp);
+        notifyUser(`✅ Оплата ${fmtMoney(amount)} ₽ (${method}) записана в «Журнал оплат» и отправлена в Telegram.`);
+      } catch (err) {
+        showError(err);
+      } finally {
+        btn.textContent = oldText;
+        btn.disabled = false;
+      }
+    }
+
+    async function copyDriverReceipt(driver, pp, btn, panel) {
+      const amount = document.getElementById(pp + 'amount').value.trim();
+      const method = document.getElementById(pp + 'method').value;
+      const category = document.getElementById(pp + 'cat').value;
+      const dateIso = document.getElementById(pp + 'date').value;
+      const comment = document.getElementById(pp + 'comment').value.trim();
+      const dateRu = parseExpiryInfo(dateIso).ru || dateIso;
+
+      const text =
+        `Подтверждение оплаты по Договору № ${driver.contractNo || 'б/н'}:\n` +
+        `Принято ${fmtMoney(amount)} ₽ (${method}, ${category}) за авто ${driver.plate || '—'} от ${dateRu}` +
+        (comment ? ` (${comment})` : '') + `.\n` +
+        `Арендодатель: Айдаров И.М. (подтвердите ответным «+» по п. 7.2 Договора).`;
+
+      const ok = await copyToClipboard(text);
+      if (ok) {
+        const oldText = btn.textContent;
+        btn.textContent = '✅ Скопировано!';
+        btn.disabled = true;
+        setTimeout(() => { btn.textContent = oldText; btn.disabled = false; }, 1800);
+      } else {
+        let box = panel.querySelector('.summary-fallback');
+        if (!box) {
+          box = document.createElement('textarea');
+          box.className = 'summary-fallback';
+          box.readOnly = true;
+          panel.appendChild(box);
+        }
+        box.value = text;
+        box.focus();
+        box.select();
+      }
+    }
+
+    async function exportDriverReconciliation(driver, pp, btn) {
+      const dateFrom = document.getElementById(pp + 'from').value;
+      const dateTo = document.getElementById(pp + 'to').value;
+      const rentDays = document.getElementById(pp + 'days').value.trim();
+      const dailyRate = document.getElementById(pp + 'rate').value.trim();
+
+      const ok = await askConfirm(
+        `Сформировать PDF Акт сверки для ${driver.name} (${driver.plate}) за период ${parseExpiryInfo(dateFrom).ru} — ${parseExpiryInfo(dateTo).ru} (${rentDays} дн. × ${fmtMoney(dailyRate)} ₽)?\n\nPDF придёт в Telegram и сохранится в папку 08_Акты_сверки.`
+      );
+      if (!ok) return;
+
+      const oldText = btn.textContent;
+      btn.textContent = 'Формируем PDF Акт сверки...';
+      btn.disabled = true;
+
+      try {
+        const res = await callApi('exportReconciliationPdf', {
+          row: driver.row,
+          driverName: driver.name,
+          plate: driver.plate,
+          contractNo: driver.contractNo || '',
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          rentDays: rentDays,
+          dailyRate: dailyRate
+        }, 40000);
+
+        if (tg && tg.HapticFeedback && typeof tg.HapticFeedback.notificationOccurred === 'function') {
+          tg.HapticFeedback.notificationOccurred('success');
+        }
+        notifyUser(`✅ PDF Акт сверки отправлен в Telegram!\n${res.balanceText || ''}`);
+      } catch (err) {
+        showError(err);
+      } finally {
+        btn.textContent = oldText;
+        btn.disabled = false;
+      }
     }
 
     async function updateDriverDocs(driver, dateId, timeId, numId, fileChkId, sendPdfs, activeBtn, otherBtn) {
