@@ -33,12 +33,15 @@
     label.lbl { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 6px; color: #374151; }
     .req { color: #dc2626; }
     .hint { font-size: 12px; color: var(--hint); margin-top: 6px; line-height: 1.4; }
+    .hint-ok { color: #15803d; font-weight: 600; }
+    .hint-err { color: #b91c1c; font-weight: 600; }
 
     input[type="text"], input[type="tel"], input[type="number"], input[type="date"], select, textarea {
       width: 100%; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--border);
       background: #ffffff; color: var(--text); font-size: 15px; outline: none;
     }
     input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.12); }
+    input.input-invalid { border-color: #dc2626; }
     textarea { min-height: 68px; resize: vertical; }
 
     .upload-trigger {
@@ -78,6 +81,11 @@
       cursor: pointer; box-shadow: 0 3px 10px rgba(29, 78, 216, 0.25);
     }
     .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-bot-connect {
+      display: block; text-decoration: none; text-align: center;
+      background: #229ED9; margin-bottom: 10px;
+      box-shadow: 0 3px 10px rgba(34, 158, 217, 0.28);
+    }
 
     .status-box {
       padding: 12px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.45;
@@ -107,6 +115,7 @@
     <div id="successCard" class="success-card">
       <h2 id="successTitle">✅ Анкета успешно отправлена!</h2>
       <p id="successText">Данные и фотографии переданы арендодателю на проверку.</p>
+      <a id="connectBotBtn" href="https://t.me/Documents_TS_bot" target="_blank" rel="noopener" class="btn-submit btn-bot-connect">🔔 Подключить уведомления в Telegram</a>
       <button type="button" class="btn-submit" onclick="window.location.reload()">Заполнить ещё одну анкету</button>
     </div>
 
@@ -147,8 +156,9 @@
         <div class="section-title">2. Паспорт, регистрация и ВУ</div>
 
         <div class="field">
-          <label class="lbl" for="passportNum">Паспорт (серия, номер, ИНН / перевод) <span class="req">*</span></label>
-          <input type="text" id="passportNum" placeholder="0415 123456" required>
+          <label class="lbl" for="passportNum" id="passportLabel">Паспорт (серия и номер) <span class="req">*</span></label>
+          <input type="text" id="passportNum" placeholder="Сначала выберите гражданство" autocomplete="off" autocapitalize="characters" required>
+          <div id="passportHint" class="hint">Выберите гражданство выше — поле автоматически подстроит нужный формат паспорта.</div>
         </div>
 
         <div class="field">
@@ -253,12 +263,155 @@
 
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbxjqMGkJBR045NHEBrVlgEWOYeCuqmMqOmTMwMJFkR0UKG90HNYVtuktVdDfcwS27x5YQ/exec';
+    const BOT_USERNAME = 'Documents_TS_bot';
 
     const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     if (tg) { tg.ready(); tg.expand(); }
 
     const photoStore = { vu: [], passport: [], reg: [] };
     const photoLimits = { vu: 4, passport: 5, reg: 3 };
+
+    const CYR_TO_LAT = {
+      'А': 'A', 'В': 'B', 'Е': 'E', 'К': 'K', 'М': 'M', 'Н': 'H',
+      'О': 'O', 'Р': 'P', 'С': 'C', 'Т': 'T', 'У': 'Y', 'Х': 'X', 'І': 'I'
+    };
+
+    function toUpperLatinAlnum(raw, maxLen) {
+      const upper = String(raw || '').toUpperCase().replace(/[АВЕКМНОРСТУХІ]/g, ch => CYR_TO_LAT[ch] || ch);
+      return upper.replace(/[^A-Z0-9]/g, '').slice(0, maxLen);
+    }
+
+    const PASSPORT_RULES = {
+      'РФ (Российская Федерация)': {
+        label: 'Паспорт РФ (серия и номер)',
+        placeholder: '0415 123456',
+        hint: 'Формат РФ: 10 цифр — 0000 000000 (пробел ставится автоматически).',
+        inputmode: 'numeric',
+        maxlength: 11,
+        format: (val) => {
+          const d = String(val || '').replace(/\D/g, '').slice(0, 10);
+          return d.length > 4 ? (d.slice(0, 4) + ' ' + d.slice(4)) : d;
+        },
+        regex: /^\d{4} \d{6}$/,
+        errMsg: 'Неверный формат паспорта РФ. Введите 10 цифр (например: 0415 123456).'
+      },
+      'Республика Таджикистан': {
+        label: 'Загранпаспорт РТ (серия и номер)',
+        placeholder: '401234567',
+        hint: 'Формат РТ: 9 цифр без пробела (например, 401234567) или биометрический (1–2 лат. буквы + 7–8 цифр).',
+        inputmode: 'text',
+        maxlength: 10,
+        format: (val) => toUpperLatinAlnum(val, 10),
+        regex: /^(\d{9}|[A-Z]{1,2}\d{7,8})$/,
+        errMsg: 'Неверный формат паспорта РТ. Введите 9 цифр (например: 401234567) или серию с латинской буквой и 7–8 цифр.'
+      },
+      'Кыргызская Республика (Кыргызстан)': {
+        label: 'Паспорт / ID-карта Кыргызстана',
+        placeholder: 'ID1234567 или AC1234567',
+        hint: 'Формат КР: 2 латинские буквы и 7 цифр (например, ID1234567, AN1234567, AC1234567, PE1234567).',
+        inputmode: 'text',
+        maxlength: 9,
+        format: (val) => toUpperLatinAlnum(val, 9),
+        regex: /^[A-Z]{1,2}\d{7}$/,
+        errMsg: 'Неверный формат паспорта Кыргызстана. Введите 2 латинские буквы и 7 цифр (например: ID1234567 или AC1234567).'
+      },
+      'Республика Узбекистан': {
+        label: 'Загранпаспорт / ID Узбекистана',
+        placeholder: 'FA1234567',
+        hint: 'Формат Узбекистана: 2 латинские буквы и 7 цифр без пробела (например, FA1234567 или AA1234567).',
+        inputmode: 'text',
+        maxlength: 9,
+        format: (val) => toUpperLatinAlnum(val, 9),
+        regex: /^[A-Z]{2}\d{7}$/,
+        errMsg: 'Неверный формат паспорта Узбекистана. Введите 2 латинские буквы и 7 цифр (например: FA1234567 или AA1234567).'
+      },
+      'Республика Армения': {
+        label: 'Загранпаспорт Армении',
+        placeholder: 'AR1234567',
+        hint: 'Формат Армении: 2 латинские буквы и 7 цифр (например, AR1234567, AP1234567) или 9 цифр (ID-карта).',
+        inputmode: 'text',
+        maxlength: 9,
+        format: (val) => toUpperLatinAlnum(val, 9),
+        regex: /^([A-Z]{2}\d{7}|\d{9})$/,
+        errMsg: 'Неверный формат паспорта Армении. Введите 2 латинские буквы и 7 цифр (например: AR1234567) или 9 цифр.'
+      },
+      'Азербайджанская Республика': {
+        label: 'Загранпаспорт Азербайджана',
+        placeholder: 'C01234567',
+        hint: 'Формат Азербайджана: латинская буква C и 8 цифр (например, C01234567), старый — P + 7 цифр, ID — AA + 7 цифр.',
+        inputmode: 'text',
+        maxlength: 11,
+        format: (val) => toUpperLatinAlnum(val, 11),
+        regex: /^([A-Z]\d{7,8}|[A-Z]{2}\d{7}|AZE\d{8})$/,
+        errMsg: 'Неверный формат паспорта Азербайджана. Введите букву C и 8 цифр (например: C01234567), либо P + 7 цифр / AA + 7 цифр.'
+      }
+    };
+
+    function getCurrentPassportRule() {
+      return PASSPORT_RULES[document.getElementById('citizenship').value] || null;
+    }
+
+    function updatePassportFieldByCitizenship() {
+      const rule = getCurrentPassportRule();
+      const inp = document.getElementById('passportNum');
+      const lbl = document.getElementById('passportLabel');
+      const hint = document.getElementById('passportHint');
+      inp.classList.remove('input-invalid');
+
+      if (!rule) {
+        lbl.innerHTML = 'Паспорт (серия и номер) <span class="req">*</span>';
+        inp.placeholder = 'Сначала выберите гражданство';
+        inp.setAttribute('inputmode', 'text');
+        inp.removeAttribute('maxlength');
+        hint.className = 'hint';
+        hint.textContent = 'Выберите гражданство выше — поле автоматически подстроит нужный формат паспорта.';
+        return;
+      }
+
+      lbl.innerHTML = `${rule.label} <span class="req">*</span>`;
+      inp.placeholder = rule.placeholder;
+      inp.setAttribute('inputmode', rule.inputmode);
+      inp.setAttribute('maxlength', String(rule.maxlength));
+      if (inp.value) inp.value = rule.format(inp.value);
+      updatePassportHintState();
+    }
+
+    function updatePassportHintState() {
+      const rule = getCurrentPassportRule();
+      const inp = document.getElementById('passportNum');
+      const hint = document.getElementById('passportHint');
+      if (!rule) return;
+
+      const val = inp.value.trim();
+      if (!val) {
+        inp.classList.remove('input-invalid');
+        hint.className = 'hint';
+        hint.textContent = rule.hint;
+      } else if (rule.regex.test(val)) {
+        inp.classList.remove('input-invalid');
+        hint.className = 'hint hint-ok';
+        hint.textContent = '✓ Формат паспорта корректный';
+      } else {
+        hint.className = 'hint';
+        hint.textContent = rule.hint;
+      }
+    }
+
+    document.getElementById('citizenship').addEventListener('change', updatePassportFieldByCitizenship);
+    document.getElementById('passportNum').addEventListener('input', (e) => {
+      const rule = getCurrentPassportRule();
+      if (rule) {
+        e.target.value = rule.format(e.target.value);
+        updatePassportHintState();
+      }
+    });
+
+    document.getElementById('connectBotBtn').addEventListener('click', (e) => {
+      if (tg && typeof tg.openTelegramLink === 'function') {
+        e.preventDefault();
+        tg.openTelegramLink(e.currentTarget.href);
+      }
+    });
 
     function showStatus(type, msg) {
       const box = document.getElementById('statusBox');
@@ -445,13 +598,18 @@
 
       if (res && res.status === 'На проверке') {
         title.textContent = '✅ Анкета отправлена на проверку!';
-        txt.textContent = `Заявка ${res.appId || ''} на авто ${res.plate || ''} получена. Арендодатель проверит фото документов и оформит договор.`;
+        txt.textContent = `Заявка ${res.appId || ''} на авто ${res.plate || ''} получена. Нажмите кнопку ниже, чтобы подключить уведомления в Telegram — туда придут сообщения от автопарка.`;
       } else if (res && res.plate) {
         title.textContent = '✅ Анкета успешно отправлена!';
-        txt.textContent = `Договор № ${res.contractNo || '—'} на авто ${res.plate} (${res.startDate || ''} — ${res.endDate || ''}, ${res.days || '365'} сут.) оформлен и отправлен арендодателю.`;
+        txt.textContent = `Договор № ${res.contractNo || '—'} на авто ${res.plate} (${res.startDate || ''} — ${res.endDate || ''}, ${res.days || '365'} сут.) оформлен. Нажмите кнопку ниже, чтобы подключить уведомления в Telegram.`;
       }
+
       const phDigits = document.getElementById('phone').value.replace(/\D/g, '').slice(-10);
-      document.getElementById('connectBotBtn').href = phDigits ? `https://t.me/Documents_TS_bot?start=p_${phDigits}` : 'https://t.me/Documents_TS_bot';
+      const botBtn = document.getElementById('connectBotBtn');
+      if (botBtn) {
+        botBtn.href = phDigits ? `https://t.me/${BOT_USERNAME}?start=p_${phDigits}` : `https://t.me/${BOT_USERNAME}`;
+      }
+
       card.style.display = 'block';
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -464,7 +622,10 @@
       const birthDateIso = document.getElementById('birthDate').value.trim();
       const citizenship = document.getElementById('citizenship').value.trim();
       const phone = document.getElementById('phone').value.trim();
-      const passportNum = document.getElementById('passportNum').value.trim();
+      const passportInput = document.getElementById('passportNum');
+      const passRule = getCurrentPassportRule();
+      if (passRule) passportInput.value = passRule.format(passportInput.value);
+      const passportNum = passportInput.value.trim();
       const passportIssued = document.getElementById('passportIssued').value.trim();
       const regAddress = document.getElementById('regAddress').value.trim();
       const factAddress = document.getElementById('factAddress').value.trim();
@@ -478,7 +639,19 @@
       if (!birthDateIso) return showStatus('err', 'Укажите дату рождения.');
       if (!citizenship) return showStatus('err', 'Выберите гражданство.');
       if (!phone) return showStatus('err', 'Укажите контактный телефон.');
-      if (!passportNum || !passportIssued) return showStatus('err', 'Заполните серию, номер и кем выдан паспорт.');
+      if (!passportNum) {
+        passportInput.classList.add('input-invalid');
+        return showStatus('err', 'Укажите серию и номер паспорта.');
+      }
+      if (passRule && !passRule.regex.test(passportNum)) {
+        passportInput.classList.add('input-invalid');
+        const hint = document.getElementById('passportHint');
+        hint.className = 'hint hint-err';
+        hint.textContent = passRule.errMsg;
+        passportInput.focus();
+        return showStatus('err', passRule.errMsg);
+      }
+      if (!passportIssued) return showStatus('err', 'Укажите, кем и когда выдан паспорт.');
       if (!regAddress) return showStatus('err', 'Укажите адрес регистрации.');
       if (!vuDetailsRaw || !vuStartYear) return showStatus('err', 'Укажите реквизиты ВУ и год начала стажа.');
       if (!carSelection) return showStatus('err', 'Выберите автомобиль.');
