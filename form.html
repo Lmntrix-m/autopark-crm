@@ -450,6 +450,8 @@
         title.textContent = '✅ Анкета успешно отправлена!';
         txt.textContent = `Договор № ${res.contractNo || '—'} на авто ${res.plate} (${res.startDate || ''} — ${res.endDate || ''}, ${res.days || '365'} сут.) оформлен и отправлен арендодателю.`;
       }
+      const phDigits = document.getElementById('phone').value.replace(/\D/g, '').slice(-10);
+      document.getElementById('connectBotBtn').href = phDigits ? `https://t.me/Documents_TS_bot?start=p_${phDigits}` : 'https://t.me/Documents_TS_bot';
       card.style.display = 'block';
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
