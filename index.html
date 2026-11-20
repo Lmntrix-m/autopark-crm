@@ -125,7 +125,7 @@
   <div class="header">
     <h1 id="userName">Автопарк CRM</h1>
     <div class="header-right">
-      <a href="form.html?v=20261120_2" class="btn-new-form" title="Открыть анкету водителя">+ Новая анкета</a>
+      <a href="form.html?v=20261120_3" class="btn-new-form" title="Открыть анкету водителя">+ Новая анкета</a>
       <button class="btn-refresh" onclick="loadInitial()" title="Обновить">↻</button>
       <span id="userRole" class="role-badge">...</span>
     </div>
@@ -383,6 +383,11 @@
       box.className = 'msg error';
       box.classList.remove('hidden');
       box.textContent = (err && err.message) ? err.message : String(err);
+    }
+
+    function clearError() {
+      const box = document.getElementById('statusMsg');
+      box.classList.add('hidden');
     }
 
     function escapeHtml(str) {
@@ -1171,6 +1176,7 @@
     }
 
     function switchTab(tab) {
+      clearError();
       currentTab = tab;
       document.querySelectorAll('#navTabs .tab').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tab);
@@ -1188,6 +1194,7 @@
     }
 
     async function loadDrivers() {
+      clearError();
       const list = document.getElementById('driversList');
       list.innerHTML = '<div class="msg">Загрузка списка водителей...</div>';
       try {
@@ -1371,63 +1378,68 @@
           ${actionBtnHtml}
         `;
 
+        list.appendChild(card);
+
         if (canEdit && d.row) {
           const payToggle = card.querySelector('.js-pay-toggle');
           const payPanel = card.querySelector('.js-pay-panel');
           const docsToggle = card.querySelector('.js-docs-toggle');
           const docsPanel = card.querySelector('.js-docs-panel');
 
-          const methodSel = document.getElementById(pp + 'method');
-          const checkSel = document.getElementById(pp + 'check');
-          const fromInp = document.getElementById(pp + 'from');
-          const toInp = document.getElementById(pp + 'to');
-          const daysInp = document.getElementById(pp + 'days');
+          const methodSel = card.querySelector('#' + pp + 'method');
+          const checkSel = card.querySelector('#' + pp + 'check');
+          const fromInp = card.querySelector('#' + pp + 'from');
+          const toInp = card.querySelector('#' + pp + 'to');
+          const daysInp = card.querySelector('#' + pp + 'days');
 
-          // При выборе «Наличные» автоматически подсказываем статус «Расписка в мессенджере»
-          methodSel.addEventListener('change', () => {
-            checkSel.value = methodSel.value === 'Наличные' ? 'Расписка в мессенджере' : 'Чек НПД выдан';
-          });
-          // Пересчитываем количество дней при изменении периода сверки
+          if (methodSel && checkSel) {
+            methodSel.addEventListener('change', () => {
+              checkSel.value = methodSel.value === 'Наличные' ? 'Расписка в мессенджере' : 'Чек НПД выдан';
+            });
+          }
+
           const recalcDays = () => {
-            if (fromInp.value && toInp.value) {
+            if (fromInp && toInp && daysInp && fromInp.value && toInp.value) {
               daysInp.value = diffDaysInclusive(fromInp.value, toInp.value);
             }
           };
-          fromInp.addEventListener('change', recalcDays);
-          toInp.addEventListener('change', recalcDays);
+          if (fromInp) fromInp.addEventListener('change', recalcDays);
+          if (toInp) toInp.addEventListener('change', recalcDays);
 
-          payToggle.addEventListener('click', () => {
-            docsPanel.classList.add('hidden');
-            const opening = payPanel.classList.contains('hidden');
-            payPanel.classList.toggle('hidden');
-            if (opening) loadDriverPayments(d, payPanel, pp);
-          });
+          if (payToggle && payPanel && docsPanel) {
+            payToggle.addEventListener('click', () => {
+              docsPanel.classList.add('hidden');
+              const opening = payPanel.classList.contains('hidden');
+              payPanel.classList.toggle('hidden');
+              if (opening) loadDriverPayments(d, payPanel, pp);
+            });
+          }
 
-          docsToggle.addEventListener('click', () => {
-            payPanel.classList.add('hidden');
-            docsPanel.classList.toggle('hidden');
-          });
+          if (docsToggle && docsPanel && payPanel) {
+            docsToggle.addEventListener('click', () => {
+              payPanel.classList.add('hidden');
+              docsPanel.classList.toggle('hidden');
+            });
+          }
 
           const paySaveBtn = card.querySelector('.js-pay-save');
           const payReceiptBtn = card.querySelector('.js-pay-receipt');
           const payPdfBtn = card.querySelector('.js-pay-pdf');
 
-          paySaveBtn.addEventListener('click', () => saveDriverPayment(d, pp, payPanel, paySaveBtn));
-          payReceiptBtn.addEventListener('click', () => copyDriverReceipt(d, pp, payReceiptBtn, payPanel));
-          payPdfBtn.addEventListener('click', () => exportDriverReconciliation(d, pp, payPdfBtn));
+          if (paySaveBtn) paySaveBtn.addEventListener('click', () => saveDriverPayment(d, pp, payPanel, paySaveBtn));
+          if (payReceiptBtn) payReceiptBtn.addEventListener('click', () => copyDriverReceipt(d, pp, payReceiptBtn, payPanel));
+          if (payPdfBtn) payPdfBtn.addEventListener('click', () => exportDriverReconciliation(d, pp, payPdfBtn));
 
           const sendBtn = card.querySelector('.js-docs-send');
           const fileBtn = card.querySelector('.js-docs-file');
-          sendBtn.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, true, sendBtn, fileBtn));
-          fileBtn.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, false, fileBtn, sendBtn));
+          if (sendBtn) sendBtn.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, true, sendBtn, fileBtn));
+          if (fileBtn) fileBtn.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, false, fileBtn, sendBtn));
         }
 
         if (!isReturned && canEdit && d.row) {
           const btn = card.querySelector('.btn-return');
-          btn.addEventListener('click', () => returnDriverCar(d, btn));
+          if (btn) btn.addEventListener('click', () => returnDriverCar(d, btn));
         }
-
-        list.appendChild(card);
       });
     }
 
