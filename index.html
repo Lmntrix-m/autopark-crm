@@ -61,7 +61,17 @@
     .doc-edit { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
     .doc-edit .btn-full { grid-column: span 2; }
     .field-group { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .field-group.full { grid-column: span 2; }
     .field-lbl { font-size: 11px; color: var(--hint); padding-left: 2px; }
+    .check-row {
+      grid-column: span 2; display: flex; align-items: center; gap: 8px;
+      font-size: 12.5px; color: var(--text); padding: 4px 2px; cursor: pointer;
+    }
+    .check-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--btn); flex-shrink: 0; }
+    .driver-docs-panel {
+      margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(128,128,128,0.28);
+    }
+
     select, .field-input {
       -webkit-appearance: none; appearance: none; width: 100%; min-width: 0; padding: 8px 10px;
       border-radius: 8px; border: 1px solid rgba(128,128,128,0.3); background: var(--bg); color: var(--text); font-size: 13px;
@@ -363,6 +373,37 @@
     function fmtKm(n) {
       if (n === null || n === undefined || n === '' || isNaN(Number(n))) return 'Не указан';
       return Number(n).toLocaleString('ru-RU') + ' км';
+    }
+
+    function parseDriverTimestamp(rawStr) {
+      const s = String(rawStr || '').trim();
+      const pad = n => String(n).padStart(2, '0');
+      const ru = s.match(/(\d{2})\.(\d{2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+      if (ru) {
+        const hh = ru[4] ? pad(ru[4]) : '12';
+        const mm = ru[5] || '00';
+        return {
+          dateIso: `${ru[3]}-${ru[2]}-${ru[1]}`,
+          timeStr: `${hh}:${mm}`,
+          ruDisplay: `${ru[1]}.${ru[2]}.${ru[3]} ${hh}:${mm}`
+        };
+      }
+      const iso = s.match(/(\d{4})-(\d{2})-(\d{2})(?:[T\s]+(\d{1,2}):(\d{2}))?/);
+      if (iso) {
+        const hh = iso[4] ? pad(iso[4]) : '12';
+        const mm = iso[5] || '00';
+        return {
+          dateIso: `${iso[1]}-${iso[2]}-${iso[3]}`,
+          timeStr: `${hh}:${mm}`,
+          ruDisplay: `${iso[3]}.${iso[2]}.${iso[1]} ${hh}:${mm}`
+        };
+      }
+      const now = new Date();
+      return {
+        dateIso: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+        timeStr: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+        ruDisplay: s || '—'
+      };
     }
 
     function formatDriverExpText(expYearRaw) {
@@ -1008,13 +1049,49 @@
 
       const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
 
-      filtered.forEach(d => {
+      filtered.forEach((d, idx) => {
         const statusText = String(d.rentalStatus || 'Ездит').trim();
         const isReturned = statusText.toLowerCase() === 'сдал';
         const pillClass = isReturned ? 'st-service' : 'st-free';
+        const tsInfo = parseDriverTimestamp(d.timestamp);
 
         const card = document.createElement('div');
         card.className = 'card';
+
+        const dateId = 'drv_date_' + idx;
+        const timeId = 'drv_time_' + idx;
+        const numId = 'drv_num_' + idx;
+        const fileChkId = 'drv_file_' + idx;
+
+        let editDocsHtml = '';
+        if (canEdit && d.row) {
+          editDocsHtml = `
+            <div class="actions">
+              <button class="btn-copy js-docs-toggle" style="width:100%;">📅 Дата, № договора и 3 PDF</button>
+            </div>
+            <div class="driver-docs-panel hidden js-docs-panel">
+              <div class="doc-edit">
+                <div class="field-group">
+                  <label class="field-lbl" for="${dateId}">Дата выдачи</label>
+                  <input type="date" id="${dateId}" class="field-input" value="${escapeHtml(tsInfo.dateIso)}">
+                </div>
+                <div class="field-group">
+                  <label class="field-lbl" for="${timeId}">Время выдачи</label>
+                  <input type="time" id="${timeId}" class="field-input" value="${escapeHtml(tsInfo.timeStr)}">
+                </div>
+                <div class="field-group full">
+                  <label class="field-lbl" for="${numId}">Номер договора</label>
+                  <input type="text" id="${numId}" class="field-input" value="${escapeHtml(d.contractNo || '')}" placeholder="Напр. 727.11">
+                </div>
+                <label class="check-row" for="${fileChkId}">
+                  <input type="checkbox" id="${fileChkId}" checked>
+                  <span>Создать личный файл-таблицу водителя</span>
+                </label>
+                <button class="btn-save js-docs-send">📄 Сохранить и 3 PDF</button>
+                <button class="btn-oil-done js-docs-file">📁 Только личный файл</button>
+              </div>
+            </div>`;
+        }
 
         const actionBtnHtml = (!isReturned && canEdit && d.row)
           ? '<button class="btn-return">🔓 Сдал авто (Акт возврата)</button>'
@@ -1026,9 +1103,26 @@
             <span class="status-pill ${pillClass}">${escapeHtml(statusText)}</span>
           </div>
           <div class="model"><strong>${escapeHtml(d.plate || '—')}</strong> • ${escapeHtml(d.car || '')}</div>
-          <div class="meta">Тел: ${escapeHtml(d.phone || '—')} • Гражданство: ${escapeHtml(d.nationality || '—')} • Дней аренды: ${escapeHtml(d.rentDays || '—')}</div>
+          <div class="meta">
+            Договор №: <strong>${escapeHtml(d.contractNo || '—')}</strong> • Выдача: <strong>${escapeHtml(tsInfo.ruDisplay)}</strong><br>
+            Тел: ${escapeHtml(d.phone || '—')} • Гражданство: ${escapeHtml(d.nationality || '—')} • Срок: ${escapeHtml(d.rentDays || '365')} сут.
+          </div>
+          ${editDocsHtml}
           ${actionBtnHtml}
         `;
+
+        if (canEdit && d.row) {
+          const toggleBtn = card.querySelector('.js-docs-toggle');
+          const panel = card.querySelector('.js-docs-panel');
+          const sendBtn = card.querySelector('.js-docs-send');
+          const fileBtn = card.querySelector('.js-docs-file');
+
+          toggleBtn.addEventListener('click', () => {
+            panel.classList.toggle('hidden');
+          });
+          sendBtn.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, true, sendBtn, fileBtn));
+          fileBtn.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, false, fileBtn, sendBtn));
+        }
 
         if (!isReturned && canEdit && d.row) {
           const btn = card.querySelector('.btn-return');
@@ -1037,6 +1131,55 @@
 
         list.appendChild(card);
       });
+    }
+
+    async function updateDriverDocs(driver, dateId, timeId, numId, fileChkId, sendPdfs, activeBtn, otherBtn) {
+      const issueDate = document.getElementById(dateId).value.trim();
+      const issueTime = document.getElementById(timeId).value.trim();
+      const contractNo = document.getElementById(numId).value.trim();
+      const createFile = sendPdfs ? document.getElementById(fileChkId).checked : true;
+
+      if (!issueDate) {
+        notifyUser('Выберите дату выдачи автомобиля.');
+        return;
+      }
+
+      const dateRu = parseExpiryInfo(issueDate).ru || issueDate;
+      const confirmText = sendPdfs
+        ? `Обновить документы для ${driver.name} (${driver.plate})?\n\n• Дата выдачи: ${dateRu} в ${issueTime || '12:00'}\n• Договор №: ${contractNo || 'авто'}\n• Будут отправлены 3 PDF в Telegram${createFile ? ' и создан личный файл-таблица в 06_Файлы_водителей' : ''}.`
+        : `Создать личный файл-таблицу для ${driver.name} (${driver.plate})?\n\n• Дата выдачи: ${dateRu} в ${issueTime || '12:00'}\n• Договор №: ${contractNo || 'авто'}\n• Ссылка на файл придёт в Telegram.`;
+
+      const ok = await askConfirm(confirmText);
+      if (!ok) return;
+
+      const oldText = activeBtn.textContent;
+      activeBtn.textContent = sendPdfs ? 'Формируем 3 PDF...' : 'Создаём файл...';
+      activeBtn.disabled = true;
+      if (otherBtn) otherBtn.disabled = true;
+
+      try {
+        const actionName = sendPdfs ? 'updateDriverDocs' : 'createDriverFile';
+        const res = await callApi(actionName, {
+          row: driver.row,
+          issueDate: issueDate,
+          issueTime: issueTime,
+          contractNo: contractNo,
+          createPersonalFile: createFile ? 'true' : 'false',
+          sendPdfs: sendPdfs ? 'true' : 'false'
+        }, 45000);
+
+        const doneMsg = sendPdfs
+          ? `✅ Готово!\nДоговор № ${res.contractNo} от ${res.startDate} (${res.startTime}).\n3 PDF${res.personalFileUrl ? ' и ссылка на личный файл-таблицу' : ''} отправлены в Telegram.`
+          : `✅ Личный файл создан!\n${res.personalFileName || ''}\nСсылка отправлена в Telegram.`;
+
+        notifyUser(doneMsg);
+        await loadInitial();
+      } catch (err) {
+        activeBtn.textContent = oldText;
+        activeBtn.disabled = false;
+        if (otherBtn) otherBtn.disabled = false;
+        showError(err);
+      }
     }
 
     async function returnDriverCar(driver, btn) {
