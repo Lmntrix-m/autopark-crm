@@ -33,14 +33,33 @@
     .role-badge { font-size: 12px; padding: 4px 9px; border-radius: 12px; background: var(--btn); color: var(--btn-text); font-weight: 600; white-space: nowrap; }
     .btn-refresh { -webkit-appearance: none; appearance: none; border: none; background: var(--card-bg); color: var(--text); width: 30px; height: 30px; border-radius: 50%; font-size: 16px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0; }
 
+    .pending-banner {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+      background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; border-radius: 10px;
+      padding: 9px 12px; margin-bottom: 12px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    }
+    .pending-banner span:last-child { text-decoration: underline; white-space: nowrap; }
+
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
     .stat-box { background: var(--card-bg); padding: 10px 6px; border-radius: 10px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
     .stat-val { font-size: 18px; font-weight: 700; }
     .stat-lbl { font-size: 11px; color: var(--hint); margin-top: 2px; }
 
-    .tabs { display: flex; gap: 4px; margin-bottom: 12px; }
-    .tab { -webkit-appearance: none; appearance: none; flex: 1; padding: 9px 2px; border: none; border-radius: 10px; background: var(--card-bg); color: var(--text); font-weight: 600; font-size: 11.5px; cursor: pointer; white-space: nowrap; }
+    .tabs {
+      display: flex; gap: 4px; margin-bottom: 12px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px;
+    }
+    .tab {
+      -webkit-appearance: none; appearance: none; flex: 1 0 auto; min-width: 56px;
+      padding: 9px 8px; border: none; border-radius: 10px; background: var(--card-bg); color: var(--text);
+      font-weight: 600; font-size: 11.5px; cursor: pointer; white-space: nowrap;
+      display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    }
     .tab.active { background: var(--btn); color: var(--btn-text); }
+    .tab-badge {
+      display: inline-block; min-width: 16px; height: 16px; line-height: 16px; padding: 0 4px;
+      border-radius: 99px; background: #dc2626; color: #ffffff; font-size: 10px; font-weight: 700; text-align: center;
+    }
 
     .filters { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; margin-bottom: 10px; }
     .chip { -webkit-appearance: none; appearance: none; padding: 6px 12px; border-radius: 16px; border: 1px solid rgba(128,128,128,0.25); background: var(--card-bg); color: var(--text); font-size: 12px; white-space: nowrap; cursor: pointer; }
@@ -59,6 +78,16 @@
     .model { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
     .meta { font-size: 12.5px; color: var(--hint); margin-bottom: 8px; line-height: 1.45; }
     .meta strong { color: var(--text); }
+
+    .mod-box {
+      padding: 8px 10px; border-radius: 8px; background: var(--bg); font-size: 12px; line-height: 1.45;
+      margin-bottom: 8px; border: 1px solid rgba(128,128,128,0.22);
+    }
+    .photo-links { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+    .photo-link {
+      display: inline-block; padding: 5px 9px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      background: var(--bg); color: var(--btn); text-decoration: none; border: 1px solid rgba(128,128,128,0.25);
+    }
 
     .actions { display: flex; gap: 6px; margin-top: 8px; }
     .doc-edit { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
@@ -96,11 +125,12 @@
     .btn-save { -webkit-appearance: none; appearance: none; padding: 8px 10px; border: none; border-radius: 8px; background: var(--btn); color: var(--btn-text); font-weight: 600; font-size: 12.5px; cursor: pointer; }
     .btn-copy { -webkit-appearance: none; appearance: none; padding: 8px 10px; border: 1px solid rgba(128,128,128,0.3); border-radius: 8px; background: var(--bg); color: var(--text); font-weight: 600; font-size: 12.5px; cursor: pointer; }
     .btn-oil-done { -webkit-appearance: none; appearance: none; padding: 8px 10px; border: none; border-radius: 8px; background: #16a34a; color: #ffffff; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+    .btn-danger { -webkit-appearance: none; appearance: none; padding: 8px 10px; border: none; border-radius: 8px; background: #dc2626; color: #ffffff; font-weight: 600; font-size: 12.5px; cursor: pointer; }
     .btn-return {
       -webkit-appearance: none; appearance: none; width: 100%; padding: 9px 12px; margin-top: 6px;
       border: none; border-radius: 8px; background: #dc2626; color: #ffffff; font-weight: 600; font-size: 13px; cursor: pointer;
     }
-    .btn-save:disabled, .btn-copy:disabled, .btn-oil-done:disabled, .btn-return:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-save:disabled, .btn-copy:disabled, .btn-oil-done:disabled, .btn-danger:disabled, .btn-return:disabled { opacity: 0.6; cursor: not-allowed; }
     .summary-fallback {
       width: 100%; min-height: 150px; margin-top: 8px; padding: 8px; border-radius: 8px;
       border: 1px solid rgba(128,128,128,0.3); background: var(--bg); color: var(--text); font-size: 12px; line-height: 1.4;
@@ -125,7 +155,7 @@
   <div class="header">
     <h1 id="userName">Автопарк CRM</h1>
     <div class="header-right">
-      <a href="form.html?v=20261120_3" class="btn-new-form" title="Открыть анкету водителя">+ Новая анкета</a>
+      <a href="form.html?v=20261120_4" class="btn-new-form" title="Открыть анкету водителя">+ Новая анкета</a>
       <button class="btn-refresh" onclick="loadInitial()" title="Обновить">↻</button>
       <span id="userRole" class="role-badge">...</span>
     </div>
@@ -134,6 +164,11 @@
   <div id="statusMsg" class="msg">Загрузка данных автопарка...</div>
 
   <div id="appContent" class="hidden">
+    <div id="pendingBanner" class="pending-banner hidden" onclick="switchTab('moderation')">
+      <span id="pendingBannerText">🕵️ Заявок на проверке: 0</span>
+      <span>Проверить →</span>
+    </div>
+
     <div class="stats">
       <div class="stat-box"><div class="stat-val" id="stFree">0</div><div class="stat-lbl">Свободны</div></div>
       <div class="stat-box"><div class="stat-val" id="stRented">0</div><div class="stat-lbl">В аренде</div></div>
@@ -144,6 +179,9 @@
     <div class="tabs" id="navTabs">
       <button class="tab active" data-tab="fleet" onclick="switchTab('fleet')">Авто</button>
       <button class="tab hidden" id="tabDriversBtn" data-tab="drivers" onclick="switchTab('drivers')">Водители</button>
+      <button class="tab hidden" id="tabModBtn" data-tab="moderation" onclick="switchTab('moderation')">
+        Проверка <span id="modBadge" class="tab-badge hidden">0</span>
+      </button>
       <button class="tab" id="tabOsagoBtn" data-tab="osago" onclick="switchTab('osago')">ОСАГО</button>
       <button class="tab" id="tabToBtn" data-tab="to" onclick="switchTab('to')">ТО</button>
       <button class="tab" id="tabOilBtn" data-tab="oil" onclick="switchTab('oil')">Масло</button>
@@ -167,6 +205,10 @@
         <button class="chip" onclick="filterDrivers('сдал', this)">Сдал</button>
       </div>
       <div id="driversList"></div>
+    </div>
+
+    <div id="moderationSection" class="hidden">
+      <div id="moderationList"></div>
     </div>
 
     <div id="osagoSection" class="hidden">
@@ -213,6 +255,7 @@
 
     let allCars = [];
     let allDrivers = [];
+    let allPending = [];
     let currentUser = null;
     let currentFilter = 'all';
     let currentDriverFilter = 'all';
@@ -386,8 +429,7 @@
     }
 
     function clearError() {
-      const box = document.getElementById('statusMsg');
-      box.classList.add('hidden');
+      document.getElementById('statusMsg').classList.add('hidden');
     }
 
     function escapeHtml(str) {
@@ -497,6 +539,33 @@
       return 'st-service';
     }
 
+    function aiVerdictMeta(verdict) {
+      const v = String(verdict || '').toUpperCase().trim();
+      if (v === 'OK') return { cls: 'st-free', label: '🟢 ИИ: ОК' };
+      if (v === 'SPAM') return { cls: 'st-rented', label: '🔴 ИИ: СПАМ' };
+      if (v === 'WARNING') return { cls: 'st-booked', label: '🟡 ИИ: ВНИМАНИЕ' };
+      return { cls: 'st-service', label: '⚪ Без ИИ' };
+    }
+
+    function updatePendingIndicators(count) {
+      const n = Number(count || 0);
+      const canMod = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
+      const badge = document.getElementById('modBadge');
+      const banner = document.getElementById('pendingBanner');
+      const bannerTxt = document.getElementById('pendingBannerText');
+
+      if (!canMod || n <= 0) {
+        badge.classList.add('hidden');
+        banner.classList.add('hidden');
+        return;
+      }
+
+      badge.textContent = String(n);
+      badge.classList.remove('hidden');
+      bannerTxt.textContent = `🕵️ Заявок на проверке: ${n}`;
+      banner.classList.remove('hidden');
+    }
+
     function parseExpiryInfo(rawStr) {
       const s = String(rawStr || '').trim();
       if (!s) return { state: 'nodate', daysLeft: null, label: 'Срок не указан', pillClass: 'st-service', iso: '', ru: '' };
@@ -573,13 +642,16 @@
 
         if (currentUser.role === 'admin' || currentUser.role === 'manager') {
           document.getElementById('tabDriversBtn').classList.remove('hidden');
+          document.getElementById('tabModBtn').classList.remove('hidden');
         }
+        updatePendingIndicators(data.pendingCount || 0);
 
         renderCars();
         renderOsago();
         renderTo();
         renderOil();
         if (currentTab === 'drivers') loadDrivers();
+        if (currentTab === 'moderation') loadPendingReviews();
       } catch (err) {
         showError(err);
       }
@@ -725,20 +797,21 @@
           ${editHtml}
         `;
 
+        list.appendChild(card);
+
         if (canEdit) {
           const stBtn = card.querySelector('.js-st-save');
-          stBtn.addEventListener('click', () => changeStatus(c.plate, selectId, stBtn));
+          if (stBtn) stBtn.addEventListener('click', () => changeStatus(c.plate, selectId, stBtn));
 
           const toggleBtn = card.querySelector('.js-car-toggle');
           const panel = card.querySelector('.js-car-panel');
           const saveCarBtn = card.querySelector('.js-car-save');
 
-          toggleBtn.addEventListener('click', () => {
-            panel.classList.toggle('hidden');
-          });
-          saveCarBtn.addEventListener('click', () => saveCarCard(c, p, saveCarBtn));
+          if (toggleBtn && panel) {
+            toggleBtn.addEventListener('click', () => panel.classList.toggle('hidden'));
+          }
+          if (saveCarBtn) saveCarBtn.addEventListener('click', () => saveCarCard(c, p, saveCarBtn));
         }
-        list.appendChild(card);
       });
     }
 
@@ -789,6 +862,131 @@
       } catch (err) {
         btn.textContent = oldText;
         btn.disabled = false;
+        showError(err);
+      }
+    }
+
+    /* ==================== РАЗДЕЛ «🕵️ ПРОВЕРКА» (МОДЕРАЦИЯ ЗАЯВОК) ==================== */
+
+    async function loadPendingReviews() {
+      clearError();
+      const list = document.getElementById('moderationList');
+      list.innerHTML = '<div class="msg">Загрузка заявок на проверке...</div>';
+      try {
+        allPending = (await callApi('pendingReviews')) || [];
+        updatePendingIndicators(allPending.length);
+        renderPendingReviews();
+      } catch (err) {
+        showError(err);
+      }
+    }
+
+    function renderPendingReviews() {
+      const list = document.getElementById('moderationList');
+      list.innerHTML = '';
+
+      if (!allPending.length) {
+        list.innerHTML = '<div class="msg">✅ Новых заявок на проверке нет — всё разобрано!</div>';
+        return;
+      }
+
+      allPending.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const ai = aiVerdictMeta(item.aiVerdict);
+        const dupHasIssue = item.duplicates && item.duplicates !== 'Дубликатов нет';
+        const dupIcon = dupHasIssue ? '⚠️' : '✅';
+
+        const links = [];
+        if (Array.isArray(item.photoUrls)) {
+          item.photoUrls.forEach((p, i) => {
+            if (p && p.url) {
+              links.push(`<a class="photo-link" href="${escapeHtml(p.url)}" target="_blank" rel="noopener">📷 ${escapeHtml(p.label || ('Фото ' + (i + 1)))}</a>`);
+            }
+          });
+        }
+        if (item.folderId) {
+          links.push(`<a class="photo-link" href="https://drive.google.com/drive/folders/${escapeHtml(item.folderId)}" target="_blank" rel="noopener">📁 Папка на Диске</a>`);
+        }
+
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="plate">${escapeHtml(item.fio || 'Без имени')}</span>
+            <span class="status-pill ${ai.cls}">${escapeHtml(ai.label)}</span>
+          </div>
+          <div class="model"><strong>${escapeHtml(item.car || 'Авто не указано')}</strong> • ${escapeHtml(item.date || '')}</div>
+          <div class="meta">
+            ID: <strong>${escapeHtml(item.appId)}</strong><br>
+            Тел: <strong>${escapeHtml(item.phone || '—')}</strong> • Гражданство: ${escapeHtml(item.citizenship || '—')}
+          </div>
+          <div class="mod-box">
+            <div>${dupIcon} <strong>Дубли фото:</strong> ${escapeHtml(item.duplicates || 'Дубликатов нет')}</div>
+            <div style="margin-top:4px;">🤖 <strong>ИИ-отчёт:</strong> ${escapeHtml(item.aiSummary || '—')}</div>
+          </div>
+          ${links.length ? `<div class="photo-links">${links.join('')}</div>` : ''}
+          <div class="actions">
+            <button class="btn-oil-done js-mod-approve" style="flex:1;">✅ Одобрить и 3 PDF</button>
+            <button class="btn-danger js-mod-spam" style="flex:1;">🗑 Удалить спам</button>
+          </div>
+        `;
+
+        list.appendChild(card);
+
+        const approveBtn = card.querySelector('.js-mod-approve');
+        const spamBtn = card.querySelector('.js-mod-spam');
+        if (approveBtn) approveBtn.addEventListener('click', () => approvePendingApp(item, approveBtn, spamBtn));
+        if (spamBtn) spamBtn.addEventListener('click', () => deleteSpamPendingApp(item, spamBtn, approveBtn));
+      });
+    }
+
+    async function approvePendingApp(item, approveBtn, spamBtn) {
+      const ok = await askConfirm(
+        `Одобрить заявку ${item.fio} (${item.car || 'ТС'})?\n\nАвто перейдёт в «В аренде», создастся личный файл водителя, в Telegram придут 3 PDF и расчёт ОСАГО.`
+      );
+      if (!ok) return;
+
+      const oldText = approveBtn.textContent;
+      approveBtn.textContent = 'Оформляем 3 PDF...';
+      approveBtn.disabled = true;
+      if (spamBtn) spamBtn.disabled = true;
+
+      try {
+        const res = await callApi('approveApp', { appId: item.appId }, 45000);
+        if (tg && tg.HapticFeedback && typeof tg.HapticFeedback.notificationOccurred === 'function') {
+          tg.HapticFeedback.notificationOccurred('success');
+        }
+        notifyUser(`✅ ${res.message || 'Заявка одобрена, 3 PDF отправлены в Telegram!'}`);
+        await loadInitial();
+      } catch (err) {
+        approveBtn.textContent = oldText;
+        approveBtn.disabled = false;
+        if (spamBtn) spamBtn.disabled = false;
+        showError(err);
+      }
+    }
+
+    async function deleteSpamPendingApp(item, spamBtn, approveBtn) {
+      const ok = await askConfirm(
+        `Удалить заявку ${item.fio} (${item.appId}) как спам?\n\nСтрока удалится, а загруженные фото отправятся в корзину Google Диска.`
+      );
+      if (!ok) return;
+
+      const oldText = spamBtn.textContent;
+      spamBtn.textContent = 'Удаляем...';
+      spamBtn.disabled = true;
+      if (approveBtn) approveBtn.disabled = true;
+
+      try {
+        await callApi('deleteSpamApp', { appId: item.appId }, 20000);
+        if (tg && tg.HapticFeedback && typeof tg.HapticFeedback.notificationOccurred === 'function') {
+          tg.HapticFeedback.notificationOccurred('warning');
+        }
+        notifyUser('🗑 Спам-заявка удалена, фото перемещены в корзину Google Диска.');
+        await loadInitial();
+      } catch (err) {
+        spamBtn.textContent = oldText;
+        spamBtn.disabled = false;
+        if (approveBtn) approveBtn.disabled = false;
         showError(err);
       }
     }
@@ -934,15 +1132,16 @@
           ${editHtml}
         `;
 
+        list.appendChild(card);
+
         if (canEdit) {
           const saveBtn = card.querySelector('.js-osago-save');
-          saveBtn.addEventListener('click', () => saveOsago(c.plate, polId, expId, saveBtn));
+          if (saveBtn) saveBtn.addEventListener('click', () => saveOsago(c.plate, polId, expId, saveBtn));
         }
         const copyBtn = card.querySelector('.js-osago-copy');
         if (copyBtn) {
           copyBtn.addEventListener('click', () => copyOsagoSummary(c, info, canEdit ? polId : null, canEdit ? expId : null, copyBtn, card));
         }
-        list.appendChild(card);
       });
     }
 
@@ -992,11 +1191,12 @@
           ${editHtml}
         `;
 
+        list.appendChild(card);
+
         if (canEdit) {
           const btn = card.querySelector('.btn-save');
-          btn.addEventListener('click', () => saveTo(c.plate, numId, expId, btn));
+          if (btn) btn.addEventListener('click', () => saveTo(c.plate, numId, expId, btn));
         }
-        list.appendChild(card);
       });
     }
 
@@ -1069,13 +1269,14 @@
           ${editHtml}
         `;
 
+        list.appendChild(card);
+
         if (canEdit) {
           const saveBtn = card.querySelector('.js-oil-save');
           const doneBtn = card.querySelector('.js-oil-done');
-          saveBtn.addEventListener('click', () => saveOil(c.plate, curId, lastId, false, saveBtn, doneBtn));
-          doneBtn.addEventListener('click', () => saveOil(c.plate, curId, lastId, true, doneBtn, saveBtn));
+          if (saveBtn) saveBtn.addEventListener('click', () => saveOil(c.plate, curId, lastId, false, saveBtn, doneBtn));
+          if (doneBtn) doneBtn.addEventListener('click', () => saveOil(c.plate, curId, lastId, true, doneBtn, saveBtn));
         }
-        list.appendChild(card);
       });
     }
 
@@ -1183,11 +1384,13 @@
       });
       document.getElementById('fleetSection').classList.toggle('hidden', tab !== 'fleet');
       document.getElementById('driversSection').classList.toggle('hidden', tab !== 'drivers');
+      document.getElementById('moderationSection').classList.toggle('hidden', tab !== 'moderation');
       document.getElementById('osagoSection').classList.toggle('hidden', tab !== 'osago');
       document.getElementById('toSection').classList.toggle('hidden', tab !== 'to');
       document.getElementById('oilSection').classList.toggle('hidden', tab !== 'oil');
 
       if (tab === 'drivers') loadDrivers();
+      if (tab === 'moderation') loadPendingReviews();
       if (tab === 'osago') renderOsago();
       if (tab === 'to') renderTo();
       if (tab === 'oil') renderOil();
