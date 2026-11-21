@@ -3,203 +3,273 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Анкета водителя — Аренда ТС (Красноярск)</title>
+  <title>Анкета водителя — Автопарк Красноярск</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
-      --bg: #f2f4f7;
-      --card: #ffffff;
-      --text: #111827;
-      --hint: #6b7280;
-      --accent: #1d4ed8;
-      --border: #d1d5db;
+      --bg: var(--tg-theme-bg-color, #f3f5f9);
+      --card: var(--tg-theme-secondary-bg-color, #ffffff);
+      --text: var(--tg-theme-text-color, #1e293b);
+      --hint: var(--tg-theme-hint-color, #64748b);
+      --btn: var(--tg-theme-button-color, #2481cc);
+      --btn-text: var(--tg-theme-button-text-color, #ffffff);
+      --border: rgba(148, 163, 184, 0.38);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); padding: 14px 12px 44px; -webkit-text-size-adjust: 100%; }
-    .container { max-width: 560px; margin: 0 auto; }
+    body { background: var(--bg); color: var(--text); padding: 14px 12px 48px; -webkit-text-size-adjust: 100%; }
+    .wrap { max-width: 560px; margin: 0 auto; }
+
+    .hero {
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: #ffffff; border-radius: 16px; padding: 16px; margin-bottom: 12px;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.22);
+    }
+    .hero h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .hero p { font-size: 13px; opacity: 0.92; line-height: 1.4; }
 
     .card {
-      background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px;
+      background: var(--card); border-radius: 14px; padding: 14px; margin-bottom: 12px;
       box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
     }
-    .hero h1 { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
-    .hero p { font-size: 13.5px; color: var(--hint); line-height: 1.45; }
-
-    .section-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; color: var(--text); }
-
-    .field { margin-bottom: 14px; }
-    .field:last-child { margin-bottom: 0; }
-    label.lbl { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 6px; color: #374151; }
-    .req { color: #dc2626; }
-    .hint { font-size: 12px; color: var(--hint); margin-top: 6px; line-height: 1.4; }
-    .hint-ok { color: #15803d; font-weight: 600; }
-    .hint-err { color: #b91c1c; font-weight: 600; }
-
-    input[type="text"], input[type="tel"], input[type="number"], input[type="date"], select, textarea {
-      width: 100%; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--border);
-      background: #ffffff; color: var(--text); font-size: 15px; outline: none;
+    .sec-title {
+      font-size: 14px; font-weight: 700; color: var(--btn);
+      margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
     }
-    input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.12); }
-    input.input-invalid { border-color: #dc2626; }
+
+    .field { margin-bottom: 11px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 4px; color: var(--text); }
+    .req { color: #dc2626; }
+    .hint { font-size: 11.5px; color: var(--hint); margin-top: 3px; line-height: 1.35; }
+
+    input[type="text"], input[type="tel"], input[type="date"], input[type="number"], select, textarea {
+      -webkit-appearance: none; appearance: none; width: 100%;
+      padding: 10px 11px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.3;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--btn);
+      box-shadow: 0 0 0 2px rgba(36, 129, 204, 0.16);
+    }
     textarea { min-height: 68px; resize: vertical; }
 
-    .upload-trigger {
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      width: 100%; padding: 14px 12px; border-radius: 12px;
-      border: 1.5px dashed #93c5fd; background: #f8fafc;
-      color: var(--accent); font-size: 14.5px; font-weight: 600; cursor: pointer; text-align: center;
-    }
-    .upload-trigger:active { background: #eff6ff; }
-    .upload-input { display: none; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
-    .thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .sub-box {
+      margin-top: 10px; padding: 11px; border-radius: 11px;
+      background: rgba(36, 129, 204, 0.06); border: 1px solid rgba(36, 129, 204, 0.28);
+    }
+    .warn-box {
+      margin-top: 8px; padding: 9px 11px; border-radius: 10px;
+      background: #fef3c7; color: #92400e; border: 1px solid #f59e0b;
+      font-size: 12.5px; line-height: 1.4; font-weight: 500;
+    }
+    .warn-box.danger {
+      background: #fee2e2; color: #991b1b; border-color: #ef4444; font-weight: 600;
+    }
+
+    .check-row {
+      display: flex; align-items: flex-start; gap: 9px; cursor: pointer;
+      font-size: 13px; line-height: 1.4; color: var(--text);
+    }
+    .check-row input[type="checkbox"] {
+      width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; accent-color: var(--btn);
+    }
+
+    .upload-box {
+      border: 1.5px dashed var(--border); border-radius: 11px; padding: 10px;
+      background: var(--bg);
+    }
+    .upload-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; padding: 9px 12px; border-radius: 9px; border: none;
+      background: var(--card); color: var(--btn); font-weight: 700; font-size: 13.5px;
+      cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .upload-input { display: none; }
+    .thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
     .thumb {
-      position: relative; width: 76px; height: 76px; border-radius: 10px; overflow: hidden;
+      position: relative; width: 78px; height: 78px; border-radius: 9px; overflow: hidden;
       border: 1px solid var(--border); background: #000;
     }
     .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .thumb-del {
-      position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; border-radius: 50%;
-      border: none; background: rgba(220, 38, 38, 0.92); color: #fff; font-size: 14px;
-      line-height: 22px; text-align: center; cursor: pointer; font-weight: 700;
+      position: absolute; top: 3px; right: 3px; width: 22px; height: 22px;
+      border-radius: 50%; border: none; background: rgba(220, 38, 38, 0.92);
+      color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; line-height: 22px;
     }
-
-    details.consent-details {
-      background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px;
-      padding: 10px 12px; margin-bottom: 12px; font-size: 13px; color: #374151;
-    }
-    details.consent-details summary { font-weight: 600; cursor: pointer; outline: none; }
-    details.consent-details p { margin-top: 8px; line-height: 1.45; font-size: 12.5px; color: #4b5563; }
-
-    .consent-row { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.45; cursor: pointer; }
-    .consent-row input { width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0; accent-color: var(--accent); }
 
     .btn-submit {
-      width: 100%; padding: 15px; border: none; border-radius: 14px;
-      background: var(--accent); color: #ffffff; font-size: 16px; font-weight: 700;
-      cursor: pointer; box-shadow: 0 3px 10px rgba(29, 78, 216, 0.25);
+      -webkit-appearance: none; appearance: none; width: 100%; padding: 14px 16px;
+      border: none; border-radius: 12px; background: #16a34a; color: #ffffff;
+      font-size: 15.5px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
     }
-    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-bot-connect {
-      display: block; text-decoration: none; text-align: center;
-      background: #229ED9; margin-bottom: 10px;
-      box-shadow: 0 3px 10px rgba(34, 158, 217, 0.28);
+    .btn-submit:disabled { opacity: 0.65; cursor: not-allowed; }
+
+    .err-banner {
+      background: #fee2e2; color: #991b1b; border: 1px solid #ef4444;
+      border-radius: 11px; padding: 11px 12px; margin-bottom: 12px;
+      font-size: 13px; line-height: 1.4; font-weight: 600;
     }
 
-    .status-box {
-      padding: 12px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.45;
-      margin-bottom: 12px; display: none;
+    .success-card { text-align: center; padding: 22px 16px; }
+    .success-icon { font-size: 46px; margin-bottom: 8px; }
+    .success-card h2 { font-size: 18px; margin-bottom: 8px; color: #16a34a; }
+    .success-meta {
+      text-align: left; background: var(--bg); border-radius: 11px; padding: 12px;
+      margin: 12px 0 16px; font-size: 13.5px; line-height: 1.55;
     }
-    .status-info { background: #e0f2fe; color: #075985; display: block; }
-    .status-err { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; display: block; }
-
-    .success-card {
-      background: var(--card); border-radius: 16px; padding: 22px 16px; text-align: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: none;
+    .btn-bot {
+      display: inline-block; width: 100%; padding: 13px 16px; border-radius: 12px;
+      background: #229ED9; color: #ffffff; text-decoration: none;
+      font-weight: 700; font-size: 15px; margin-bottom: 10px;
     }
-    .success-card h2 { font-size: 19px; color: #16a34a; margin-bottom: 8px; }
-    .success-card p { font-size: 14px; line-height: 1.5; margin-bottom: 14px; color: #374151; }
+    .btn-again {
+      width: 100%; padding: 11px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text); font-weight: 600; font-size: 13.5px; cursor: pointer;
+    }
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="card hero">
-      <h1>📝 Анкета водителя — Аренда ТС</h1>
-      <p>г. Красноярск • Заполните данные и прикрепите чёткие фото документов (ВУ с двух сторон, паспорт и прописку/регистрацию).</p>
+  <div class="wrap">
+    <div class="hero">
+      <h1>🚗 Анкета водителя</h1>
+      <p>Оформление договора аренды автомобиля в г. Красноярск. Заполните данные точно по документам и прикрепите чёткие фото.</p>
     </div>
 
-    <div id="statusBox" class="status-box"></div>
-
-    <div id="successCard" class="success-card">
-      <h2 id="successTitle">✅ Анкета успешно отправлена!</h2>
-      <p id="successText">Данные и фотографии переданы арендодателю на проверку.</p>
-      <a id="connectBotBtn" href="https://t.me/Documents_TS_bot" target="_blank" rel="noopener" class="btn-submit btn-bot-connect">🔔 Подключить уведомления в Telegram</a>
-      <button type="button" class="btn-submit" onclick="window.location.reload()">Заполнить ещё одну анкету</button>
-    </div>
+    <div id="errBox" class="err-banner hidden"></div>
 
     <form id="driverForm" novalidate>
+      <!-- 1. Личные данные и статус в РФ -->
       <div class="card">
-        <div class="section-title">1. Личные данные водителя</div>
+        <div class="sec-title">1. Личные данные и гражданство</div>
 
         <div class="field">
-          <label class="lbl" for="fio">ФИО полностью <span class="req">*</span></label>
-          <input type="text" id="fio" placeholder="Иванов Иван Иванович" required>
+          <label for="fio">ФИО полностью (как в паспорте / ВНЖ) <span class="req">*</span></label>
+          <input type="text" id="fio" placeholder="Иванов Иван Иванович" autocomplete="name" required>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="birthDate">Дата рождения <span class="req">*</span></label>
+            <input type="date" id="birthDate" required>
+          </div>
+          <div class="field">
+            <label for="phone">Телефон <span class="req">*</span></label>
+            <input type="tel" id="phone" placeholder="+7 999 123-45-67" autocomplete="tel" required>
+          </div>
         </div>
 
         <div class="field">
-          <label class="lbl" for="birthDate">Дата рождения <span class="req">*</span></label>
-          <input type="date" id="birthDate" required>
-        </div>
-
-        <div class="field">
-          <label class="lbl" for="citizenship">Гражданство <span class="req">*</span></label>
+          <label for="citizenship">Гражданство <span class="req">*</span></label>
           <select id="citizenship" required>
-            <option value="">— Выберите гражданство —</option>
             <option value="РФ (Российская Федерация)">РФ (Российская Федерация)</option>
             <option value="Республика Таджикистан">Республика Таджикистан</option>
             <option value="Кыргызская Республика (Кыргызстан)">Кыргызская Республика (Кыргызстан)</option>
             <option value="Республика Узбекистан">Республика Узбекистан</option>
             <option value="Республика Армения">Республика Армения</option>
             <option value="Азербайджанская Республика">Азербайджанская Республика</option>
+            <option value="Лицо без гражданства (ВНЖ ЛБГ)">Лицо без гражданства (ВНЖ ЛБГ)</option>
           </select>
         </div>
 
-        <div class="field">
-          <label class="lbl" for="phone">Контактный телефон (WhatsApp / Telegram) <span class="req">*</span></label>
-          <input type="tel" id="phone" placeholder="+7 (999) 123-45-67" required>
+        <div id="stayStatusWrap" class="field hidden">
+          <label for="stayStatus">Статус пребывания в РФ <span class="req">*</span></label>
+          <select id="stayStatus">
+            <option value="Временное пребывание (миграционная карта / патент)">Временное пребывание (миграционная карта / патент)</option>
+            <option value="РВП (разрешение на временное проживание)">РВП (разрешение на временное проживание)</option>
+            <option value="ВНЖ (вид на жительство)">ВНЖ (вид на жительство)</option>
+          </select>
+        </div>
+
+        <div id="stayDocBox" class="sub-box hidden">
+          <div class="field">
+            <label for="stayDocNum" id="stayDocNumLbl">Серия и номер ВНЖ <span class="req">*</span></label>
+            <input type="text" id="stayDocNum" placeholder="82 № 1234567">
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="stayDocDate">Дата выдачи <span class="req">*</span></label>
+              <input type="date" id="stayDocDate">
+            </div>
+            <div class="field">
+              <label for="stayDocExpiry" id="stayDocExpiryLbl">Действует до</label>
+              <input type="date" id="stayDocExpiry">
+              <div class="hint" id="stayDocExpiryHint">Если ВНЖ бессрочный — оставьте пустым</div>
+            </div>
+          </div>
+          <div id="vnjWarning" class="warn-box danger hidden"></div>
         </div>
       </div>
 
+      <!-- 2. Паспорт и адреса -->
       <div class="card">
-        <div class="section-title">2. Паспорт, регистрация и ВУ</div>
+        <div class="sec-title">2. Паспорт и адрес проживания</div>
 
-        <div class="field">
-          <label class="lbl" for="passportNum" id="passportLabel">Паспорт (серия и номер) <span class="req">*</span></label>
-          <input type="text" id="passportNum" placeholder="Сначала выберите гражданство" autocomplete="off" autocapitalize="characters" required>
-          <div id="passportHint" class="hint">Выберите гражданство выше — поле автоматически подстроит нужный формат паспорта.</div>
+        <div class="field" id="passportNumField">
+          <label for="passportNum" id="passportNumLbl">Паспорт (серия и номер) <span class="req">*</span></label>
+          <input type="text" id="passportNum" placeholder="0415 123456">
+          <div class="hint" id="passportHint">РФ: 0000 000000 • РТ: 000000000 • КР/УЗБ/АРМ: AA0000000 • АЗЕР: C00000000</div>
         </div>
 
         <div class="field">
-          <label class="lbl" for="passportIssued">Кем и когда выдан паспорт <span class="req">*</span></label>
-          <textarea id="passportIssued" placeholder="ГУ МВД России по Красноярскому краю, 12.05.2020" required></textarea>
+          <label for="passportIssued" id="passportIssuedLbl">Кем и когда выдан документ <span class="req">*</span></label>
+          <textarea id="passportIssued" placeholder="ГУ МВД России по Красноярскому краю, 15.05.2020, код 240-001"></textarea>
         </div>
 
         <div class="field">
-          <label class="lbl" for="regAddress">Адрес регистрации / миграционного учёта <span class="req">*</span></label>
-          <input type="text" id="regAddress" placeholder="г. Красноярск, ул. ..." required>
+          <label for="regAddress">Адрес регистрации (прописка / миграционный учёт в РФ) <span class="req">*</span></label>
+          <textarea id="regAddress" placeholder="г. Красноярск, ул. ..., д. ..., кв. ..."></textarea>
         </div>
 
         <div class="field">
-          <label class="lbl" for="factAddress">Фактический адрес проживания в Красноярске</label>
-          <input type="text" id="factAddress" placeholder="Оставьте пустым, если совпадает с регистрацией">
+          <label class="check-row" for="sameAddressChk">
+            <input type="checkbox" id="sameAddressChk" checked>
+            <span>Фактический адрес проживания совпадает с регистрацией</span>
+          </label>
         </div>
 
-        <div class="field">
-          <label class="lbl" for="vuDetailsRaw">Водительское удостоверение (серия, номер и дата выдачи) <span class="req">*</span></label>
-          <input type="text" id="vuDetailsRaw" placeholder="99 20 № 123456, выдано 15.04.2020" required>
-        </div>
-
-        <div class="field">
-          <label class="lbl" for="vuStartYear">Год начала водительского стажа <span class="req">*</span></label>
-          <input type="number" inputmode="numeric" id="vuStartYear" min="1960" max="2026" placeholder="Например: 2018" required>
+        <div class="field hidden" id="factAddressWrap">
+          <label for="factAddress">Фактический адрес проживания <span class="req">*</span></label>
+          <textarea id="factAddress" placeholder="г. Красноярск, ул. ..., д. ..., кв. ..."></textarea>
         </div>
       </div>
 
+      <!-- 3. Водительское удостоверение -->
       <div class="card">
-        <div class="section-title">3. Выбор автомобиля и срока аренды</div>
+        <div class="sec-title">3. Водительское удостоверение (ВУ)</div>
 
         <div class="field">
-          <label class="lbl" for="carSelection">Выберите свободный автомобиль <span class="req">*</span></label>
+          <label for="vuDetailsRaw">Серия, номер и дата выдачи ВУ <span class="req">*</span></label>
+          <input type="text" id="vuDetailsRaw" placeholder="99 20 123456 от 12.04.2021">
+          <div class="hint">РФ: 00 00 000000 • РТ/УЗБ: AA 0000000 • КР: 000000000 / AA 000000 • АРМ/АЗЕР: AA 000000</div>
+        </div>
+
+        <div class="field">
+          <label for="vuStartYear">Год начала водительского стажа <span class="req">*</span></label>
+          <input type="number" inputmode="numeric" id="vuStartYear" min="1960" max="2026" placeholder="2018">
+          <div class="hint">Указан в графе «Стаж с ...» на обратной стороне ВУ</div>
+        </div>
+      </div>
+
+      <!-- 4. Автомобиль и срок -->
+      <div class="card">
+        <div class="sec-title">4. Автомобиль и срок аренды</div>
+
+        <div class="field">
+          <label for="carSelection">Выберите автомобиль <span class="req">*</span></label>
           <select id="carSelection" required>
             <option value="">Загрузка списка свободных авто...</option>
           </select>
-          <div id="carsCountHint" class="hint">Загружаем доступные автомобили...</div>
         </div>
 
         <div class="field">
-          <label class="lbl" for="durationRaw">Планируемый срок аренды <span class="req">*</span></label>
+          <label for="durationRaw">Срок договора аренды <span class="req">*</span></label>
           <select id="durationRaw" required>
             <option value="365 суток (1 год — стандартный договор)">365 суток (1 год — стандартный договор)</option>
             <option value="180 суток (6 месяцев)">180 суток (6 месяцев)</option>
@@ -213,322 +283,263 @@
         </div>
       </div>
 
+      <!-- 5. Фото документов -->
       <div class="card">
-        <div class="section-title">4. Фотографии документов</div>
+        <div class="sec-title">5. Фотографии документов (чётко, без бликов)</div>
 
         <div class="field">
-          <label class="lbl">Фото водительского удостоверения (с двух сторон) <span class="req">*</span></label>
-          <label class="upload-trigger" for="vuPhotosInput">📷 Сделать фото или выбрать ВУ</label>
-          <input type="file" id="vuPhotosInput" class="upload-input" accept="image/*" multiple>
-          <div class="hint">Лицевая и обратная сторона прав (можно добавлять по одному фото, до 4 шт.).</div>
-          <div id="vuThumbs" class="thumbs"></div>
+          <label>🪪 Фото ВУ (обе стороны, 1–2 фото) <span class="req">*</span></label>
+          <div class="upload-box">
+            <button type="button" class="upload-btn" onclick="document.getElementById('inpVu').click()">📷 Загрузить фото ВУ</button>
+            <input type="file" id="inpVu" class="upload-input" accept="image/*" multiple>
+            <div class="thumbs" id="thumbsVu"></div>
+          </div>
+        </div>
+
+        <div class="field" id="passPhotosField">
+          <label id="passPhotosLbl">🛂 Фото паспорта (главный разворот, 1–2 фото) <span class="req">*</span></label>
+          <div class="upload-box">
+            <button type="button" class="upload-btn" onclick="document.getElementById('inpPass').click()">📷 Загрузить фото паспорта</button>
+            <input type="file" id="inpPass" class="upload-input" accept="image/*" multiple>
+            <div class="thumbs" id="thumbsPass"></div>
+          </div>
+        </div>
+
+        <div class="field hidden" id="stayPhotosField">
+          <label id="stayPhotosLbl">📘 Фото ВНЖ (разворот с фото + регистрация) <span class="req">*</span></label>
+          <div class="upload-box">
+            <button type="button" class="upload-btn" onclick="document.getElementById('inpStay').click()">📷 Загрузить фото ВНЖ / РВП</button>
+            <input type="file" id="inpStay" class="upload-input" accept="image/*" multiple>
+            <div class="thumbs" id="thumbsStay"></div>
+          </div>
         </div>
 
         <div class="field">
-          <label class="lbl">Фото паспорта (главный разворот) / миграционной карты <span class="req">*</span></label>
-          <label class="upload-trigger" for="passportPhotosInput">🛂 Сделать фото или выбрать паспорт</label>
-          <input type="file" id="passportPhotosInput" class="upload-input" accept="image/*" multiple>
-          <div class="hint">Разворот с фото + при необходимости перевод, мигр. карта и патент (до 5 шт.).</div>
-          <div id="passportThumbs" class="thumbs"></div>
-        </div>
-
-        <div class="field">
-          <label class="lbl">Фото прописки / регистрации <span class="req">*</span></label>
-          <label class="upload-trigger" for="regPhotosInput">🏠 Сделать фото или выбрать прописку</label>
-          <input type="file" id="regPhotosInput" class="upload-input" accept="image/*" multiple>
-          <div class="hint">Страница с пропиской в паспорте или бланк миграционного учёта (обязательно, до 3 шт.).</div>
-          <div id="regThumbs" class="thumbs"></div>
+          <label>🏠 Фото прописки / регистрации в РФ (1–2 фото) <span class="req">*</span></label>
+          <div class="upload-box">
+            <button type="button" class="upload-btn" onclick="document.getElementById('inpReg').click()">📷 Загрузить фото регистрации</button>
+            <input type="file" id="inpReg" class="upload-input" accept="image/*" multiple>
+            <div class="thumbs" id="thumbsReg"></div>
+          </div>
         </div>
       </div>
 
+      <!-- 6. Согласие и отправка -->
       <div class="card">
-        <div class="section-title">5. Согласие на обработку персональных данных</div>
-
-        <details class="consent-details">
-          <summary>Прочитать условия согласия (ФЗ № 152-ФЗ)</summary>
-          <p>
-            Настоящим я свободно, своей волей и в своём интересе даю согласие ИП / плательщику НПД Айдарову Исламу Мамурджановичу на обработку моих персональных данных (ФИО, дата рождения, паспортные данные, данные ВУ, адрес регистрации и проживания, номер телефона, фото документов) в целях заключения и исполнения договора аренды транспортного средства, проверки благонадёжности, передачи сведений в ГИБДД, страховые компании, МВД и суды при обжаловании штрафов/ДТП, а также на спутниковый GPS/ГЛОНАСС-мониторинг арендуемого ТС.
-          </p>
-        </details>
-
-        <label class="consent-row" for="opdConsent">
-          <input type="checkbox" id="opdConsent" required>
-          <span><strong>Да, я даю согласие</strong> на обработку и передачу моих персональных данных (в ГИБДД, страховые компании, МВД, суды) и спутниковый мониторинг ТС по ФЗ № 152-ФЗ <span class="req">*</span></span>
-        </label>
+        <div class="field">
+          <label class="check-row" for="opdConsent">
+            <input type="checkbox" id="opdConsent" required>
+            <span>Даю согласие на обработку и передачу персональных данных (в ГИБДД, страховые компании, МВД, суды) и спутниковый мониторинг ТС по ФЗ № 152-ФЗ <span class="req">*</span></span>
+          </label>
+        </div>
       </div>
 
-      <button type="submit" id="submitBtn" class="btn-submit">Отправить анкету и оформить договор</button>
+      <button type="submit" id="submitBtn" class="btn-submit">✅ Отправить анкету</button>
     </form>
+
+    <div id="successCard" class="card success-card hidden">
+      <div class="success-icon">✅</div>
+      <h2>Анкета успешно отправлена!</h2>
+      <div id="successMeta" class="success-meta"></div>
+      <a id="botConnectBtn" href="https://t.me/Documents_TS_bot" target="_blank" rel="noopener" class="btn-bot">🤖 Подключить Telegram-бот автопарка</a>
+      <button type="button" class="btn-again" onclick="window.location.reload()">Заполнить ещё одну анкету</button>
+    </div>
   </div>
 
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbxjqMGkJBR045NHEBrVlgEWOYeCuqmMqOmTMwMJFkR0UKG90HNYVtuktVdDfcwS27x5YQ/exec';
     const BOT_USERNAME = 'Documents_TS_bot';
+    const LBG_LABEL = 'Лицо без гражданства (ВНЖ ЛБГ)';
 
     const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     if (tg) { tg.ready(); tg.expand(); }
 
-    const photoStore = { vu: [], passport: [], reg: [] };
-    const photoLimits = { vu: 4, passport: 5, reg: 3 };
+    const photoStore = { vu: [], pass: [], stay: [], reg: [] };
 
-    const CYR_TO_LAT = {
-      'А': 'A', 'В': 'B', 'Е': 'E', 'К': 'K', 'М': 'M', 'Н': 'H',
-      'О': 'O', 'Р': 'P', 'С': 'C', 'Т': 'T', 'У': 'Y', 'Х': 'X', 'І': 'I'
-    };
-
-    function toUpperLatinAlnum(raw, maxLen) {
-      const upper = String(raw || '').toUpperCase().replace(/[АВЕКМНОРСТУХІ]/g, ch => CYR_TO_LAT[ch] || ch);
-      return upper.replace(/[^A-Z0-9]/g, '').slice(0, maxLen);
-    }
-
-    const PASSPORT_RULES = {
-      'РФ (Российская Федерация)': {
-        label: 'Паспорт РФ (серия и номер)',
-        placeholder: '0415 123456',
-        hint: 'Формат РФ: 10 цифр — 0000 000000 (пробел ставится автоматически).',
-        inputmode: 'numeric',
-        maxlength: 11,
-        format: (val) => {
-          const d = String(val || '').replace(/\D/g, '').slice(0, 10);
-          return d.length > 4 ? (d.slice(0, 4) + ' ' + d.slice(4)) : d;
-        },
-        regex: /^\d{4} \d{6}$/,
-        errMsg: 'Неверный формат паспорта РФ. Введите 10 цифр (например: 0415 123456).'
-      },
-      'Республика Таджикистан': {
-        label: 'Загранпаспорт РТ (серия и номер)',
-        placeholder: '401234567',
-        hint: 'Формат РТ: 9 цифр без пробела (например, 401234567) или биометрический (1–2 лат. буквы + 7–8 цифр).',
-        inputmode: 'text',
-        maxlength: 10,
-        format: (val) => toUpperLatinAlnum(val, 10),
-        regex: /^(\d{9}|[A-Z]{1,2}\d{7,8})$/,
-        errMsg: 'Неверный формат паспорта РТ. Введите 9 цифр (например: 401234567) или серию с латинской буквой и 7–8 цифр.'
-      },
-      'Кыргызская Республика (Кыргызстан)': {
-        label: 'Паспорт / ID-карта Кыргызстана',
-        placeholder: 'ID1234567 или AC1234567',
-        hint: 'Формат КР: 2 латинские буквы и 7 цифр (например, ID1234567, AN1234567, AC1234567, PE1234567).',
-        inputmode: 'text',
-        maxlength: 9,
-        format: (val) => toUpperLatinAlnum(val, 9),
-        regex: /^[A-Z]{1,2}\d{7}$/,
-        errMsg: 'Неверный формат паспорта Кыргызстана. Введите 2 латинские буквы и 7 цифр (например: ID1234567 или AC1234567).'
-      },
-      'Республика Узбекистан': {
-        label: 'Загранпаспорт / ID Узбекистана',
-        placeholder: 'FA1234567',
-        hint: 'Формат Узбекистана: 2 латинские буквы и 7 цифр без пробела (например, FA1234567 или AA1234567).',
-        inputmode: 'text',
-        maxlength: 9,
-        format: (val) => toUpperLatinAlnum(val, 9),
-        regex: /^[A-Z]{2}\d{7}$/,
-        errMsg: 'Неверный формат паспорта Узбекистана. Введите 2 латинские буквы и 7 цифр (например: FA1234567 или AA1234567).'
-      },
-      'Республика Армения': {
-        label: 'Загранпаспорт Армении',
-        placeholder: 'AR1234567',
-        hint: 'Формат Армении: 2 латинские буквы и 7 цифр (например, AR1234567, AP1234567) или 9 цифр (ID-карта).',
-        inputmode: 'text',
-        maxlength: 9,
-        format: (val) => toUpperLatinAlnum(val, 9),
-        regex: /^([A-Z]{2}\d{7}|\d{9})$/,
-        errMsg: 'Неверный формат паспорта Армении. Введите 2 латинские буквы и 7 цифр (например: AR1234567) или 9 цифр.'
-      },
-      'Азербайджанская Республика': {
-        label: 'Загранпаспорт Азербайджана',
-        placeholder: 'C01234567',
-        hint: 'Формат Азербайджана: латинская буква C и 8 цифр (например, C01234567), старый — P + 7 цифр, ID — AA + 7 цифр.',
-        inputmode: 'text',
-        maxlength: 11,
-        format: (val) => toUpperLatinAlnum(val, 11),
-        regex: /^([A-Z]\d{7,8}|[A-Z]{2}\d{7}|AZE\d{8})$/,
-        errMsg: 'Неверный формат паспорта Азербайджана. Введите букву C и 8 цифр (например: C01234567), либо P + 7 цифр / AA + 7 цифр.'
-      }
-    };
-
-    function getCurrentPassportRule() {
-      return PASSPORT_RULES[document.getElementById('citizenship').value] || null;
-    }
-
-    function updatePassportFieldByCitizenship() {
-      const rule = getCurrentPassportRule();
-      const inp = document.getElementById('passportNum');
-      const lbl = document.getElementById('passportLabel');
-      const hint = document.getElementById('passportHint');
-      inp.classList.remove('input-invalid');
-
-      if (!rule) {
-        lbl.innerHTML = 'Паспорт (серия и номер) <span class="req">*</span>';
-        inp.placeholder = 'Сначала выберите гражданство';
-        inp.setAttribute('inputmode', 'text');
-        inp.removeAttribute('maxlength');
-        hint.className = 'hint';
-        hint.textContent = 'Выберите гражданство выше — поле автоматически подстроит нужный формат паспорта.';
-        return;
-      }
-
-      lbl.innerHTML = `${rule.label} <span class="req">*</span>`;
-      inp.placeholder = rule.placeholder;
-      inp.setAttribute('inputmode', rule.inputmode);
-      inp.setAttribute('maxlength', String(rule.maxlength));
-      if (inp.value) inp.value = rule.format(inp.value);
-      updatePassportHintState();
-    }
-
-    function updatePassportHintState() {
-      const rule = getCurrentPassportRule();
-      const inp = document.getElementById('passportNum');
-      const hint = document.getElementById('passportHint');
-      if (!rule) return;
-
-      const val = inp.value.trim();
-      if (!val) {
-        inp.classList.remove('input-invalid');
-        hint.className = 'hint';
-        hint.textContent = rule.hint;
-      } else if (rule.regex.test(val)) {
-        inp.classList.remove('input-invalid');
-        hint.className = 'hint hint-ok';
-        hint.textContent = '✓ Формат паспорта корректный';
-      } else {
-        hint.className = 'hint';
-        hint.textContent = rule.hint;
-      }
-    }
-
-    document.getElementById('citizenship').addEventListener('change', updatePassportFieldByCitizenship);
-    document.getElementById('passportNum').addEventListener('input', (e) => {
-      const rule = getCurrentPassportRule();
-      if (rule) {
-        e.target.value = rule.format(e.target.value);
-        updatePassportHintState();
-      }
-    });
-
-    document.getElementById('connectBotBtn').addEventListener('click', (e) => {
-      if (tg && typeof tg.openTelegramLink === 'function') {
-        e.preventDefault();
-        tg.openTelegramLink(e.currentTarget.href);
-      }
-    });
-
-    function showStatus(type, msg) {
-      const box = document.getElementById('statusBox');
-      box.className = 'status-box ' + (type === 'err' ? 'status-err' : 'status-info');
+    function showErr(msg) {
+      const box = document.getElementById('errBox');
       box.textContent = msg;
-      box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      box.classList.remove('hidden');
+      box.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+    function hideErr() { document.getElementById('errBox').classList.add('hidden'); }
 
-    function hideStatus() {
-      const box = document.getElementById('statusBox');
-      box.className = 'status-box';
-      box.textContent = '';
-    }
-
-    function callJsonp(action, extraParams, timeoutMs) {
+    function jsonpGet(paramsObj, timeoutMs) {
       return new Promise((resolve, reject) => {
         const cb = '__formJsonp_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
         const s = document.createElement('script');
         let done = false;
-        const clean = () => {
+        const cleanup = () => {
           if (s.parentNode) s.parentNode.removeChild(s);
           try { delete window[cb]; } catch (e) { window[cb] = undefined; }
         };
         const timer = setTimeout(() => {
-          if (done) return;
-          done = true; clean();
-          reject(new Error('Таймаут загрузки данных.'));
+          if (done) return; done = true; cleanup();
+          reject(new Error('Таймаут ответа сервера'));
         }, timeoutMs || 15000);
-
-        window[cb] = (json) => {
-          if (done) return;
-          done = true; clearTimeout(timer); clean();
-          resolve(json);
-        };
-        s.onerror = () => {
-          if (done) return;
-          done = true; clearTimeout(timer); clean();
-          reject(new Error('Ошибка сети при обращении к серверу.'));
-        };
-        const qs = new URLSearchParams({ action, callback: cb, _t: String(Date.now()), ...extraParams });
-        s.src = API_URL + '?' + qs.toString();
+        window[cb] = (json) => { if (done) return; done = true; clearTimeout(timer); cleanup(); resolve(json); };
+        s.onerror = () => { if (done) return; done = true; clearTimeout(timer); cleanup(); reject(new Error('Ошибка сети')); };
+        const q = new URLSearchParams({ ...paramsObj, callback: cb, _t: String(Date.now()) });
+        s.src = API_URL + '?' + q.toString();
         document.head.appendChild(s);
       });
     }
 
-    async function loadCars() {
+    async function loadFormInit() {
       const sel = document.getElementById('carSelection');
-      const hint = document.getElementById('carsCountHint');
       try {
-        let json;
+        let json = null;
         try {
-          const r = await fetch(API_URL + '?action=publicCars&_t=' + Date.now(), { credentials: 'omit', redirect: 'follow' });
+          const r = await fetch(API_URL + '?action=formInit&_t=' + Date.now(), { method: 'GET', credentials: 'omit', redirect: 'follow' });
           json = await r.json();
         } catch (e) {
-          json = await callJsonp('publicCars', {});
+          json = await jsonpGet({ action: 'formInit' }, 15000);
         }
-
-        if (!json || !json.ok || !json.data) throw new Error('Не удалось получить список авто.');
-        const cars = json.data.cars || json.data.choices || [];
-        sel.innerHTML = '<option value="">— Выберите автомобиль —</option>';
-        cars.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c;
-          opt.textContent = c;
-          sel.appendChild(opt);
-        });
-        hint.textContent = `Доступно свободных автомобилей: ${cars.length} шт.`;
-
-        if (Array.isArray(json.data.durations) && json.data.durations.length) {
-          const durSel = document.getElementById('durationRaw');
-          durSel.innerHTML = '';
-          json.data.durations.forEach(d => {
-            const opt = document.createElement('option');
-            opt.value = d;
-            opt.textContent = d;
-            durSel.appendChild(opt);
-          });
+        if (json && json.ok && json.data) {
+          const cars = json.data.cars || json.data.choices || [];
+          sel.innerHTML = '<option value="">— Выберите автомобиль —</option>' +
+            cars.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('');
+          if (Array.isArray(json.data.durations) && json.data.durations.length) {
+            const dSel = document.getElementById('durationRaw');
+            dSel.innerHTML = json.data.durations.map(d => `<option value="${escapeAttr(d)}">${escapeHtml(d)}</option>`).join('');
+          }
+        } else {
+          sel.innerHTML = '<option value="">Не удалось загрузить авто — обновите страницу</option>';
         }
       } catch (err) {
         sel.innerHTML = '<option value="">Ошибка загрузки списка авто — обновите страницу</option>';
-        hint.textContent = 'Не удалось загрузить список авто.';
-        showStatus('err', 'Не удалось загрузить список свободных авто: ' + (err.message || err));
       }
     }
+
+    function escapeHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function escapeAttr(s) { return escapeHtml(s).replace(/"/g, '&quot;'); }
+
+    function isLbgSelected() { return document.getElementById('citizenship').value === LBG_LABEL; }
+    function isRfSelected() { return document.getElementById('citizenship').value.indexOf('РФ') === 0; }
+    function getEffectiveStayStatus() {
+      if (isRfSelected()) return '';
+      if (isLbgSelected()) return 'ВНЖ (вид на жительство)';
+      return document.getElementById('stayStatus').value;
+    }
+    function isVnjOrRvp() {
+      const st = getEffectiveStayStatus();
+      return st.indexOf('ВНЖ') === 0 || st.indexOf('РВП') === 0;
+    }
+
+    function updateCitizenshipUi() {
+      const rf = isRfSelected();
+      const lbg = isLbgSelected();
+      const stayWrap = document.getElementById('stayStatusWrap');
+      const staySel = document.getElementById('stayStatus');
+      const stayDocBox = document.getElementById('stayDocBox');
+      const stayPhotosField = document.getElementById('stayPhotosField');
+
+      stayWrap.classList.toggle('hidden', rf);
+      if (lbg) {
+        staySel.value = 'ВНЖ (вид на жительство)';
+        staySel.disabled = true;
+      } else {
+        staySel.disabled = false;
+      }
+
+      const st = getEffectiveStayStatus();
+      const isVnj = st.indexOf('ВНЖ') === 0;
+      const isRvp = st.indexOf('РВП') === 0;
+      const showStayDoc = isVnj || isRvp;
+
+      stayDocBox.classList.toggle('hidden', !showStayDoc);
+      stayPhotosField.classList.toggle('hidden', !showStayDoc);
+
+      if (isVnj) {
+        document.getElementById('stayDocNumLbl').innerHTML = 'Серия и номер ВНЖ <span class="req">*</span>';
+        document.getElementById('stayDocNum').placeholder = '82 № 1234567';
+        document.getElementById('stayDocExpiryLbl').textContent = 'Действует до (если срочный)';
+        document.getElementById('stayDocExpiryHint').textContent = 'Если ВНЖ бессрочный — оставьте пустым';
+        document.getElementById('stayPhotosLbl').innerHTML = '📘 Фото ВНЖ (разворот с фото + штамп регистрации, 1–2 фото) <span class="req">*</span>';
+      } else if (isRvp) {
+        document.getElementById('stayDocNumLbl').innerHTML = 'Номер решения / штампа РВП <span class="req">*</span>';
+        document.getElementById('stayDocNum').placeholder = '№ 1234/2025';
+        document.getElementById('stayDocExpiryLbl').innerHTML = 'Срок действия РВП до <span class="req">*</span>';
+        document.getElementById('stayDocExpiryHint').textContent = 'Указан в штампе РВП в паспорте';
+        document.getElementById('stayPhotosLbl').innerHTML = '📘 Фото штампа РВП в паспорте (1–2 фото) <span class="req">*</span>';
+      }
+
+      // Для лица без гражданства ВНЖ заменяет паспорт
+      document.getElementById('passportNumField').classList.toggle('hidden', lbg);
+      document.getElementById('passPhotosField').classList.toggle('hidden', lbg);
+      document.getElementById('passportIssuedLbl').innerHTML = lbg
+        ? 'Кем выдан ВНЖ <span class="req">*</span>'
+        : 'Кем и когда выдан паспорт <span class="req">*</span>';
+
+      checkVnjRuleWarning();
+    }
+
+    function checkVnjRuleWarning() {
+      const warn = document.getElementById('vnjWarning');
+      const st = getEffectiveStayStatus();
+      const dateStr = document.getElementById('stayDocDate').value;
+      const expStr = document.getElementById('stayDocExpiry').value;
+
+      if (st.indexOf('ВНЖ') === 0 && dateStr) {
+        const p = dateStr.split('-').map(Number);
+        const issuedMs = Date.UTC(p[0], p[1] - 1, p[2]);
+        const daysPassed = Math.floor((Date.now() - issuedMs) / 86400000);
+        if (daysPassed >= 365) {
+          warn.textContent = '⚠️ Внимание: с даты получения ВНЖ прошло более 1 года. По закону 313-ФЗ иностранные ВУ в РФ уже недействительны — требуются водительские права РФ!';
+          warn.classList.remove('hidden');
+          return;
+        }
+      }
+
+      if (st.indexOf('РВП') === 0 && expStr) {
+        const ep = expStr.split('-').map(Number);
+        const expMs = Date.UTC(ep[0], ep[1] - 1, ep[2]);
+        const daysLeft = Math.floor((expMs - Date.now()) / 86400000);
+        if (daysLeft < 0) {
+          warn.textContent = '🚨 Срок действия РВП уже истёк! Выдача автомобиля невозможна до продления документов.';
+          warn.classList.remove('hidden');
+          return;
+        } else if (daysLeft <= 30) {
+          warn.textContent = `⚠️ До окончания РВП осталось ${daysLeft} дн. Сообщите арендодателю о планах продления / подачи на ВНЖ.`;
+          warn.classList.remove('hidden');
+          return;
+        }
+      }
+
+      warn.classList.add('hidden');
+    }
+
+    document.getElementById('citizenship').addEventListener('change', updateCitizenshipUi);
+    document.getElementById('stayStatus').addEventListener('change', updateCitizenshipUi);
+    document.getElementById('stayDocDate').addEventListener('change', checkVnjRuleWarning);
+    document.getElementById('stayDocExpiry').addEventListener('change', checkVnjRuleWarning);
+    document.getElementById('sameAddressChk').addEventListener('change', (e) => {
+      document.getElementById('factAddressWrap').classList.toggle('hidden', e.target.checked);
+    });
 
     function compressImageFile(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onerror = () => reject(new Error('Не удалось прочитать файл ' + file.name));
+        reader.onerror = () => reject(new Error('Не удалось прочитать файл'));
         reader.onload = () => {
-          const dataUrl = reader.result;
           const img = new Image();
-          img.onerror = () => {
-            const base64 = String(dataUrl).split(',')[1] || '';
-            resolve({ base64, mimeType: file.type || 'image/jpeg', previewUrl: dataUrl });
-          };
+          img.onerror = () => reject(new Error('Повреждённое изображение'));
           img.onload = () => {
-            try {
-              const maxSide = 1400;
-              let w = img.width, h = img.height;
-              if (w > maxSide || h > maxSide) {
-                if (w >= h) { h = Math.round(h * maxSide / w); w = maxSide; }
-                else { w = Math.round(w * maxSide / h); h = maxSide; }
-              }
-              const canvas = document.createElement('canvas');
-              canvas.width = w;
-              canvas.height = h;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(img, 0, 0, w, h);
-              const outUrl = canvas.toDataURL('image/jpeg', 0.78);
-              resolve({ base64: outUrl.split(',')[1], mimeType: 'image/jpeg', previewUrl: outUrl });
-            } catch (e) {
-              const base64 = String(dataUrl).split(',')[1] || '';
-              resolve({ base64, mimeType: file.type || 'image/jpeg', previewUrl: dataUrl });
+            const maxDim = 1350;
+            let w = img.width, h = img.height;
+            if (w > maxDim || h > maxDim) {
+              if (w >= h) { h = Math.round(h * maxDim / w); w = maxDim; }
+              else { w = Math.round(w * maxDim / h); h = maxDim; }
             }
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.78);
+            const base64 = dataUrl.split(',')[1];
+            resolve({ base64, mimeType: 'image/jpeg', preview: dataUrl });
           };
-          img.src = dataUrl;
+          img.src = reader.result;
         };
         reader.readAsDataURL(file);
       });
@@ -538,49 +549,58 @@
       const box = document.getElementById(containerId);
       box.innerHTML = '';
       photoStore[key].forEach((item, idx) => {
-        const wrap = document.createElement('div');
-        wrap.className = 'thumb';
-        wrap.innerHTML = `<img src="${item.previewUrl}" alt="Фото"><button type="button" class="thumb-del" title="Удалить">×</button>`;
-        wrap.querySelector('.thumb-del').addEventListener('click', () => {
+        const div = document.createElement('div');
+        div.className = 'thumb';
+        div.innerHTML = `<img src="${item.preview}" alt="photo"><button type="button" class="thumb-del" title="Удалить">×</button>`;
+        div.querySelector('.thumb-del').addEventListener('click', () => {
           photoStore[key].splice(idx, 1);
           renderThumbs(key, containerId);
         });
-        box.appendChild(wrap);
+        box.appendChild(div);
       });
     }
 
-    function bindPhotoInput(inputId, key, containerId) {
-      const input = document.getElementById(inputId);
-      input.addEventListener('change', async () => {
-        const files = Array.from(input.files || []);
-        input.value = '';
-        if (!files.length) return;
+    function bindPhotoInput(inputId, key, thumbsId, maxFiles) {
+      const inp = document.getElementById(inputId);
+      inp.addEventListener('change', async () => {
+        hideErr();
+        const files = Array.from(inp.files || []);
         for (const f of files) {
-          if (photoStore[key].length >= photoLimits[key]) {
-            showStatus('err', `Можно прикрепить не более ${photoLimits[key]} фото в этот раздел.`);
-            break;
-          }
+          if (photoStore[key].length >= maxFiles) break;
           try {
             const compressed = await compressImageFile(f);
             photoStore[key].push(compressed);
-          } catch (err) {
-            showStatus('err', err.message || String(err));
+          } catch (e) {
+            showErr('Не удалось обработать одно из фото. Попробуйте сделать снимок ещё раз.');
           }
         }
-        renderThumbs(key, containerId);
+        inp.value = '';
+        renderThumbs(key, thumbsId);
       });
     }
 
-    function formatIsoToRu(iso) {
-      const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      return m ? `${m[3]}.${m[2]}.${m[1]}` : String(iso || '').trim();
+    bindPhotoInput('inpVu', 'vu', 'thumbsVu', 3);
+    bindPhotoInput('inpPass', 'pass', 'thumbsPass', 3);
+    bindPhotoInput('inpStay', 'stay', 'thumbsStay', 3);
+    bindPhotoInput('inpReg', 'reg', 'thumbsReg', 3);
+
+    function formatDateRu(iso) {
+      if (!iso) return '';
+      const p = iso.split('-');
+      return p.length === 3 ? `${p[2]}.${p[1]}.${p[0]}` : iso;
     }
 
-    async function pollSubmissionResult(submissionId) {
-      for (let attempt = 0; attempt < 15; attempt++) {
-        await new Promise(r => setTimeout(r, 3000));
+    function normalizePhoneLast10(raw) {
+      const d = String(raw || '').replace(/\D/g, '');
+      return d.length >= 10 ? d.slice(-10) : d;
+    }
+
+    async function pollWebFormResult(submissionId, maxWaitMs) {
+      const started = Date.now();
+      while (Date.now() - started < maxWaitMs) {
+        await new Promise(r => setTimeout(r, 2500));
         try {
-          const check = await callJsonp('checkWebForm', { submissionId }, 10000);
+          const check = await jsonpGet({ action: 'checkWebForm', submissionId }, 12000);
           if (check && check.ok && check.data && check.data.found) {
             return check.data.result || {};
           }
@@ -589,88 +609,66 @@
       return null;
     }
 
-    function showSuccess(res) {
-      hideStatus();
-      document.getElementById('driverForm').classList.add('hidden');
-      const card = document.getElementById('successCard');
-      const title = document.getElementById('successTitle');
-      const txt = document.getElementById('successText');
-
-      if (res && res.status === 'На проверке') {
-        title.textContent = '✅ Анкета отправлена на проверку!';
-        txt.textContent = `Заявка ${res.appId || ''} на авто ${res.plate || ''} получена. Нажмите кнопку ниже, чтобы подключить уведомления в Telegram — туда придут сообщения от автопарка.`;
-      } else if (res && res.plate) {
-        title.textContent = '✅ Анкета успешно отправлена!';
-        txt.textContent = `Договор № ${res.contractNo || '—'} на авто ${res.plate} (${res.startDate || ''} — ${res.endDate || ''}, ${res.days || '365'} сут.) оформлен. Нажмите кнопку ниже, чтобы подключить уведомления в Telegram.`;
-      }
-
-      const phDigits = document.getElementById('phone').value.replace(/\D/g, '').slice(-10);
-      const botBtn = document.getElementById('connectBotBtn');
-      if (botBtn) {
-        botBtn.href = phDigits ? `https://t.me/${BOT_USERNAME}?start=p_${phDigits}` : `https://t.me/${BOT_USERNAME}`;
-      }
-
-      card.style.display = 'block';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    document.getElementById('driverForm').addEventListener('submit', async (ev) => {
-      ev.preventDefault();
-      hideStatus();
+    document.getElementById('driverForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideErr();
 
       const fio = document.getElementById('fio').value.trim();
-      const birthDateIso = document.getElementById('birthDate').value.trim();
-      const citizenship = document.getElementById('citizenship').value.trim();
+      const birthDate = document.getElementById('birthDate').value.trim();
       const phone = document.getElementById('phone').value.trim();
-      const passportInput = document.getElementById('passportNum');
-      const passRule = getCurrentPassportRule();
-      if (passRule) passportInput.value = passRule.format(passportInput.value);
-      const passportNum = passportInput.value.trim();
+      const citizenship = document.getElementById('citizenship').value;
+      const stayStatus = getEffectiveStayStatus();
+      const stayDocNum = document.getElementById('stayDocNum').value.trim();
+      const stayDocDate = document.getElementById('stayDocDate').value.trim();
+      const stayDocExpiry = document.getElementById('stayDocExpiry').value.trim();
+      const lbg = isLbgSelected();
+      const needStay = isVnjOrRvp();
+
+      const passportNum = lbg ? ('ВНЖ ЛБГ ' + stayDocNum) : document.getElementById('passportNum').value.trim();
       const passportIssued = document.getElementById('passportIssued').value.trim();
       const regAddress = document.getElementById('regAddress').value.trim();
-      const factAddress = document.getElementById('factAddress').value.trim();
+      const sameAddr = document.getElementById('sameAddressChk').checked;
+      const factAddress = sameAddr ? regAddress : document.getElementById('factAddress').value.trim();
       const vuDetailsRaw = document.getElementById('vuDetailsRaw').value.trim();
       const vuStartYear = document.getElementById('vuStartYear').value.trim();
-      const carSelection = document.getElementById('carSelection').value.trim();
-      const durationRaw = document.getElementById('durationRaw').value.trim();
+      const carSelection = document.getElementById('carSelection').value;
+      const durationRaw = document.getElementById('durationRaw').value;
       const opdConsent = document.getElementById('opdConsent').checked;
 
-      if (!fio) return showStatus('err', 'Укажите ФИО полностью.');
-      if (!birthDateIso) return showStatus('err', 'Укажите дату рождения.');
-      if (!citizenship) return showStatus('err', 'Выберите гражданство.');
-      if (!phone) return showStatus('err', 'Укажите контактный телефон.');
-      if (!passportNum) {
-        passportInput.classList.add('input-invalid');
-        return showStatus('err', 'Укажите серию и номер паспорта.');
-      }
-      if (passRule && !passRule.regex.test(passportNum)) {
-        passportInput.classList.add('input-invalid');
-        const hint = document.getElementById('passportHint');
-        hint.className = 'hint hint-err';
-        hint.textContent = passRule.errMsg;
-        passportInput.focus();
-        return showStatus('err', passRule.errMsg);
-      }
-      if (!passportIssued) return showStatus('err', 'Укажите, кем и когда выдан паспорт.');
-      if (!regAddress) return showStatus('err', 'Укажите адрес регистрации.');
-      if (!vuDetailsRaw || !vuStartYear) return showStatus('err', 'Укажите реквизиты ВУ и год начала стажа.');
-      if (!carSelection) return showStatus('err', 'Выберите автомобиль.');
-      if (!photoStore.vu.length) return showStatus('err', 'Обязательно прикрепите фото ВУ (лицевую и обратную сторону).');
-      if (!photoStore.passport.length) return showStatus('err', 'Обязательно прикрепите фото паспорта / миграционной карты.');
-      if (!photoStore.reg.length) return showStatus('err', 'Обязательно прикрепите фото прописки / регистрации.');
-      if (!opdConsent) return showStatus('err', 'Подтвердите согласие на обработку персональных данных (152-ФЗ).');
+      if (!fio || fio.split(/\s+/).length < 2) return showErr('Введите ФИО полностью (минимум фамилия и имя).');
+      if (!birthDate) return showErr('Укажите дату рождения.');
+      if (normalizePhoneLast10(phone).length < 10) return showErr('Введите корректный номер телефона (10 цифр).');
+      if (needStay && !stayDocNum) return showErr('Укажите серию и номер ВНЖ или номер решения РВП.');
+      if (needStay && !stayDocDate) return showErr('Укажите дату выдачи ВНЖ / РВП.');
+      if (stayStatus.indexOf('РВП') === 0 && !stayDocExpiry) return showErr('Укажите срок действия РВП.');
+      if (!lbg && !passportNum) return showErr('Укажите серию и номер паспорта.');
+      if (!passportIssued) return showErr('Укажите, кем и когда выдан документ.');
+      if (!regAddress) return showErr('Укажите адрес регистрации (прописки).');
+      if (!sameAddr && !factAddress) return showErr('Укажите фактический адрес проживания.');
+      if (!vuDetailsRaw) return showErr('Укажите серию, номер и дату выдачи ВУ.');
+      if (!vuStartYear || Number(vuStartYear) < 1960 || Number(vuStartYear) > 2026) return showErr('Укажите корректный год начала стажа (например, 2018).');
+      if (!carSelection) return showErr('Выберите автомобиль из списка.');
+      if (!photoStore.vu.length) return showErr('Прикрепите фото водительского удостоверения (ВУ).');
+      if (!lbg && !photoStore.pass.length) return showErr('Прикрепите фото паспорта.');
+      if (needStay && !photoStore.stay.length) return showErr('Прикрепите фото ВНЖ или штампа РВП.');
+      if (!photoStore.reg.length) return showErr('Прикрепите фото прописки / регистрации.');
+      if (!opdConsent) return showErr('Необходимо дать согласие на обработку персональных данных (152-ФЗ).');
 
       const btn = document.getElementById('submitBtn');
+      const oldText = btn.textContent;
       btn.disabled = true;
-      btn.textContent = 'Отправляем анкету и фото...';
-      showStatus('info', 'Загружаем фото и отправляем анкету (обычно 10–25 секунд). Не закрывайте страницу...');
+      btn.textContent = '⏳ Отправка и проверка документов...';
 
-      const submissionId = 'sub_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+      const submissionId = 'sub_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
       const payload = {
         submissionId,
         fio,
-        birthDate: formatIsoToRu(birthDateIso),
+        birthDate: formatDateRu(birthDate),
         citizenship,
+        stayStatus,
+        stayDocNum,
+        stayDocDate,
+        stayDocExpiry,
         phone,
         passportNum,
         passportIssued,
@@ -682,39 +680,70 @@
         durationRaw,
         opdConsent,
         vuPhotos: photoStore.vu.map(x => ({ base64: x.base64, mimeType: x.mimeType })),
-        passportPhotos: photoStore.passport.map(x => ({ base64: x.base64, mimeType: x.mimeType })),
+        passportPhotos: photoStore.pass.map(x => ({ base64: x.base64, mimeType: x.mimeType })),
+        stayDocPhotos: photoStore.stay.map(x => ({ base64: x.base64, mimeType: x.mimeType })),
         regPhotos: photoStore.reg.map(x => ({ base64: x.base64, mimeType: x.mimeType }))
       };
 
+      const bodyStr = JSON.stringify(payload);
+      let resultData = null;
+
       try {
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload),
-          redirect: 'follow',
-          credentials: 'omit'
-        });
-        const text = await res.text();
-        const json = JSON.parse(text);
-        if (!json.ok) throw new Error(json.error || 'Ошибка обработки анкеты.');
-        showSuccess(json.data);
-      } catch (err) {
-        showStatus('info', 'Проверяем доставку анкеты на сервер...');
-        const polled = await pollSubmissionResult(submissionId);
-        if (polled) {
-          showSuccess(polled);
-        } else {
-          btn.disabled = false;
-          btn.textContent = 'Отправить анкету и оформить договор';
-          showStatus('err', 'Не удалось получить подтверждение отправки: ' + (err.message || err) + '. Проверьте интернет и попробуйте ещё раз.');
+        try {
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            credentials: 'omit',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: bodyStr
+          });
+          const json = await res.json();
+          if (!json || !json.ok) throw new Error((json && json.error) || 'Ошибка сервера');
+          resultData = json.data || {};
+        } catch (fetchErr) {
+          // Если браузер/WebView заблокировал чтение CORS-ответа — проверяем статус или досылаем no-cors с тем же submissionId
+          resultData = await pollWebFormResult(submissionId, 8000);
+          if (!resultData) {
+            try {
+              await fetch(API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: bodyStr
+              });
+            } catch (e2) {}
+            resultData = await pollWebFormResult(submissionId, 65000);
+          }
+          if (!resultData) {
+            throw new Error(fetchErr && fetchErr.message && fetchErr.message.indexOf('Failed') === -1
+              ? fetchErr.message
+              : 'Сервер обрабатывает анкету дольше обычного. Подождите 1 минуту и уточните у арендодателя, не отправляя повторно.');
+          }
         }
+
+        const p10 = normalizePhoneLast10(phone);
+        const botUrl = `https://t.me/${BOT_USERNAME}?start=p_${p10}`;
+        document.getElementById('botConnectBtn').href = botUrl;
+
+        document.getElementById('successMeta').innerHTML =
+          `👤 <strong>Водитель:</strong> ${escapeHtml(resultData.driverName || fio)}<br>` +
+          `🚗 <strong>Автомобиль:</strong> ${escapeHtml(resultData.plate || carSelection.split(' ')[0])}<br>` +
+          `📄 <strong>Статус:</strong> ${escapeHtml(resultData.status || 'Принята')} (${escapeHtml(resultData.contractNo || '—')})<br>` +
+          `📅 <strong>Дата:</strong> ${escapeHtml(resultData.startDate || '')}<br><br>` +
+          `Нажмите синюю кнопку ниже и нажмите <strong>«Старт»</strong> в боте, чтобы получать чеки, документы на авто и уведомления.`;
+
+        document.getElementById('driverForm').classList.add('hidden');
+        document.getElementById('successCard').classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (err) {
+        showErr(err && err.message ? err.message : String(err));
+        btn.disabled = false;
+        btn.textContent = oldText;
       }
     });
 
-    bindPhotoInput('vuPhotosInput', 'vu', 'vuThumbs');
-    bindPhotoInput('passportPhotosInput', 'passport', 'passportThumbs');
-    bindPhotoInput('regPhotosInput', 'reg', 'regThumbs');
-    window.onload = loadCars;
+    updateCitizenshipUi();
+    loadFormInit();
   </script>
 </body>
 </html>
