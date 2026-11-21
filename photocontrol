@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Фотоконтроль авто — Автопарк (Красноярск)</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #f2f4f7;
+      --card: #ffffff;
+      --text: #111827;
+      --hint: #6b7280;
+      --accent: #1d4ed8;
+      --border: #d1d5db;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 14px 12px 44px; -webkit-text-size-adjust: 100%; }
+    .container { max-width: 560px; margin: 0 auto; }
+
+    .card {
+      background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+    }
+    .hero h1 { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
+    .hero p { font-size: 13.5px; color: var(--hint); line-height: 1.45; }
+
+    .section-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; color: var(--text); }
+
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    label.lbl { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 6px; color: #374151; }
+    .req { color: #dc2626; }
+    .hint { font-size: 12px; color: var(--hint); margin-top: 6px; line-height: 1.4; }
+
+    .car-info-pill {
+      margin-top: 8px; padding: 9px 11px; border-radius: 10px;
+      background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
+      font-size: 12.5px; line-height: 1.45; display: none;
+    }
+
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--border);
+      background: #ffffff; color: var(--text); font-size: 15px; outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.12); }
+    textarea { min-height: 68px; resize: vertical; }
+
+    .upload-trigger {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 14px 12px; border-radius: 12px;
+      border: 1.5px dashed #93c5fd; background: #f8fafc;
+      color: var(--accent); font-size: 14.5px; font-weight: 600; cursor: pointer; text-align: center;
+    }
+    .upload-trigger:active { background: #eff6ff; }
+    .upload-input { display: none; }
+
+    .odo-preview-wrap {
+      position: relative; margin-top: 10px; border-radius: 12px; overflow: hidden;
+      border: 1px solid var(--border); background: #000; max-height: 220px; display: none;
+    }
+    .odo-preview-wrap img { width: 100%; max-height: 220px; object-fit: contain; display: block; }
+
+    .thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .thumb {
+      position: relative; width: 82px; height: 82px; border-radius: 10px; overflow: hidden;
+      border: 1px solid var(--border); background: #000;
+    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb-del {
+      position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%;
+      border: none; background: rgba(220, 38, 38, 0.92); color: #fff; font-size: 15px;
+      line-height: 24px; text-align: center; cursor: pointer; font-weight: 700;
+    }
+
+    .checklist {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px;
+      font-size: 12px; color: #4b5563;
+    }
+    .checklist span {
+      background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px 8px;
+    }
+
+    .btn-submit {
+      width: 100%; padding: 15px; border: none; border-radius: 14px;
+      background: var(--accent); color: #ffffff; font-size: 16px; font-weight: 700;
+      cursor: pointer; box-shadow: 0 3px 10px rgba(29, 78, 216, 0.25);
+    }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .status-box {
+      padding: 12px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.45;
+      margin-bottom: 12px; display: none;
+    }
+    .status-info { background: #e0f2fe; color: #075985; display: block; }
+    .status-err { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; display: block; }
+
+    .success-card {
+      background: var(--card); border-radius: 16px; padding: 22px 16px; text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: none;
+    }
+    .success-card h2 { font-size: 19px; color: #16a34a; margin-bottom: 10px; }
+    .res-box {
+      text-align: left; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px;
+      padding: 12px; font-size: 13.5px; line-height: 1.55; margin-bottom: 14px; color: #1f2937;
+    }
+    .oil-warn { color: #b45309; font-weight: 700; }
+    .oil-bad { color: #dc2626; font-weight: 700; }
+    .oil-ok { color: #15803d; font-weight: 700; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card hero">
+      <h1>📸 Еженедельный фотоконтроль ТС</h1>
+      <p>г. Красноярск • Загрузите чёткое фото приборной панели с общим пробегом (<strong>ODO</strong>) и фотографии кузова/салона. Пробег считается автоматически.</p>
+    </div>
+
+    <div id="statusBox" class="status-box"></div>
+
+    <div id="successCard" class="success-card">
+      <h2>✅ Фотоконтроль принят!</h2>
+      <div id="successDetails" class="res-box"></div>
+      <button type="button" class="btn-submit" onclick="window.location.reload()">Отправить ещё один отчёт</button>
+    </div>
+
+    <form id="pcForm" novalidate>
+      <div class="card">
+        <div class="section-title">1. Автомобиль и водитель</div>
+
+        <div class="field">
+          <label class="lbl" for="plateSelect">Выберите автомобиль <span class="req">*</span></label>
+          <select id="plateSelect" required>
+            <option value="">Загрузка списка автомобилей...</option>
+          </select>
+          <div id="carInfoPill" class="car-info-pill"></div>
+        </div>
+
+        <div class="field">
+          <label class="lbl" for="driverName">ФИО водителя <span class="req">*</span></label>
+          <input type="text" id="driverName" placeholder="Иванов Иван Иванович" required>
+        </div>
+
+        <div class="field">
+          <label class="lbl" for="driverMileage">Текущий пробег по одометру (км)</label>
+          <input type="number" inputmode="numeric" id="driverMileage" placeholder="Например: 359450">
+          <div class="hint">Необязательно, но помогает системе перепроверить показания ИИ с фото приборной панели.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">2. Фото приборной панели (одометр) <span class="req">*</span></div>
+
+        <div class="field">
+          <label class="upload-trigger" for="odoInput">🛣️ Сделать фото приборки (ODO)</label>
+          <input type="file" id="odoInput" class="upload-input" accept="image/*">
+          <div class="hint">
+            Включите зажигание, переключите экран на <strong>общий пробег (ODO)</strong> (не TRIP A/B) и сделайте чёткое фото без бликов.
+          </div>
+          <div id="odoPreviewWrap" class="odo-preview-wrap">
+            <img id="odoPreviewImg" src="" alt="Приборная панель">
+            <button type="button" class="thumb-del" id="odoDelBtn" title="Удалить">×</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">3. Фото кузова и салона <span class="req">*</span></div>
+
+        <div class="field">
+          <label class="upload-trigger" for="bodyInput">📷 Добавить фото кузова / салона (до 6 шт.)</label>
+          <input type="file" id="bodyInput" class="upload-input" accept="image/*" multiple>
+          <div class="checklist">
+            <span>1. Спереди + капот</span>
+            <span>2. Сзади + бампер</span>
+            <span>3. Левый бок</span>
+            <span>4. Правый бок</span>
+            <span>5. Салон (перед/зад)</span>
+            <span>6. Повреждения (если есть)</span>
+          </div>
+          <div id="bodyThumbs" class="thumbs"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">4. Замечания по автомобилю</div>
+        <div class="field">
+          <label class="lbl" for="comment">Комментарий (если есть жалобы / стуки / лампы)</label>
+          <textarea id="comment" placeholder="Например: всё исправно, либо — перегорела правая лампа ближнего света, стук в подвеске..."></textarea>
+        </div>
+      </div>
+
+      <button type="submit" id="submitBtn" class="btn-submit">📸 Отправить фотоконтроль</button>
+    </form>
+  </div>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxjqMGkJBR045NHEBrVlgEWOYeCuqmMqOmTMwMJFkR0UKG90HNYVtuktVdDfcwS27x5YQ/exec';
+
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (tg) { tg.ready(); tg.expand(); }
+
+    let fleetCars = [];
+    let odoPhoto = null;
+    let bodyPhotos = [];
+    const BODY_MAX = 6;
+
+    function showStatus(type, msg) {
+      const box = document.getElementById('statusBox');
+      box.className = 'status-box ' + (type === 'err' ? 'status-err' : 'status-info');
+      box.textContent = msg;
+      box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function hideStatus() {
+      const box = document.getElementById('statusBox');
+      box.className = 'status-box';
+      box.textContent = '';
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function fmtNum(n) {
+      return Number(n).toLocaleString('ru-RU');
+    }
+
+    function callJsonp(action, extraParams, timeoutMs) {
+      return new Promise((resolve, reject) => {
+        const cb = '__pcJsonp_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+        const s = document.createElement('script');
+        let done = false;
+        const clean = () => {
+          if (s.parentNode) s.parentNode.removeChild(s);
+          try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+        };
+        const timer = setTimeout(() => {
+          if (done) return;
+          done = true; clean();
+          reject(new Error('Таймаут ответа сервера.'));
+        }, timeoutMs || 15000);
+
+        window[cb] = (json) => {
+          if (done) return;
+          done = true; clearTimeout(timer); clean();
+          resolve(json);
+        };
+        s.onerror = () => {
+          if (done) return;
+          done = true; clearTimeout(timer); clean();
+          reject(new Error('Ошибка сети при загрузке данных.'));
+        };
+        const qs = new URLSearchParams({ action, callback: cb, _t: String(Date.now()), ...extraParams });
+        s.src = API_URL + '?' + qs.toString();
+        document.head.appendChild(s);
+      });
+    }
+
+    function updateSelectedCarInfo() {
+      const plate = document.getElementById('plateSelect').value;
+      const pill = document.getElementById('carInfoPill');
+      const drvInput = document.getElementById('driverName');
+      const car = fleetCars.find(c => c.plate === plate);
+      if (!car) {
+        pill.style.display = 'none';
+        return;
+      }
+      const kmTxt = car.currentMileage ? `${fmtNum(car.currentMileage)} км` : 'не указан';
+      pill.innerHTML =
+        `🚗 <strong>${escapeHtml(car.plate)}</strong> — ${escapeHtml(car.model || '')}${car.code ? ` (${escapeHtml(car.code)})` : ''}<br>` +
+        `🛣️ Прошлый пробег в базе: <strong>${kmTxt}</strong>` +
+        (car.driverName ? `<br>👤 Закреплённый водитель: <strong>${escapeHtml(car.driverName)}</strong>` : '');
+      pill.style.display = 'block';
+
+      if (car.driverName && !drvInput.dataset.userEdited) {
+        drvInput.value = car.driverName;
+      }
+    }
+
+    document.getElementById('driverName').addEventListener('input', (e) => {
+      e.target.dataset.userEdited = e.target.value.trim() ? '1' : '';
+    });
+    document.getElementById('plateSelect').addEventListener('change', () => {
+      document.getElementById('driverName').dataset.userEdited = '';
+      updateSelectedCarInfo();
+    });
+
+    async function loadCars() {
+      const sel = document.getElementById('plateSelect');
+      try {
+        let json;
+        try {
+          const r = await fetch(API_URL + '?action=photoControlInit&_t=' + Date.now(), { credentials: 'omit', redirect: 'follow' });
+          json = await r.json();
+        } catch (e) {
+          json = await callJsonp('photoControlInit', {});
+        }
+        if (!json || !json.ok || !json.data) throw new Error('Не удалось загрузить автопарк.');
+
+        fleetCars = json.data.cars || [];
+        sel.innerHTML = '<option value="">— Выберите автомобиль —</option>';
+        fleetCars.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.plate;
+          opt.textContent = `${c.plate} — ${c.model}${c.code ? ' (' + c.code + ')' : ''}`;
+          sel.appendChild(opt);
+        });
+
+        const urlPlate = new URLSearchParams(window.location.search).get('plate');
+        if (urlPlate) {
+          const norm = urlPlate.trim().toUpperCase();
+          const match = fleetCars.find(c => String(c.plate || '').toUpperCase() === norm);
+          if (match) {
+            sel.value = match.plate;
+            updateSelectedCarInfo();
+          }
+        }
+      } catch (err) {
+        sel.innerHTML = '<option value="">Ошибка загрузки — обновите страницу</option>';
+        showStatus('err', 'Не удалось загрузить список машин: ' + (err.message || err));
+      }
+    }
+
+    function compressImageFile(file, maxSide, quality) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Не удалось прочитать файл ' + file.name));
+        reader.onload = () => {
+          const dataUrl = reader.result;
+          const img = new Image();
+          img.onerror = () => {
+            resolve({ base64: String(dataUrl).split(',')[1] || '', mimeType: file.type || 'image/jpeg', previewUrl: dataUrl });
+          };
+          img.onload = () => {
+            try {
+              let w = img.width, h = img.height;
+              if (w > maxSide || h > maxSide) {
+                if (w >= h) { h = Math.round(h * maxSide / w); w = maxSide; }
+                else { w = Math.round(w * maxSide / h); h = maxSide; }
+              }
+              const canvas = document.createElement('canvas');
+              canvas.width = w;
+              canvas.height = h;
+              canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+              const outUrl = canvas.toDataURL('image/jpeg', quality);
+              resolve({ base64: outUrl.split(',')[1], mimeType: 'image/jpeg', previewUrl: outUrl });
+            } catch (e) {
+              resolve({ base64: String(dataUrl).split(',')[1] || '', mimeType: file.type || 'image/jpeg', previewUrl: dataUrl });
+            }
+          };
+          img.src = dataUrl;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    document.getElementById('odoInput').addEventListener('change', async (e) => {
+      const file = (e.target.files || [])[0];
+      e.target.value = '';
+      if (!file) return;
+      try {
+        odoPhoto = await compressImageFile(file, 1400, 0.80);
+        document.getElementById('odoPreviewImg').src = odoPhoto.previewUrl;
+        document.getElementById('odoPreviewWrap').style.display = 'block';
+        hideStatus();
+      } catch (err) {
+        showStatus('err', err.message || String(err));
+      }
+    });
+
+    document.getElementById('odoDelBtn').addEventListener('click', () => {
+      odoPhoto = null;
+      document.getElementById('odoPreviewImg').src = '';
+      document.getElementById('odoPreviewWrap').style.display = 'none';
+    });
+
+    function renderBodyThumbs() {
+      const box = document.getElementById('bodyThumbs');
+      box.innerHTML = '';
+      bodyPhotos.forEach((item, idx) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'thumb';
+        wrap.innerHTML = `<img src="${item.previewUrl}" alt="Фото кузова"><button type="button" class="thumb-del" title="Удалить">×</button>`;
+        wrap.querySelector('.thumb-del').addEventListener('click', () => {
+          bodyPhotos.splice(idx, 1);
+          renderBodyThumbs();
+        });
+        box.appendChild(wrap);
+      });
+    }
+
+    document.getElementById('bodyInput').addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files || []);
+      e.target.value = '';
+      for (const f of files) {
+        if (bodyPhotos.length >= BODY_MAX) {
+          showStatus('err', `Можно загрузить не более ${BODY_MAX} фото кузова и салона.`);
+          break;
+        }
+        try {
+          bodyPhotos.push(await compressImageFile(f, 1280, 0.74));
+        } catch (err) {
+          showStatus('err', err.message || String(err));
+        }
+      }
+      renderBodyThumbs();
+    });
+
+    async function pollPcResult(submissionId) {
+      for (let attempt = 0; attempt < 15; attempt++) {
+        await new Promise(r => setTimeout(r, 3000));
+        try {
+          const check = await callJsonp('checkPhotoControl', { submissionId }, 10000);
+          if (check && check.ok && check.data && check.data.found) return check.data.result || {};
+        } catch (e) {}
+      }
+      return null;
+    }
+
+    function showSuccess(res) {
+      hideStatus();
+      document.getElementById('pcForm').classList.add('hidden');
+      const box = document.getElementById('successDetails');
+
+      let oilHtml = '';
+      if (res && res.oilRemainingKm !== null && res.oilRemainingKm !== undefined) {
+        const rem = Number(res.oilRemainingKm);
+        if (rem <= 0) oilHtml = `<br>🛢️ Замена масла: <span class="oil-bad">СРОЧНО! Перекат +${fmtNum(Math.abs(rem))} км</span>`;
+        else if (rem <= 1000) oilHtml = `<br>🛢️ До замены масла: <span class="oil-warn">осталось ${fmtNum(rem)} км (пора записаться)</span>`;
+        else oilHtml = `<br>🛢️ До замены масла: <span class="oil-ok">осталось ${fmtNum(rem)} км</span>`;
+      }
+
+      box.innerHTML =
+        `📋 Отчёт: <strong>${escapeHtml(res.reportId || 'принят')}</strong><br>` +
+        `🚗 Автомобиль: <strong>${escapeHtml(res.plate || '—')}</strong><br>` +
+        `🤖 Пробег по фото (ИИ): <strong>${res.aiMileage ? fmtNum(res.aiMileage) + ' км' : 'проверит арендодатель'}</strong><br>` +
+        `🛣️ Записанный пробег: <strong>${res.finalMileage ? fmtNum(res.finalMileage) + ' км' : '—'}</strong>` +
+        oilHtml +
+        (res.condition ? `<br><br>🔍 <em>${escapeHtml(res.condition)}</em>` : '');
+
+      document.getElementById('successCard').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.getElementById('pcForm').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      hideStatus();
+
+      const plate = document.getElementById('plateSelect').value.trim();
+      const driverName = document.getElementById('driverName').value.trim();
+      const driverMileage = document.getElementById('driverMileage').value.trim();
+      const comment = document.getElementById('comment').value.trim();
+
+      if (!plate) return showStatus('err', 'Выберите автомобиль из списка.');
+      if (!driverName) return showStatus('err', 'Укажите ФИО водителя.');
+      if (!odoPhoto) return showStatus('err', 'Обязательно прикрепите фото приборной панели с пробегом (ODO).');
+      if (!bodyPhotos.length) return showStatus('err', 'Прикрепите хотя бы 1 фото кузова (рекомендуется 4–5 фото со всех сторон и салон).');
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Анализируем пробег и сохраняем...';
+      showStatus('info', 'Загружаем фотографии и считываем одометр через ИИ (обычно 10–25 секунд). Не закрывайте страницу...');
+
+      const submissionId = 'pc_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+      const payload = {
+        type: 'photocontrol',
+        submissionId,
+        plate,
+        driverName,
+        driverMileage,
+        comment,
+        odoPhoto: { base64: odoPhoto.base64, mimeType: odoPhoto.mimeType },
+        bodyPhotos: bodyPhotos.map(x => ({ base64: x.base64, mimeType: x.mimeType }))
+      };
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload),
+          redirect: 'follow',
+          credentials: 'omit'
+        });
+        const text = await res.text();
+        const json = JSON.parse(text);
+        if (!json.ok) throw new Error(json.error || 'Ошибка отправки фотоконтроля.');
+        showSuccess(json.data);
+      } catch (err) {
+        showStatus('info', 'Проверяем сохранение отчёта на сервере...');
+        const polled = await pollPcResult(submissionId);
+        if (polled) {
+          showSuccess(polled);
+        } else {
+          btn.disabled = false;
+          btn.textContent = '📸 Отправить фотоконтроль';
+          showStatus('err', 'Не удалось получить подтверждение: ' + (err.message || err) + '. Проверьте интернет и попробуйте снова.');
+        }
+      }
+    });
+
+    window.onload = loadCars;
+  </script>
+</body>
+</html>
