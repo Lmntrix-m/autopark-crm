@@ -73,6 +73,7 @@
       font-size: 12.5px; font-weight: 700; cursor: pointer;
     }
     .btn-evening.bl-add-btn { border-color: rgba(220, 38, 38, 0.45); color: #dc2626; }
+    .btn-evening.green-bar-btn { border-color: rgba(22, 163, 74, 0.45); color: #16a34a; }
 
     .card { background: var(--card-bg); border-radius: 12px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
     .card.card-bl-alert { border: 1.5px solid #dc2626; }
@@ -112,6 +113,31 @@
       border: 1px solid rgba(128,128,128,0.35); background: var(--card-bg); color: var(--text);
       font-size: 11.5px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
     }
+
+    .fin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .fin-kpi { background: var(--card-bg); border-radius: 11px; padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .fin-kpi-lbl { font-size: 11px; color: var(--hint); margin-bottom: 3px; }
+    .fin-kpi-val { font-size: 16px; font-weight: 700; }
+    .fin-kpi-sub { font-size: 11px; color: var(--hint); margin-top: 2px; }
+    .npd-bar-track {
+      width: 100%; height: 9px; border-radius: 99px; background: rgba(128,128,128,0.22);
+      overflow: hidden; margin: 7px 0;
+    }
+    .npd-bar-fill { height: 100%; border-radius: 99px; background: #16a34a; transition: width 0.3s; }
+    .npd-bar-fill.warn { background: #d97706; }
+    .npd-bar-fill.bad { background: #dc2626; }
+
+    .fin-row {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+      padding: 7px 0; border-bottom: 1px solid rgba(128,128,128,0.16); font-size: 12.5px;
+    }
+    .fin-row:last-child { border-bottom: none; }
+    .fin-row-left { flex: 1; min-width: 0; }
+    .fin-row-sub { font-size: 11px; color: var(--hint); margin-top: 2px; }
+    .fin-row-right { text-align: right; white-space: nowrap; font-weight: 700; }
+
+    .gps-cmds { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+    .gps-hint { font-size: 11px; color: var(--hint); margin-top: 6px; line-height: 1.4; }
 
     .bl-warning-box {
       padding: 8px 10px; border-radius: 8px; background: rgba(220, 38, 38, 0.12);
@@ -242,6 +268,7 @@
     <div class="tabs" id="navTabs">
       <button class="tab active" data-tab="fleet" onclick="switchTab('fleet')">Авто</button>
       <button class="tab hidden" id="tabDriversBtn" data-tab="drivers" onclick="switchTab('drivers')">Водители</button>
+      <button class="tab hidden" id="tabFinanceBtn" data-tab="finance" onclick="switchTab('finance')">📊 Финансы</button>
       <button class="tab hidden" id="tabModBtn" data-tab="moderation" onclick="switchTab('moderation')">
         Проверка <span id="modBadge" class="tab-badge hidden">0</span>
       </button>
@@ -278,6 +305,55 @@
         <button class="chip" onclick="filterDrivers('debt', this)">С долгом / штрафом</button>
       </div>
       <div id="driversList"></div>
+    </div>
+
+    <div id="financeSection" class="hidden">
+      <div class="evening-bar">
+        <select id="finPeriodSelect" onchange="loadFinance()" style="flex:1;"></select>
+        <button class="btn-save" style="white-space:nowrap;" onclick="toggleQuickExpForm()">➕ Расход</button>
+      </div>
+
+      <div id="quickExpForm" class="card hidden">
+        <div class="pay-subhead" style="margin-top:0;">🔧 Новый расход / ремонт</div>
+        <div class="doc-edit">
+          <div class="field-group full">
+            <label class="field-lbl" for="qexp_plate">Автомобиль</label>
+            <select id="qexp_plate"></select>
+          </div>
+          <div class="field-group">
+            <label class="field-lbl" for="qexp_cat">Категория</label>
+            <select id="qexp_cat">
+              <option value="Ремонт">Ремонт</option>
+              <option value="ТО / Масло">ТО / Масло</option>
+              <option value="Шины / Шиномонтаж">Шины / Шиномонтаж</option>
+              <option value="Запчасти">Запчасти</option>
+              <option value="ОСАГО / Страховка">ОСАГО / Страховка</option>
+              <option value="Мойка / Химчистка">Мойка / Химчистка</option>
+              <option value="GPS / Связь Tele2">GPS / Связь Tele2</option>
+              <option value="Прочее">Прочее</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-lbl" for="qexp_amt">Сумма (₽) *</label>
+            <input type="number" inputmode="numeric" id="qexp_amt" class="field-input" placeholder="3500">
+          </div>
+          <div class="field-group">
+            <label class="field-lbl" for="qexp_date">Дата</label>
+            <input type="date" id="qexp_date" class="field-input">
+          </div>
+          <div class="field-group">
+            <label class="field-lbl" for="qexp_km">Пробег (км)</label>
+            <input type="number" inputmode="numeric" id="qexp_km" class="field-input" placeholder="Необязательно">
+          </div>
+          <div class="field-group full">
+            <label class="field-lbl" for="qexp_desc">Описание / сервис</label>
+            <input type="text" id="qexp_desc" class="field-input" placeholder="Напр. Замена колодок + масло 0W-20">
+          </div>
+          <button class="btn-oil-done btn-full" onclick="saveQuickExpense(this)">💾 Записать расход</button>
+        </div>
+      </div>
+
+      <div id="financeContent"><div class="msg">Загрузка финансовой сводки...</div></div>
     </div>
 
     <div id="moderationSection" class="hidden">
@@ -344,6 +420,9 @@
     </div>
 
     <div id="oilSection" class="hidden">
+      <div class="evening-bar">
+        <button class="btn-evening green-bar-btn" onclick="sendWeeklyPhotoControlNow(this)">📸 Разослать фотоконтроль всем водителям (в бот)</button>
+      </div>
       <div class="filters">
         <button class="chip active" onclick="filterOil('all', this)">По порядку парка</button>
         <button class="chip" onclick="filterOil('urgent', this)">Сначала срочные</button>
@@ -358,6 +437,7 @@
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbxjqMGkJBR045NHEBrVlgEWOYeCuqmMqOmTMwMJFkR0UKG90HNYVtuktVdDfcwS27x5YQ/exec';
     const BOT_USERNAME = 'Documents_TS_bot';
+    const PHOTOCONTROL_BASE_URL = 'https://lmntrix-m.github.io/autopark-crm/photocontrol.html?v=20261121_1';
     const OWNER_SBP_PHONE = '+7 908 020-00-17';
     const OIL_INTERVAL_KM = 7000;
     const OIL_WARN_KM = 1000;
@@ -379,6 +459,7 @@
     let currentOilFilter = 'all';
     let currentTab = 'fleet';
     let preferJsonp = false;
+    let finPeriodsInitialized = false;
 
     function askConfirm(message) {
       return new Promise(resolve => {
@@ -419,6 +500,20 @@
         if (ok) return true;
       } catch (e) {}
       return false;
+    }
+
+    async function launchGpsSms(simRaw, cmdText, title, requireConfirm) {
+      const ph = formatPhoneIntl(simRaw);
+      if (!ph) return notifyUser('Сначала укажите и сохраните номер SIM-карты Tele2 трекера.');
+      if (requireConfirm) {
+        const ok = await askConfirm(`⚠️ ${title}\n\nБудет открыто SMS на номер +${ph} с командой:\n${cmdText}\n\nПродолжить?`);
+        if (!ok) return;
+      }
+      await copyToClipboard(cmdText);
+      const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+      const sep = isIos ? '&' : '?';
+      const smsUrl = `sms:+${ph}${sep}body=${encodeURIComponent(cmdText)}`;
+      window.location.href = smsUrl;
     }
 
     function resolveInitData() {
@@ -580,7 +675,6 @@
 
     function updateBadges(pendingCount, newFinesCount, blacklistCount) {
       const canMod = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
-
       const setBadge = (elId, val) => {
         const el = document.getElementById(elId);
         if (!el) return;
@@ -588,7 +682,6 @@
         if (!canMod || n <= 0) { el.classList.add('hidden'); return; }
         el.textContent = String(n); el.classList.remove('hidden');
       };
-
       setBadge('modBadge', pendingCount);
       setBadge('finesBadge', newFinesCount);
       setBadge('blBadge', blacklistCount);
@@ -637,6 +730,32 @@
       return { state: 'ok', cur, last, next, rem, label: `Ост. ${rem.toLocaleString('ru-RU')} км`, pillClass: 'st-free' };
     }
 
+    function initFinanceSelectors() {
+      if (!finPeriodsInitialized) {
+        const sel = document.getElementById('finPeriodSelect');
+        const monthsRu = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+        const now = new Date();
+        const curY = now.getFullYear(), curM = now.getMonth();
+        sel.innerHTML = '';
+        for (let offset = 0; offset < 12; offset++) {
+          const d = new Date(curY, curM - offset, 1);
+          const y = d.getFullYear(), m = d.getMonth();
+          const val = `${y}-${String(m + 1).padStart(2, '0')}`;
+          const opt = document.createElement('option');
+          opt.value = val; opt.textContent = `${monthsRu[m]} ${y}`;
+          sel.appendChild(opt);
+        }
+        const optYear = document.createElement('option');
+        optYear.value = `${curY}-all`; optYear.textContent = `Весь ${curY} год`;
+        sel.appendChild(optYear);
+        document.getElementById('qexp_date').value = todayIsoLocal();
+        finPeriodsInitialized = true;
+      }
+      const plateSel = document.getElementById('qexp_plate');
+      plateSel.innerHTML = '<option value="ОБЩИЕ">ОБЩИЕ (расходы автопарка)</option>' +
+        allCars.map(c => `<option value="${escapeHtml(c.plate)}">${escapeHtml(c.plate)} — ${escapeHtml(c.model)}${c.code ? ' (' + escapeHtml(c.code) + ')' : ''}</option>`).join('');
+    }
+
     async function loadInitial() {
       const box = document.getElementById('statusMsg');
       box.className = 'msg'; box.textContent = 'Загрузка данных автопарка...'; box.classList.remove('hidden');
@@ -657,12 +776,14 @@
         document.getElementById('stService').textContent = data.counts.service;
 
         if (currentUser.role === 'admin' || currentUser.role === 'manager') {
-          ['tabDriversBtn', 'tabModBtn', 'tabFinesBtn', 'tabBlBtn'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+          ['tabDriversBtn', 'tabFinanceBtn', 'tabModBtn', 'tabFinesBtn', 'tabBlBtn'].forEach(id => document.getElementById(id).classList.remove('hidden'));
         }
         updateBadges(data.pendingCount || 0, data.newFinesCount || 0, data.blacklistCount || 0);
+        initFinanceSelectors();
 
         renderCars(); renderOsago(); renderTo(); renderOil();
         if (currentTab === 'drivers') loadDrivers();
+        if (currentTab === 'finance') loadFinance();
         if (currentTab === 'moderation') loadPendingReviews();
         if (currentTab === 'fines') loadFines();
         if (currentTab === 'blacklist') loadBlacklist();
@@ -678,6 +799,16 @@
       finally { btn.textContent = old; btn.disabled = false; }
     }
 
+    async function sendWeeklyPhotoControlNow(btn) {
+      if (!(await askConfirm('Отправить всем активным водителям (с подключённым ботом) напоминание и кнопку еженедельного фотоконтроля?'))) return;
+      const old = btn.textContent; btn.textContent = 'Отправляем...'; btn.disabled = true;
+      try {
+        const res = await callApi('sendWeeklyPhotoControl', {}, 30000);
+        notifyUser(`✅ Рассылка фотоконтроля завершена!\nОтправлено в бот: ${res.sent || 0}\nБез бота: ${res.noBot || 0}`);
+      } catch (err) { showError(err); }
+      finally { btn.textContent = old; btn.disabled = false; }
+    }
+
     function filterCars(filter, btn) { currentFilter = filter; document.querySelectorAll('#fleetSection .chip').forEach(c => c.classList.remove('active')); if (btn) btn.classList.add('active'); renderCars(); }
     function filterDrivers(filter, btn) { currentDriverFilter = filter; document.querySelectorAll('#driversSection .chip').forEach(c => c.classList.remove('active')); if (btn) btn.classList.add('active'); renderDrivers(); }
     function filterFines(filter, btn) { currentFineFilter = filter; document.querySelectorAll('#finesSection .chip').forEach(c => c.classList.remove('active')); if (btn) btn.classList.add('active'); renderFines(); }
@@ -685,7 +816,7 @@
     function filterTo(filter, btn) { currentToFilter = filter; document.querySelectorAll('#toSection .chip').forEach(c => c.classList.remove('active')); if (btn) btn.classList.add('active'); renderTo(); }
     function filterOil(filter, btn) { currentOilFilter = filter; document.querySelectorAll('#oilSection .chip').forEach(c => c.classList.remove('active')); if (btn) btn.classList.add('active'); renderOil(); }
 
-    /* ==================== АВТОПАРК ==================== */
+    /* ==================== АВТОПАРК + БЫСТРЫЙ РАСХОД + GPS SINOTRACK ==================== */
 
     function renderCars() {
       const list = document.getElementById('carsList'); list.innerHTML = '';
@@ -693,18 +824,57 @@
       const filtered = allCars.map((c, idx) => ({ car: c, order: idx + 1 })).filter(item => currentFilter === 'all' || String(item.car.status || '').toLowerCase().trim() === currentFilter);
       if (!filtered.length) { list.innerHTML = '<div class="msg">Нет автомобилей с выбранным статусом</div>'; return; }
 
+      const todayIso = todayIsoLocal();
+
       filtered.forEach((item, idx) => {
         const c = item.car, card = document.createElement('div'); card.className = 'card';
-        const selectId = 'st_sel_' + idx, p = 'car_ed_' + idx + '_';
+        const selectId = 'st_sel_' + idx, p = 'car_ed_' + idx + '_', ep = 'cexp_' + idx + '_', gp = 'cgps_' + idx + '_';
         const stsDisplay = (c.sts || '—') + (c.stsDate ? (' от ' + c.stsDate) : '');
         const stsDateIso = dateStrToIso(c.stsDate);
+        const hasGps = !!(c.gpsSim || c.gpsImei);
+        const pcBadge = c.lastPhotoControl ? ` • 📸 ${escapeHtml(c.lastPhotoControl)}` : '';
 
         let editHtml = '';
         if (canEdit) {
           const opts = ['Свободен', 'В аренде', 'Бронь', 'На ТО'].map(s => `<option value="${s}" ${s === c.status ? 'selected' : ''}>${s}</option>`).join('');
           editHtml = `
             <div class="actions"><select id="${selectId}">${opts}</select><button class="btn-save js-st-save">Сохранить</button></div>
-            <div class="actions"><button class="btn-copy js-car-toggle" style="width:100%;">✏️ Изменить данные ТС (№, СТС, кузов, модель)</button></div>
+            <div class="actions">
+              <button class="btn-copy js-car-toggle" style="flex:1;">✏️ ТС</button>
+              <button class="btn-warn js-exp-toggle" style="flex:1;">🔧 Расход</button>
+              <button class="btn-tg js-gps-toggle" style="flex:1;">🛰️ GPS${hasGps ? ' ✓' : ''}</button>
+            </div>
+
+            <div class="expand-panel hidden js-exp-panel">
+              <div class="pay-subhead" style="margin-top:0;">🔧 Записать расход / ремонт (${escapeHtml(c.plate)})</div>
+              <div class="doc-edit">
+                <div class="field-group"><label class="field-lbl" for="${ep}cat">Категория</label><select id="${ep}cat"><option value="Ремонт">Ремонт</option><option value="ТО / Масло">ТО / Масло</option><option value="Шины / Шиномонтаж">Шины / Шиномонтаж</option><option value="Запчасти">Запчасти</option><option value="ОСАГО / Страховка">ОСАГО / Страховка</option><option value="Мойка / Химчистка">Мойка / Химчистка</option><option value="GPS / Связь Tele2">GPS / Связь Tele2</option><option value="Прочее">Прочее</option></select></div>
+                <div class="field-group"><label class="field-lbl" for="${ep}amt">Сумма (₽) *</label><input type="number" inputmode="numeric" id="${ep}amt" class="field-input" placeholder="2500"></div>
+                <div class="field-group"><label class="field-lbl" for="${ep}date">Дата</label><input type="date" id="${ep}date" class="field-input" value="${todayIso}"></div>
+                <div class="field-group"><label class="field-lbl" for="${ep}km">Пробег (км)</label><input type="number" inputmode="numeric" id="${ep}km" class="field-input" value="${c.currentMileage !== null ? c.currentMileage : ''}"></div>
+                <div class="field-group full"><label class="field-lbl" for="${ep}desc">Что сделано / сервис</label><input type="text" id="${ep}desc" class="field-input" placeholder="Напр. Замена масла + фильтр"></div>
+                <button class="btn-oil-done btn-full js-exp-save">💾 Сохранить расход</button>
+              </div>
+            </div>
+
+            <div class="expand-panel hidden js-gps-panel">
+              <div class="pay-subhead" style="margin-top:0;">🛰️ GPS-трекер SinoTrack ST-907M (Tele2)</div>
+              <div class="doc-edit">
+                <div class="field-group"><label class="field-lbl" for="${gp}imei">IMEI / ID трекера</label><input type="text" inputmode="numeric" id="${gp}imei" class="field-input" value="${escapeHtml(c.gpsImei || '')}" placeholder="9170..."></div>
+                <div class="field-group"><label class="field-lbl" for="${gp}sim">Номер SIM (Tele2)</label><input type="tel" id="${gp}sim" class="field-input" value="${escapeHtml(c.gpsSim || '')}" placeholder="+7950..."></div>
+                <div class="field-group"><label class="field-lbl" for="${gp}pass">Пароль SMS</label><input type="text" inputmode="numeric" id="${gp}pass" class="field-input" value="${escapeHtml(c.gpsPass || '0000')}" placeholder="0000"></div>
+                <div class="field-group" style="justify-content:flex-end;"><button class="btn-save js-gps-save" style="height:36px;">💾 Сохранить GPS</button></div>
+              </div>
+              <div class="gps-cmds">
+                <button class="btn-tg js-gps-loc">📍 Координаты (669)</button>
+                <button class="btn-copy js-gps-stat">ℹ️ Статус (RCONF)</button>
+                <button class="btn-danger js-gps-stop">🛑 Заглушить (940)</button>
+                <button class="btn-oil-done js-gps-start">✅ Разблокировать (941)</button>
+                <button class="btn-copy btn-full js-gps-web" style="grid-column:span 2;">🌐 Открыть SinoTrack Pro</button>
+              </div>
+              <div class="gps-hint">Кнопки сразу открывают SMS на SIM-карту трекера и копируют команду в буфер обмена.</div>
+            </div>
+
             <div class="expand-panel hidden js-car-panel">
               <div class="doc-edit">
                 <div class="field-group"><label class="field-lbl" for="${p}plate">Гос. номер ТС</label><input type="text" id="${p}plate" class="field-input" value="${escapeHtml(c.plate || '')}"></div>
@@ -727,14 +897,40 @@
         card.innerHTML = `
           <div class="card-top"><span class="plate"><span class="order-num">${item.order}.</span>${escapeHtml(c.plate)}</span><span class="status-pill ${statusClass(c.status)}">${escapeHtml(c.status || '—')}</span></div>
           <div class="model">${escapeHtml(c.model || '')}${c.code ? ' • ' + escapeHtml(c.code) : ''} (${escapeHtml(c.year || '—')} г., ${escapeHtml(c.color || '—')})</div>
-          <div class="meta">Кузов: <strong>${escapeHtml(c.frame || '—')}</strong> • СТС: <strong>${escapeHtml(stsDisplay)}</strong><br>Тариф: <strong>${escapeHtml(fmtUnit(c.dailyRate, '₽'))}/сут</strong> • Депозит: <strong>${escapeHtml(fmtUnit(c.deposit, '₽'))}</strong> • Лимит: ${escapeHtml(fmtUnit(c.mileageLimit, 'км'))}</div>
+          <div class="meta">Кузов: <strong>${escapeHtml(c.frame || '—')}</strong> • СТС: <strong>${escapeHtml(stsDisplay)}</strong><br>Тариф: <strong>${escapeHtml(fmtUnit(c.dailyRate, '₽'))}/сут</strong> • Депозит: <strong>${escapeHtml(fmtUnit(c.deposit, '₽'))}</strong> • Пробег: <strong>${escapeHtml(fmtKm(c.currentMileage))}</strong>${pcBadge}</div>
           ${editHtml}`;
         list.appendChild(card);
 
         if (canEdit) {
+          const panels = {
+            car: card.querySelector('.js-car-panel'),
+            exp: card.querySelector('.js-exp-panel'),
+            gps: card.querySelector('.js-gps-panel')
+          };
+          const toggleCarPanel = (key) => {
+            const opening = panels[key].classList.contains('hidden');
+            Object.keys(panels).forEach(k => panels[k].classList.add('hidden'));
+            if (opening) panels[key].classList.remove('hidden');
+          };
+
           card.querySelector('.js-st-save').addEventListener('click', (e) => changeStatus(c.plate, selectId, e.target));
-          card.querySelector('.js-car-toggle').addEventListener('click', () => card.querySelector('.js-car-panel').classList.toggle('hidden'));
+          card.querySelector('.js-car-toggle').addEventListener('click', () => toggleCarPanel('car'));
+          card.querySelector('.js-exp-toggle').addEventListener('click', () => toggleCarPanel('exp'));
+          card.querySelector('.js-gps-toggle').addEventListener('click', () => toggleCarPanel('gps'));
+
           card.querySelector('.js-car-save').addEventListener('click', (e) => saveCarCard(c, p, e.target));
+          card.querySelector('.js-exp-save').addEventListener('click', (e) => saveCarExpense(c, ep, e.target));
+          card.querySelector('.js-gps-save').addEventListener('click', (e) => saveCarGps(c, gp, e.target));
+
+          const getGpsCreds = () => ({
+            sim: document.getElementById(gp + 'sim').value.trim(),
+            pass: document.getElementById(gp + 'pass').value.trim() || '0000'
+          });
+          card.querySelector('.js-gps-loc').addEventListener('click', () => { const g = getGpsCreds(); launchGpsSms(g.sim, `669${g.pass}`, 'Запрос координат', false); });
+          card.querySelector('.js-gps-stat').addEventListener('click', () => { const g = getGpsCreds(); launchGpsSms(g.sim, 'RCONF', 'Проверка статуса трекера', false); });
+          card.querySelector('.js-gps-stop').addEventListener('click', () => { const g = getGpsCreds(); launchGpsSms(g.sim, `940${g.pass}`, `БЛОКИРОВКА ДВИГАТЕЛЯ ${c.plate}`, true); });
+          card.querySelector('.js-gps-start').addEventListener('click', () => { const g = getGpsCreds(); launchGpsSms(g.sim, `941${g.pass}`, `Разблокировка двигателя ${c.plate}`, true); });
+          card.querySelector('.js-gps-web').addEventListener('click', () => openExternalUrl('https://www.sinotrack.com/'));
         }
       });
     }
@@ -765,15 +961,178 @@
       finally { btn.textContent = oldText; btn.disabled = false; }
     }
 
-    /* ==================== МОДЕРАЦИЯ (С ПРЕДУПРЕЖДЕНИЕМ О ЧС) ==================== */
+    async function saveCarGps(car, gp, btn) {
+      const gpsImei = document.getElementById(gp + 'imei').value.trim();
+      const gpsSim = document.getElementById(gp + 'sim').value.trim();
+      const gpsPass = document.getElementById(gp + 'pass').value.trim() || '0000';
+      const old = btn.textContent; btn.textContent = '...'; btn.disabled = true;
+      try {
+        await callApi('setCarGps', { plate: car.plate, gpsImei, gpsSim, gpsPass }, 15000);
+        notifyUser(`✅ Данные GPS-трекера для ${car.plate} сохранены!`);
+        await loadInitial();
+      } catch (err) { showError(err); }
+      finally { btn.textContent = old; btn.disabled = false; }
+    }
+
+    async function saveCarExpense(car, ep, btn) {
+      const category = document.getElementById(ep + 'cat').value;
+      const amount = document.getElementById(ep + 'amt').value.trim();
+      const date = document.getElementById(ep + 'date').value.trim();
+      const mileage = document.getElementById(ep + 'km').value.trim();
+      const description = document.getElementById(ep + 'desc').value.trim();
+      if (!amount || Number(amount) <= 0) return notifyUser('Укажите сумму расхода больше 0 ₽.');
+
+      const old = btn.textContent; btn.textContent = 'Сохранение...'; btn.disabled = true;
+      try {
+        await callApi('addExpense', { plate: car.plate, category, amount, date, mileage, description }, 20000);
+        document.getElementById(ep + 'amt').value = '';
+        document.getElementById(ep + 'desc').value = '';
+        notifyUser(`✅ Расход ${fmtMoney(amount)} ₽ (${category}) по ${car.plate} записан!`);
+        await loadInitial();
+      } catch (err) { showError(err); }
+      finally { btn.textContent = old; btn.disabled = false; }
+    }
+
+    /* ==================== ЭТАП 3: ФИНАНСЫ, РЕМОНТЫ И НАЛОГ НПД ==================== */
+
+    function toggleQuickExpForm() { document.getElementById('quickExpForm').classList.toggle('hidden'); }
+
+    async function saveQuickExpense(btn) {
+      const plate = document.getElementById('qexp_plate').value;
+      const category = document.getElementById('qexp_cat').value;
+      const amount = document.getElementById('qexp_amt').value.trim();
+      const date = document.getElementById('qexp_date').value.trim();
+      const mileage = document.getElementById('qexp_km').value.trim();
+      const description = document.getElementById('qexp_desc').value.trim();
+      if (!amount || Number(amount) <= 0) return notifyUser('Укажите сумму расхода больше 0 ₽.');
+
+      const old = btn.textContent; btn.textContent = 'Сохранение...'; btn.disabled = true;
+      try {
+        await callApi('addExpense', { plate, category, amount, date, mileage, description }, 20000);
+        document.getElementById('qexp_amt').value = '';
+        document.getElementById('qexp_km').value = '';
+        document.getElementById('qexp_desc').value = '';
+        document.getElementById('quickExpForm').classList.add('hidden');
+        notifyUser(`✅ Расход ${fmtMoney(amount)} ₽ записан!`);
+        await loadFinance();
+      } catch (err) { showError(err); }
+      finally { btn.textContent = old; btn.disabled = false; }
+    }
+
+    async function loadFinance() {
+      clearError();
+      initFinanceSelectors();
+      const box = document.getElementById('financeContent');
+      box.innerHTML = '<div class="msg">Считаем доходы, расходы и налог НПД...</div>';
+      try {
+        const period = document.getElementById('finPeriodSelect').value;
+        const data = await callApi('financeSummary', { month: period }, 20000);
+        renderFinance(data);
+      } catch (err) { showError(err); }
+    }
+
+    function renderFinance(data) {
+      const box = document.getElementById('financeContent');
+      const t = data.totals || {}, npd = data.npd || {};
+      const pct = Math.min(100, Number(npd.limitPct) || 0);
+      const barCls = pct >= 90 ? 'bad' : (pct >= 75 ? 'warn' : '');
+      const netColor = (t.netAfterNpd4 || 0) >= 0 ? '#16a34a' : '#dc2626';
+
+      const byCarHtml = (data.byCar && data.byCar.length)
+        ? data.byCar.map(c => `
+            <div class="fin-row">
+              <div class="fin-row-left">
+                <strong>${escapeHtml(c.plate)}</strong> ${c.model ? `• ${escapeHtml(c.model)}` : ''}
+                <div class="fin-row-sub">Доход: +${fmtMoney(c.income)} ₽ • Расход: −${fmtMoney(c.expenses)} ₽</div>
+              </div>
+              <div class="fin-row-right" style="color:${c.net >= 0 ? '#16a34a' : '#dc2626'};">
+                ${c.net >= 0 ? '+' : '−'}${fmtMoney(Math.abs(c.net))} ₽
+              </div>
+            </div>`).join('')
+        : '<div class="pay-item-meta">За выбранный период нет движений по автомобилям.</div>';
+
+      const expRows = (data.recentExpenses && data.recentExpenses.length)
+        ? data.recentExpenses.map(e => `
+            <div class="fin-row">
+              <div class="fin-row-left">
+                <strong>${escapeHtml(e.plate)}</strong> • ${escapeHtml(e.category)}
+                <div class="fin-row-sub">${escapeHtml(e.dateRu)}${e.mileage ? ` • ${fmtKm(e.mileage)}` : ''}${e.description ? ` • ${escapeHtml(e.description)}` : ''}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="amt-bad" style="white-space:nowrap;">−${fmtMoney(e.amount)} ₽</span>
+                <button class="btn-mini js-exp-del" data-id="${escapeHtml(e.expId)}" title="Удалить">🗑</button>
+              </div>
+            </div>`).join('')
+        : '<div class="pay-item-meta">За выбранный период расходов нет.</div>';
+
+      box.innerHTML = `
+        <div class="fin-grid">
+          <div class="fin-kpi">
+            <div class="fin-kpi-lbl">💰 Выручка</div>
+            <div class="fin-kpi-val amt-ok">+${fmtMoney(t.income)} ₽</div>
+            <div class="fin-kpi-sub">СБП: ${fmtMoney(t.incomeSbp)} • Нал: ${fmtMoney(t.incomeCash)}</div>
+          </div>
+          <div class="fin-kpi">
+            <div class="fin-kpi-lbl">🔧 Расходы / Ремонты</div>
+            <div class="fin-kpi-val amt-bad">−${fmtMoney(t.expenses)} ₽</div>
+            <div class="fin-kpi-sub">Записей: ${(data.recentExpenses || []).length}</div>
+          </div>
+          <div class="fin-kpi">
+            <div class="fin-kpi-lbl">📈 Прибыль до НПД</div>
+            <div class="fin-kpi-val">${t.netBeforeTax >= 0 ? '+' : '−'}${fmtMoney(Math.abs(t.netBeforeTax))} ₽</div>
+            <div class="fin-kpi-sub">Выручка − Расходы</div>
+          </div>
+          <div class="fin-kpi">
+            <div class="fin-kpi-lbl">🏦 Чистая (после НПД 4%)</div>
+            <div class="fin-kpi-val" style="color:${netColor};">${t.netAfterNpd4 >= 0 ? '+' : '−'}${fmtMoney(Math.abs(t.netAfterNpd4))} ₽</div>
+            <div class="fin-kpi-sub">Налог 4%: −${fmtMoney(npd.tax4)} ₽</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-top">
+            <span style="font-weight:700;font-size:14px;">🧾 Налог самозанятого (НПД) — ${escapeHtml(data.year)} г.</span>
+            <span class="status-pill ${pct >= 90 ? 'st-rented' : (pct >= 75 ? 'st-booked' : 'st-free')}">${pct}% лимита</span>
+          </div>
+          <div class="meta" style="margin-bottom:4px;">
+            За период: <strong>4% = ${fmtMoney(npd.tax4)} ₽</strong> (физлица) • <strong>6% = ${fmtMoney(npd.tax6)} ₽</strong> (юрлица/ИП)
+          </div>
+          <div class="npd-bar-track"><div class="npd-bar-fill ${barCls}" style="width:${pct}%;"></div></div>
+          <div class="meta" style="margin-bottom:0;">
+            Доход за ${escapeHtml(data.year)} г.: <strong>${fmtMoney(npd.yearIncome)} ₽</strong> из ${fmtMoney(npd.annualLimit)} ₽<br>
+            Остаток годового лимита НПД: <strong>${fmtMoney(npd.limitRemaining)} ₽</strong>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="pay-subhead" style="margin-top:0;">🚗 Прибыльность по автомобилям</div>
+          ${byCarHtml}
+        </div>
+
+        <div class="card">
+          <div class="pay-subhead" style="margin-top:0;">🔧 Журнал расходов и ремонтов</div>
+          ${expRows}
+        </div>`;
+
+      box.querySelectorAll('.js-exp-del').forEach(btn => {
+        btn.addEventListener('click', () => deleteExpenseNow(btn.dataset.id, btn));
+      });
+    }
+
+    async function deleteExpenseNow(expId, btn) {
+      if (!(await askConfirm('Удалить эту запись расхода из таблицы?'))) return;
+      btn.disabled = true;
+      try { await callApi('deleteExpense', { expId }, 15000); await loadFinance(); }
+      catch (err) { btn.disabled = false; showError(err); }
+    }
+
+    /* ==================== МОДЕРАЦИЯ ==================== */
 
     async function loadPendingReviews() {
       clearError();
       document.getElementById('moderationList').innerHTML = '<div class="msg">Загрузка заявок на проверке...</div>';
-      try {
-        allPending = (await callApi('pendingReviews')) || [];
-        renderPendingReviews();
-      } catch (err) { showError(err); }
+      try { allPending = (await callApi('pendingReviews')) || []; renderPendingReviews(); }
+      catch (err) { showError(err); }
     }
 
     function renderPendingReviews() {
@@ -822,7 +1181,7 @@
       catch (err) { spamBtn.textContent = oldText; spamBtn.disabled = false; approveBtn.disabled = false; showError(err); }
     }
 
-    /* ==================== ЭТАП 2 (v2): ШТРАФЫ ГИБДД ИЗ GMAIL ==================== */
+    /* ==================== ШТРАФЫ ГИБДД ==================== */
 
     async function loadFines() {
       clearError();
@@ -858,10 +1217,7 @@
     function renderFines() {
       const list = document.getElementById('finesList'); list.innerHTML = '';
       const filtered = allFines.filter(f => currentFineFilter === 'all' || String(f.status || '').toLowerCase().trim() === currentFineFilter);
-      if (!filtered.length) {
-        list.innerHTML = '<div class="msg">Штрафов по выбранному фильтру нет. Нажмите «Проверить новые штрафы ГИБДД в Gmail».</div>';
-        return;
-      }
+      if (!filtered.length) { list.innerHTML = '<div class="msg">Штрафов по выбранному фильтру нет. Нажмите «Проверить новые штрафы ГИБДД в Gmail».</div>'; return; }
 
       const driverOptsBase = '<option value="">— Выберите водителя —</option>' +
         allDrivers.map(d => `<option value="${d.row}">${escapeHtml(d.name)} (${escapeHtml(d.plate || '—')}, ${escapeHtml(d.rentalStatus)})</option>`).join('');
@@ -875,14 +1231,8 @@
         const guUrl = f.gosuslugiUrl || (f.uin && f.uin.length >= 20 ? `https://www.gosuslugi.ru/pay/uin/${f.uin}` : '');
 
         card.innerHTML = `
-          <div class="card-top">
-            <span class="plate">${escapeHtml(f.plate || 'Без номера')}</span>
-            <span class="status-pill ${fineStatusClass(f.status)}">${escapeHtml(f.status || 'Новый')}</span>
-          </div>
-          <div class="uin-row">
-            <span>УИН: <strong>${escapeHtml(f.uin || '—')}</strong> • от ${escapeHtml(f.decDate || '—')}</span>
-            ${f.uin ? `<button type="button" class="btn-mini js-fn-copy-uin" title="Скопировать УИН">📋</button>` : ''}
-          </div>
+          <div class="card-top"><span class="plate">${escapeHtml(f.plate || 'Без номера')}</span><span class="status-pill ${fineStatusClass(f.status)}">${escapeHtml(f.status || 'Новый')}</span></div>
+          <div class="uin-row"><span>УИН: <strong>${escapeHtml(f.uin || '—')}</strong> • от ${escapeHtml(f.decDate || '—')}</span>${f.uin ? `<button type="button" class="btn-mini js-fn-copy-uin" title="Скопировать УИН">📋</button>` : ''}</div>
           <div class="meta">
             Сумма: ${sumTxt}<br>
             Водитель: <strong>${escapeHtml(f.driverName || 'Не определён')}</strong> ${f.charged ? '✅ <em>(начислен)</em>' : ''}<br>
@@ -900,34 +1250,13 @@
           </div>
           <div class="expand-panel hidden js-fn-panel">
             <div class="doc-edit">
-              <div class="field-group full">
-                <label class="field-lbl" for="${fp}uin">УИН / Постановление (20 цифр)</label>
-                <input type="text" inputmode="numeric" id="${fp}uin" class="field-input" value="${escapeHtml(f.uin || '')}" placeholder="1881052426...">
-              </div>
-              <div class="field-group full">
-                <label class="field-lbl" for="${fp}drv">Водитель</label>
-                <select id="${fp}drv">${driverOptsBase}</select>
-              </div>
-              <div class="field-group">
-                <label class="field-lbl" for="${fp}amt">Сумма полная (₽)</label>
-                <input type="number" inputmode="numeric" id="${fp}amt" class="field-input" value="${f.amount || ''}" placeholder="750">
-              </div>
-              <div class="field-group">
-                <label class="field-lbl" for="${fp}disc">Со скидкой (₽)</label>
-                <input type="number" inputmode="numeric" id="${fp}disc" class="field-input" value="${f.discountAmount || ''}" placeholder="562.5">
-              </div>
-              <div class="field-group">
-                <label class="field-lbl" for="${fp}vdate">Дата нарушения</label>
-                <input type="date" id="${fp}vdate" class="field-input" value="${escapeHtml(dateStrToIso(f.violDate || f.decDate))}">
-              </div>
-              <div class="field-group">
-                <label class="field-lbl" for="${fp}vtime">Время фиксации</label>
-                <input type="time" id="${fp}vtime" class="field-input" value="${escapeHtml(f.violTime || '')}">
-              </div>
-              <div class="field-group full">
-                <label class="field-lbl" for="${fp}art">Статья КоАП / Описание</label>
-                <input type="text" id="${fp}art" class="field-input" value="${escapeHtml(f.article || '')}" placeholder="ч. 2 ст. 12.9 КоАП РФ">
-              </div>
+              <div class="field-group full"><label class="field-lbl" for="${fp}uin">УИН / Постановление (20 цифр)</label><input type="text" inputmode="numeric" id="${fp}uin" class="field-input" value="${escapeHtml(f.uin || '')}"></div>
+              <div class="field-group full"><label class="field-lbl" for="${fp}drv">Водитель</label><select id="${fp}drv">${driverOptsBase}</select></div>
+              <div class="field-group"><label class="field-lbl" for="${fp}amt">Сумма полная (₽)</label><input type="number" inputmode="numeric" id="${fp}amt" class="field-input" value="${f.amount || ''}"></div>
+              <div class="field-group"><label class="field-lbl" for="${fp}disc">Со скидкой (₽)</label><input type="number" inputmode="numeric" id="${fp}disc" class="field-input" value="${f.discountAmount || ''}"></div>
+              <div class="field-group"><label class="field-lbl" for="${fp}vdate">Дата нарушения</label><input type="date" id="${fp}vdate" class="field-input" value="${escapeHtml(dateStrToIso(f.violDate || f.decDate))}"></div>
+              <div class="field-group"><label class="field-lbl" for="${fp}vtime">Время фиксации</label><input type="time" id="${fp}vtime" class="field-input" value="${escapeHtml(f.violTime || '')}"></div>
+              <div class="field-group full"><label class="field-lbl" for="${fp}art">Статья КоАП / Описание</label><input type="text" id="${fp}art" class="field-input" value="${escapeHtml(f.article || '')}"></div>
               <button class="btn-save js-fn-save">💾 Сохранить</button>
               <button class="btn-oil-done js-fn-paid">✅ Оплачен</button>
             </div>
@@ -936,16 +1265,8 @@
 
         const drvSel = card.querySelector('#' + fp + 'drv');
         if (f.driverRow) drvSel.value = String(f.driverRow);
-
         const copyUinBtn = card.querySelector('.js-fn-copy-uin');
-        if (copyUinBtn) {
-          copyUinBtn.addEventListener('click', async () => {
-            if (await copyToClipboard(f.uin)) {
-              copyUinBtn.textContent = '✅';
-              setTimeout(() => { copyUinBtn.textContent = '📋'; }, 1500);
-            }
-          });
-        }
+        if (copyUinBtn) copyUinBtn.addEventListener('click', async () => { if (await copyToClipboard(f.uin)) { copyUinBtn.textContent = '✅'; setTimeout(() => { copyUinBtn.textContent = '📋'; }, 1500); } });
 
         const panel = card.querySelector('.js-fn-panel');
         card.querySelector('.js-fn-edit-toggle').addEventListener('click', () => panel.classList.toggle('hidden'));
@@ -959,41 +1280,19 @@
 
     function collectFineFields(f, fp) {
       return {
-        fineId: f.fineId,
-        uin: document.getElementById(fp + 'uin').value.trim(),
-        driverRow: document.getElementById(fp + 'drv').value,
-        amount: document.getElementById(fp + 'amt').value.trim(),
-        discountAmount: document.getElementById(fp + 'disc').value.trim(),
-        violDate: document.getElementById(fp + 'vdate').value.trim(),
-        violTime: document.getElementById(fp + 'vtime').value.trim(),
+        fineId: f.fineId, uin: document.getElementById(fp + 'uin').value.trim(), driverRow: document.getElementById(fp + 'drv').value,
+        amount: document.getElementById(fp + 'amt').value.trim(), discountAmount: document.getElementById(fp + 'disc').value.trim(),
+        violDate: document.getElementById(fp + 'vdate').value.trim(), violTime: document.getElementById(fp + 'vtime').value.trim(),
         article: document.getElementById(fp + 'art').value.trim()
       };
     }
 
-    async function saveFineEdits(f, fp, btn) {
-      const old = btn.textContent; btn.textContent = 'Сохранение...'; btn.disabled = true;
-      try {
-        await callApi('updateFine', collectFineFields(f, fp), 20000);
-        notifyUser('✅ Данные штрафа сохранены!');
-        await loadFines();
-      } catch (err) { showError(err); }
-      finally { btn.textContent = old; btn.disabled = false; }
-    }
-
-    async function markFinePaid(f, btn) {
-      const old = btn.textContent; btn.textContent = '...'; btn.disabled = true;
-      try {
-        await callApi('updateFine', { fineId: f.fineId, status: 'Оплачен' }, 20000);
-        await loadInitial();
-      } catch (err) { showError(err); }
-      finally { btn.textContent = old; btn.disabled = false; }
-    }
+    async function saveFineEdits(f, fp, btn) { const old = btn.textContent; btn.textContent = 'Сохранение...'; btn.disabled = true; try { await callApi('updateFine', collectFineFields(f, fp), 20000); notifyUser('✅ Данные штрафа сохранены!'); await loadFines(); } catch (err) { showError(err); } finally { btn.textContent = old; btn.disabled = false; } }
+    async function markFinePaid(f, btn) { const old = btn.textContent; btn.textContent = '...'; btn.disabled = true; try { await callApi('updateFine', { fineId: f.fineId, status: 'Оплачен' }, 20000); await loadInitial(); } catch (err) { showError(err); } finally { btn.textContent = old; btn.disabled = false; } }
 
     async function notifyFineDriverNow(f, fp, btn) {
-      const vals = collectFineFields(f, fp);
-      const dRow = vals.driverRow || String(f.driverRow || '');
+      const vals = collectFineFields(f, fp), dRow = vals.driverRow || String(f.driverRow || '');
       if (!dRow) return notifyUser('Нажмите «✏️» и выберите водителя, которому нужно отправить штраф.');
-
       const old = btn.textContent; btn.textContent = 'Отправляем...'; btn.disabled = true;
       try {
         await callApi('updateFine', vals, 15000);
@@ -1003,36 +1302,19 @@
         const msg = err && err.message ? err.message : String(err);
         const drv = allDrivers.find(x => String(x.row) === String(dRow));
         const ph = drv ? formatPhoneIntl(drv.phone) : '';
-        if (ph) {
-          const openWa = await askConfirm(`${msg}\n\nОткрыть чат WhatsApp с ${drv.name}, чтобы отправить штраф вручную?`);
-          if (openWa) {
-            const uinVal = vals.uin || f.uin || '—';
-            const amtVal = vals.amount || (f.amount ? String(f.amount) : '');
-            const guLink = (uinVal && uinVal.length >= 20) ? `\nСсылка на оплату: https://www.gosuslugi.ru/pay/uin/${uinVal}` : '';
-            const waText =
-              `Здравствуйте, ${drv.name}! По авто ${f.plate || '—'} пришёл штраф ГИБДД от ${f.violDate || f.decDate || '—'}.\n` +
-              `УИН: ${uinVal}` +
-              (amtVal ? `\nСумма: ${fmtMoney(amtVal)} ₽` : '') +
-              guLink +
-              `\nПросьба оплатить штраф и прислать чек.`;
-            openExternalUrl(`https://wa.me/${ph}?text=${encodeURIComponent(waText)}`);
-          }
-        } else {
-          notifyUser(msg);
-        }
-      } finally {
-        btn.textContent = old; btn.disabled = false;
-      }
+        if (ph && await askConfirm(`${msg}\n\nОткрыть чат WhatsApp с ${drv.name}, чтобы отправить штраф вручную?`)) {
+          const uinVal = vals.uin || f.uin || '—', amtVal = vals.amount || (f.amount ? String(f.amount) : '');
+          const guLink = (uinVal && uinVal.length >= 20) ? `\nСсылка на оплату: https://www.gosuslugi.ru/pay/uin/${uinVal}` : '';
+          openExternalUrl(`https://wa.me/${ph}?text=${encodeURIComponent(`Здравствуйте, ${drv.name}! По авто ${f.plate || '—'} пришёл штраф ГИБДД от ${f.violDate || f.decDate || '—'}.\nУИН: ${uinVal}${amtVal ? `\nСумма: ${fmtMoney(amtVal)} ₽` : ''}${guLink}\nПросьба оплатить штраф и прислать чек.`)}`);
+        } else if (!ph) notifyUser(msg);
+      } finally { btn.textContent = old; btn.disabled = false; }
     }
 
     async function chargeFineNow(f, fp, btn) {
-      const vals = collectFineFields(f, fp);
-      const amt = vals.amount || String(f.amount || f.discountAmount || '');
-      const dRow = vals.driverRow || String(f.driverRow || '');
-      if (!dRow) return notifyUser('Нажмите «✏️» и выберите водителя для этого штрафа.');
+      const vals = collectFineFields(f, fp), amt = vals.amount || String(f.amount || f.discountAmount || ''), dRow = vals.driverRow || String(f.driverRow || '');
+      if (!dRow) return notifyUser('Нажмите «✏️» и выберите водителя.');
       if (!amt || Number(amt) <= 0) return notifyUser('Нажмите «✏️» и укажите сумму штрафа в рублях.');
-      if (!(await askConfirm(`Начислить штраф ${fmtMoney(amt)} ₽ в карточку водителя?\n\nЕсли у водителя подключён бот — ему сразу придёт уведомление с УИН.`))) return;
-
+      if (!(await askConfirm(`Начислить штраф ${fmtMoney(amt)} ₽ в карточку водителя?`))) return;
       const old = btn.textContent; btn.textContent = 'Начисляем...'; btn.disabled = true;
       try {
         await callApi('updateFine', vals, 15000);
@@ -1044,49 +1326,30 @@
 
     async function exportFineComplaintNow(f, fp, btn) {
       const vals = collectFineFields(f, fp);
-      if (!vals.driverRow && !f.driverRow) return notifyUser('Нажмите «✏️» и выберите водителя, на которого переводится штраф.');
-      if (!(await askConfirm(`Сформировать PDF Жалобы в ГИБДД по УИН ${vals.uin || f.uin || f.fineId}?\n\nPDF придёт в ваш Telegram и сохранится в папку 07_Штрафы_и_Претензии.`))) return;
-
+      if (!vals.driverRow && !f.driverRow) return notifyUser('Нажмите «✏️» и выберите водителя.');
+      if (!(await askConfirm(`Сформировать PDF Жалобы в ГИБДД по УИН ${vals.uin || f.uin || f.fineId}?`))) return;
       const old = btn.textContent; btn.textContent = 'Формируем PDF...'; btn.disabled = true;
-      try {
-        await callApi('updateFine', vals, 15000);
-        await callApi('exportFinePdf', { fineId: f.fineId }, 40000);
-        notifyUser('✅ PDF Жалобы на штраф ГИБДД отправлен в Telegram!');
-        await loadInitial();
-      } catch (err) { showError(err); }
+      try { await callApi('updateFine', vals, 15000); await callApi('exportFinePdf', { fineId: f.fineId }, 40000); notifyUser('✅ PDF Жалобы отправлен в Telegram!'); await loadInitial(); }
+      catch (err) { showError(err); }
       finally { btn.textContent = old; btn.disabled = false; }
     }
 
-    /* ==================== ЭТАП 2: ЧЁРНЫЙ СПИСОК ==================== */
+    /* ==================== ЧЁРНЫЙ СПИСОК ==================== */
 
     function toggleManualBlForm() { document.getElementById('manualBlForm').classList.toggle('hidden'); }
-
-    async function loadBlacklist() {
-      clearError();
-      document.getElementById('blacklistList').innerHTML = '<div class="msg">Загрузка Чёрного списка...</div>';
-      try { allBlacklist = (await callApi('blacklist')) || []; renderBlacklist(); }
-      catch (err) { showError(err); }
-    }
+    async function loadBlacklist() { clearError(); document.getElementById('blacklistList').innerHTML = '<div class="msg">Загрузка Чёрного списка...</div>'; try { allBlacklist = (await callApi('blacklist')) || []; renderBlacklist(); } catch (err) { showError(err); } }
 
     function renderBlacklist() {
       const list = document.getElementById('blacklistList'); list.innerHTML = '';
       const q = String(document.getElementById('blSearch').value || '').trim().toLowerCase();
       const filtered = allBlacklist.filter(it => !q || [it.fio, it.phone, it.passport, it.vu, it.plate, it.reason].join(' ').toLowerCase().includes(q));
-
-      if (!filtered.length) {
-        list.innerHTML = `<div class="msg">${q ? 'По вашему запросу совпадений в Чёрном списке нет ✅' : 'Чёрный список пока пуст.'}</div>`;
-        return;
-      }
+      if (!filtered.length) { list.innerHTML = `<div class="msg">${q ? 'По вашему запросу совпадений нет ✅' : 'Чёрный список пока пуст.'}</div>`; return; }
 
       filtered.forEach(it => {
         const card = document.createElement('div'); card.className = 'card card-bl-alert';
         card.innerHTML = `
           <div class="card-top"><span class="plate">${escapeHtml(it.fio || 'Без имени')}</span><span class="status-pill st-rented">⛔ В ЧС</span></div>
-          <div class="meta">
-            📅 ${escapeHtml(it.date || '—')} ${it.plate ? `• 🚗 <strong>${escapeHtml(it.plate)}</strong>` : ''}<br>
-            📱 Тел: <strong>${escapeHtml(it.phone || '—')}</strong><br>
-            🛂 Паспорт: <strong>${escapeHtml(it.passport || '—')}</strong> • 🪪 ВУ: <strong>${escapeHtml(it.vu || '—')}</strong>
-          </div>
+          <div class="meta">📅 ${escapeHtml(it.date || '—')} ${it.plate ? `• 🚗 <strong>${escapeHtml(it.plate)}</strong>` : ''}<br>📱 Тел: <strong>${escapeHtml(it.phone || '—')}</strong><br>🛂 Паспорт: <strong>${escapeHtml(it.passport || '—')}</strong> • 🪪 ВУ: <strong>${escapeHtml(it.vu || '—')}</strong></div>
           <div class="bl-warning-box" style="margin-bottom:8px;">Причина: ${escapeHtml(it.reason || '—')}${it.debt > 0 ? `<br>💸 Долг / ущерб: ${fmtMoney(it.debt)} ₽` : ''}</div>
           <div class="actions"><button class="btn-copy js-bl-del" style="width:100%;">🔓 Убрать из Чёрного списка</button></div>`;
         list.appendChild(card);
@@ -1098,15 +1361,12 @@
       const fio = document.getElementById('bl_fio').value.trim(), phone = document.getElementById('bl_phone').value.trim(), passport = document.getElementById('bl_passport').value.trim(), vu = document.getElementById('bl_vu').value.trim(), plate = document.getElementById('bl_plate').value.trim().toUpperCase(), reason = document.getElementById('bl_reason').value.trim(), debt = document.getElementById('bl_debt').value.trim();
       if (!fio && !phone && !passport) return notifyUser('Укажите хотя бы ФИО, телефон или паспорт.');
       if (!reason) return notifyUser('Укажите причину внесения в Чёрный список.');
-
       const old = btn.textContent; btn.textContent = 'Сохраняем...'; btn.disabled = true;
       try {
         await callApi('addBlacklist', { fio, phone, passport, vu, plate, reason, debt }, 20000);
         ['bl_fio', 'bl_phone', 'bl_passport', 'bl_vu', 'bl_plate', 'bl_reason'].forEach(id => document.getElementById(id).value = '');
-        document.getElementById('bl_debt').value = '0';
-        document.getElementById('manualBlForm').classList.add('hidden');
-        notifyUser('⛔ Водитель добавлен в Чёрный список!');
-        await loadInitial();
+        document.getElementById('bl_debt').value = '0'; document.getElementById('manualBlForm').classList.add('hidden');
+        notifyUser('⛔ Водитель добавлен в Чёрный список!'); await loadInitial();
       } catch (err) { showError(err); }
       finally { btn.textContent = old; btn.disabled = false; }
     }
@@ -1130,19 +1390,12 @@
     }
 
     function buildOsagoManagerSummary(car, info, polId, expId) {
-      const polInput = polId ? document.getElementById(polId) : null;
-      const expInput = expId ? document.getElementById(expId) : null;
+      const polInput = polId ? document.getElementById(polId) : null, expInput = expId ? document.getElementById(expId) : null;
       const policyVal = (polInput && polInput.value.trim()) ? polInput.value.trim() : (car.osagoPolicy || 'не указан');
       let expiryRu = info && info.ru ? info.ru : '';
       if (expInput && expInput.value.trim()) { const parsed = parseExpiryInfo(expInput.value.trim()); if (parsed.ru) expiryRu = parsed.ru; }
       const stsFull = (car.sts || '—') + (car.stsDate ? (' от ' + car.stsDate + ' г.') : '');
-      const lines = [
-        'Расчёт / продление ОСАГО ТАКСИ:',
-        `Авто: ${car.model || '—'}${car.year ? ' (' + car.year + ' г.)' : ''}, госномер ${car.plate || '—'}`,
-        `Кузов/VIN: ${car.frame || '—'}`, `СТС: ${stsFull}`,
-        `Текущий полис: ${policyVal}${expiryRu ? ' (до ' + expiryRu + ')' : ''}`,
-        'Собственник: Айдаров Ислам Мамурджанович (г. Красноярск)'
-      ];
+      const lines = ['Расчёт / продление ОСАГО ТАКСИ:', `Авто: ${car.model || '—'}${car.year ? ' (' + car.year + ' г.)' : ''}, госномер ${car.plate || '—'}`, `Кузов/VIN: ${car.frame || '—'}`, `СТС: ${stsFull}`, `Текущий полис: ${policyVal}${expiryRu ? ' (до ' + expiryRu + ')' : ''}`, 'Собственник: Айдаров Ислам Мамурджанович (г. Красноярск)'];
       if (car.driverName) { lines.push(`Водитель: ${car.driverName}`); lines.push(`ВУ: ${cleanVuForSummary(car.driverVu)}`); lines.push(`Стаж: ${formatDriverExpText(car.driverExpYear)}`); }
       else lines.push('Водитель: не назначен');
       return lines.join('\n');
@@ -1150,14 +1403,8 @@
 
     async function copyOsagoSummary(car, info, polId, expId, btn, card) {
       const text = buildOsagoManagerSummary(car, info, polId, expId);
-      if (await copyToClipboard(text)) {
-        const old = btn.textContent; btn.textContent = '✅ Скопировано!'; btn.disabled = true;
-        setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 1800);
-      } else {
-        let box = card.querySelector('.summary-fallback');
-        if (!box) { box = document.createElement('textarea'); box.className = 'summary-fallback'; box.readOnly = true; card.appendChild(box); }
-        box.value = text; box.focus(); box.select();
-      }
+      if (await copyToClipboard(text)) { const old = btn.textContent; btn.textContent = '✅ Скопировано!'; btn.disabled = true; setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 1800); }
+      else { let box = card.querySelector('.summary-fallback'); if (!box) { box = document.createElement('textarea'); box.className = 'summary-fallback'; box.readOnly = true; card.appendChild(box); } box.value = text; box.focus(); box.select(); }
     }
 
     function renderOsago() {
@@ -1211,8 +1458,9 @@
       filtered.forEach((item, idx) => {
         const c = item.car, info = item.info, card = document.createElement('div'); card.className = 'card';
         const curId = 'oil_cur_' + idx, lastId = 'oil_last_' + idx;
+        const pcNote = c.lastPhotoControl ? `<br>📸 Последний фотоконтроль: <strong>${escapeHtml(c.lastPhotoControl)}</strong>` : '';
         const editHtml = canEdit ? `<div class="doc-edit"><div class="field-group"><label class="field-lbl" for="${curId}">Текущий пробег (км)</label><input type="number" inputmode="numeric" id="${curId}" class="field-input" value="${info.cur !== null ? info.cur : ''}"></div><div class="field-group"><label class="field-lbl" for="${lastId}">Замена масла (км)</label><input type="number" inputmode="numeric" id="${lastId}" class="field-input" value="${info.last !== null ? info.last : ''}"></div><button class="btn-save js-oil-save">Сохранить пробег</button><button class="btn-oil-done js-oil-done">🛢️ Заменил масло</button></div>` : '';
-        card.innerHTML = `<div class="card-top"><span class="plate"><span class="order-num">${item.order}.</span>${escapeHtml(c.plate)}</span><span class="status-pill ${info.pillClass}">${escapeHtml(info.label)}</span></div><div class="model">${escapeHtml(c.model || '')}${c.code ? ' • ' + escapeHtml(c.code) : ''} (${escapeHtml(c.status || '—')})</div><div class="meta">Текущий пробег: <strong>${escapeHtml(fmtKm(info.cur))}</strong><br>Последняя замена: <strong>${escapeHtml(fmtKm(info.last))}</strong> → След.: <strong>${escapeHtml(fmtKm(info.next))}</strong></div>${editHtml}`;
+        card.innerHTML = `<div class="card-top"><span class="plate"><span class="order-num">${item.order}.</span>${escapeHtml(c.plate)}</span><span class="status-pill ${info.pillClass}">${escapeHtml(info.label)}</span></div><div class="model">${escapeHtml(c.model || '')}${c.code ? ' • ' + escapeHtml(c.code) : ''} (${escapeHtml(c.status || '—')})</div><div class="meta">Текущий пробег: <strong>${escapeHtml(fmtKm(info.cur))}</strong><br>Последняя замена: <strong>${escapeHtml(fmtKm(info.last))}</strong> → След.: <strong>${escapeHtml(fmtKm(info.next))}</strong>${pcNote}</div>${editHtml}`;
         list.appendChild(card);
         if (canEdit) {
           const sBtn = card.querySelector('.js-oil-save'), dBtn = card.querySelector('.js-oil-done');
@@ -1241,8 +1489,9 @@
     function switchTab(tab) {
       clearError(); currentTab = tab;
       document.querySelectorAll('#navTabs .tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
-      ['fleet', 'drivers', 'moderation', 'fines', 'blacklist', 'osago', 'to', 'oil'].forEach(t => document.getElementById(t + 'Section').classList.toggle('hidden', tab !== t));
+      ['fleet', 'drivers', 'finance', 'moderation', 'fines', 'blacklist', 'osago', 'to', 'oil'].forEach(t => document.getElementById(t + 'Section').classList.toggle('hidden', tab !== t));
       if (tab === 'drivers') loadDrivers();
+      if (tab === 'finance') loadFinance();
       if (tab === 'moderation') loadPendingReviews();
       if (tab === 'fines') loadFines();
       if (tab === 'blacklist') loadBlacklist();
@@ -1277,7 +1526,8 @@
         return `Здравствуйте, ${name}! По авто ${plate} числится штраф ГИБДД: ${fmtMoney(fines)} ₽${notePart}. Просьба оплатить и прислать подтверждение.`;
       }
       if (type === 'photo') {
-        return `Здравствуйте, ${name}! Просьба сегодня прислать фотоконтроль авто ${plate}: 4 стороны кузова, салон и фото приборной панели с пробегом.`;
+        const pcUrl = `${PHOTOCONTROL_BASE_URL}&plate=${encodeURIComponent(d.plate || '')}`;
+        return `Здравствуйте, ${name}! Просьба сегодня пройти фотоконтроль авто ${plate} (приборная панель ODO + 4 стороны кузова и салон) по ссылке: ${pcUrl}`;
       }
       return `Здравствуйте, ${name}! По договору № ${d.contractNo || 'б/н'} (${plate}) образовалась задолженность: долг ${fmtMoney(debt)} ₽, штрафы ${fmtMoney(fines)} ₽ (итого ${fmtMoney(debt + fines)} ₽). Просьба погасить в течение 12 часов по СБП ${OWNER_SBP_PHONE} или связаться со мной.`;
     }
@@ -1420,19 +1670,8 @@
         list.appendChild(card);
 
         if (canEdit && d.row) {
-          const panels = {
-            debt: card.querySelector('.js-debt-panel'),
-            bl: card.querySelector('.js-bl-panel'),
-            msg: card.querySelector('.js-msg-panel'),
-            pay: card.querySelector('.js-pay-panel'),
-            docs: card.querySelector('.js-docs-panel')
-          };
-          const toggleOnly = (key) => {
-            const opening = panels[key].classList.contains('hidden');
-            Object.keys(panels).forEach(k => panels[k].classList.add('hidden'));
-            if (opening) panels[key].classList.remove('hidden');
-            return opening;
-          };
+          const panels = { debt: card.querySelector('.js-debt-panel'), bl: card.querySelector('.js-bl-panel'), msg: card.querySelector('.js-msg-panel'), pay: card.querySelector('.js-pay-panel'), docs: card.querySelector('.js-docs-panel') };
+          const toggleOnly = (key) => { const opening = panels[key].classList.contains('hidden'); Object.keys(panels).forEach(k => panels[k].classList.add('hidden')); if (opening) panels[key].classList.remove('hidden'); return opening; };
 
           card.querySelector('.js-debt-toggle').addEventListener('click', () => toggleOnly('debt'));
           card.querySelector('.js-bl-toggle').addEventListener('click', () => toggleOnly('bl'));
@@ -1444,7 +1683,6 @@
           const dSave = card.querySelector('.js-debt-save'), dClr = card.querySelector('.js-debt-clear');
           dSave.addEventListener('click', () => saveDriverDebtFines(d, debtInp, finesInp, noteInp, false, dSave, dClr));
           dClr.addEventListener('click', () => saveDriverDebtFines(d, debtInp, finesInp, noteInp, true, dClr, dSave));
-
           card.querySelector('.js-bl-save').addEventListener('click', (e) => addDriverToBlacklist(d, bp, e.target));
 
           const msgTa = card.querySelector('#' + mp + 'text');
@@ -1459,21 +1697,11 @@
             else notifyUser(botInviteLink);
           });
           card.querySelector('.js-send-bot').addEventListener('click', (e) => sendDriverBotMessage(d, msgTa, e.target));
-          card.querySelector('.js-send-wa').addEventListener('click', () => {
-            const ph = formatPhoneIntl(d.phone);
-            if (!ph) return notifyUser('У водителя не указан номер телефона.');
-            openExternalUrl(`https://wa.me/${ph}?text=${encodeURIComponent(msgTa.value.trim())}`);
-          });
-          card.querySelector('.js-send-tg').addEventListener('click', async () => {
-            const ph = formatPhoneIntl(d.phone);
-            if (!ph) return notifyUser('У водителя не указан номер телефона.');
-            await copyToClipboard(msgTa.value.trim());
-            openExternalUrl(`https://t.me/+${ph}?text=${encodeURIComponent(msgTa.value.trim())}`);
-          });
+          card.querySelector('.js-send-wa').addEventListener('click', () => { const ph = formatPhoneIntl(d.phone); if (!ph) return notifyUser('У водителя не указан номер телефона.'); openExternalUrl(`https://wa.me/${ph}?text=${encodeURIComponent(msgTa.value.trim())}`); });
+          card.querySelector('.js-send-tg').addEventListener('click', async () => { const ph = formatPhoneIntl(d.phone); if (!ph) return notifyUser('У водителя не указан номер телефона.'); await copyToClipboard(msgTa.value.trim()); openExternalUrl(`https://t.me/+${ph}?text=${encodeURIComponent(msgTa.value.trim())}`); });
           card.querySelector('.js-send-claim').addEventListener('click', (e) => sendDriverClaimPdf(d, e.target));
 
-          const methodSel = card.querySelector('#' + pp + 'method'), checkSel = card.querySelector('#' + pp + 'check');
-          const catSel = card.querySelector('#' + pp + 'cat'), deductChk = card.querySelector('#' + pp + 'deduct');
+          const methodSel = card.querySelector('#' + pp + 'method'), checkSel = card.querySelector('#' + pp + 'check'), catSel = card.querySelector('#' + pp + 'cat'), deductChk = card.querySelector('#' + pp + 'deduct');
           const fromInp = card.querySelector('#' + pp + 'from'), toInp = card.querySelector('#' + pp + 'to'), daysInp = card.querySelector('#' + pp + 'days');
           methodSel.addEventListener('change', () => { checkSel.value = methodSel.value === 'Наличные' ? 'Расписка в мессенджере' : 'Чек НПД выдан'; });
           catSel.addEventListener('change', () => { deductChk.checked = (catSel.value === 'Погашение долга' || catSel.value === 'Штраф / Доплата'); });
@@ -1489,24 +1717,17 @@
           fDoc.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, false, fDoc, sDoc));
         }
 
-        if (!isReturned && canEdit && d.row) {
-          card.querySelector('.btn-return').addEventListener('click', (e) => returnDriverCar(d, e.target));
-        }
+        if (!isReturned && canEdit && d.row) card.querySelector('.btn-return').addEventListener('click', (e) => returnDriverCar(d, e.target));
       });
     }
 
     async function addDriverToBlacklist(driver, bp, btn) {
-      const reason = document.getElementById(bp + 'reason').value.trim();
-      const debt = document.getElementById(bp + 'debt').value.trim();
+      const reason = document.getElementById(bp + 'reason').value.trim(), debt = document.getElementById(bp + 'debt').value.trim();
       if (!reason) return notifyUser('Укажите причину добавления в Чёрный список.');
-      if (!(await askConfirm(`Внести водителя ${driver.name} (${driver.plate || '—'}) в Чёрный список?\n\nПри повторной подаче анкеты система сразу подсветит его красным.`))) return;
-
+      if (!(await askConfirm(`Внести водителя ${driver.name} (${driver.plate || '—'}) в Чёрный список?`))) return;
       const old = btn.textContent; btn.textContent = 'Вносим в ЧС...'; btn.disabled = true;
-      try {
-        await callApi('addBlacklist', { row: driver.row, reason, debt }, 20000);
-        notifyUser(`⛔ Водитель ${driver.name} внесён в Чёрный список!`);
-        await loadInitial();
-      } catch (err) { showError(err); }
+      try { await callApi('addBlacklist', { row: driver.row, reason, debt }, 20000); notifyUser(`⛔ Водитель ${driver.name} внесён в Чёрный список!`); await loadInitial(); }
+      catch (err) { showError(err); }
       finally { btn.textContent = old; btn.disabled = false; }
     }
 
@@ -1532,7 +1753,6 @@
       const fines = clearAll ? 0 : Math.max(0, Number(String(finesInp.value || '0').replace(/\s+/g, '')) || 0);
       const note = clearAll ? '' : String(noteInp.value || '').trim();
       if (clearAll && !(await askConfirm(`Обнулить долг и штрафы для ${driver.name} до 0 ₽?`))) return;
-
       const old = activeBtn.textContent; activeBtn.textContent = 'Сохранение...'; activeBtn.disabled = true; if (otherBtn) otherBtn.disabled = true;
       try { await callApi('setDriverDebtFines', { row: driver.row, debt: String(debt), fines: String(fines), note }, 20000); await loadDrivers(); }
       catch (err) { activeBtn.textContent = old; activeBtn.disabled = false; if (otherBtn) otherBtn.disabled = false; showError(err); }
