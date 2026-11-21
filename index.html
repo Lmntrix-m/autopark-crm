@@ -39,6 +39,7 @@
       padding: 9px 12px; margin-bottom: 10px; font-size: 12.5px; font-weight: 600; cursor: pointer;
     }
     .pending-banner.fine-banner { background: #fee2e2; color: #991b1b; border-color: #ef4444; }
+    .pending-banner.npd-banner { background: #e0f2fe; color: #075985; border-color: #0284c7; }
     .pending-banner span:last-child { text-decoration: underline; white-space: nowrap; }
 
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
@@ -61,6 +62,7 @@
       display: inline-block; min-width: 16px; height: 16px; line-height: 16px; padding: 0 4px;
       border-radius: 99px; background: #dc2626; color: #ffffff; font-size: 10px; font-weight: 700; text-align: center;
     }
+    .tab-badge.badge-amber { background: #d97706; }
 
     .filters { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; margin-bottom: 10px; }
     .chip { -webkit-appearance: none; appearance: none; padding: 6px 12px; border-radius: 16px; border: 1px solid rgba(128,128,128,0.25); background: var(--card-bg); color: var(--text); font-size: 12px; white-space: nowrap; cursor: pointer; }
@@ -77,6 +79,7 @@
 
     .card { background: var(--card-bg); border-radius: 12px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
     .card.card-bl-alert { border: 1.5px solid #dc2626; }
+    .card.card-npd-queue { border: 1.5px solid rgba(217, 119, 6, 0.55); }
     .card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
     .plate { font-weight: 700; font-size: 16px; }
     .order-num { color: var(--hint); font-weight: 600; font-size: 14px; margin-right: 4px; }
@@ -126,6 +129,18 @@
     .npd-bar-fill { height: 100%; border-radius: 99px; background: #16a34a; transition: width 0.3s; }
     .npd-bar-fill.warn { background: #d97706; }
     .npd-bar-fill.bad { background: #dc2626; }
+
+    .npd-item {
+      padding: 10px; border-radius: 10px; background: var(--bg);
+      border: 1px solid rgba(128,128,128,0.22); margin-bottom: 8px;
+    }
+    .npd-item:last-child { margin-bottom: 0; }
+    .npd-item-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+    .npd-service-box {
+      font-size: 11.5px; color: var(--text); background: var(--card-bg);
+      border: 1px dashed rgba(128,128,128,0.35); border-radius: 7px; padding: 6px 8px;
+      margin: 6px 0; word-break: break-word; line-height: 1.35;
+    }
 
     .fin-row {
       display: flex; justify-content: space-between; align-items: center; gap: 8px;
@@ -257,6 +272,10 @@
       <span id="finesBannerText">🚓 Новых штрафов ГИБДД: 0</span>
       <span>Разобрать →</span>
     </div>
+    <div id="npdBanner" class="pending-banner npd-banner hidden" onclick="switchTab('finance')">
+      <span id="npdBannerText">🧾 Ожидают чек НПД: 0</span>
+      <span>Выбить →</span>
+    </div>
 
     <div class="stats">
       <div class="stat-box"><div class="stat-val" id="stFree">0</div><div class="stat-lbl">Свободны</div></div>
@@ -268,7 +287,9 @@
     <div class="tabs" id="navTabs">
       <button class="tab active" data-tab="fleet" onclick="switchTab('fleet')">Авто</button>
       <button class="tab hidden" id="tabDriversBtn" data-tab="drivers" onclick="switchTab('drivers')">Водители</button>
-      <button class="tab hidden" id="tabFinanceBtn" data-tab="finance" onclick="switchTab('finance')">📊 Финансы</button>
+      <button class="tab hidden" id="tabFinanceBtn" data-tab="finance" onclick="switchTab('finance')">
+        📊 Финансы <span id="npdBadge" class="tab-badge badge-amber hidden">0</span>
+      </button>
       <button class="tab hidden" id="tabModBtn" data-tab="moderation" onclick="switchTab('moderation')">
         Проверка <span id="modBadge" class="tab-badge hidden">0</span>
       </button>
@@ -438,6 +459,7 @@
     const API_URL = 'https://script.google.com/macros/s/AKfycbxjqMGkJBR045NHEBrVlgEWOYeCuqmMqOmTMwMJFkR0UKG90HNYVtuktVdDfcwS27x5YQ/exec';
     const BOT_USERNAME = 'Documents_TS_bot';
     const PHOTOCONTROL_BASE_URL = 'https://lmntrix-m.github.io/autopark-crm/photocontrol.html?v=20261121_1';
+    const MY_NALOG_URL = 'https://lknpd.nalog.ru/';
     const OWNER_SBP_PHONE = '+7 908 020-00-17';
     const OIL_INTERVAL_KM = 7000;
     const OIL_WARN_KM = 1000;
@@ -502,6 +524,27 @@
       return false;
     }
 
+    function buildLocalNpdTitle(category, model, plate, contractNo) {
+      const cat = String(category || 'Аренда').trim();
+      const carPart = [String(model || '').trim(), String(plate || '').trim()].filter(Boolean).join(' ');
+      const dogPart = contractNo ? `, дог. № ${String(contractNo).trim()}` : '';
+      if (cat === 'Штраф / Доплата') return `Компенсация расходов / штрафа по аренде ТС${carPart ? ' ' + carPart : ''}${dogPart}`;
+      if (cat === 'Погашение долга') return `Аренда ТС без экипажа (погашение долга)${carPart ? ' ' + carPart : ''}${dogPart}`;
+      if (cat === 'ОСАГО') return `Компенсация ОСАГО по аренде ТС${carPart ? ' ' + carPart : ''}${dogPart}`;
+      return `Аренда ТС без экипажа${carPart ? ' ' + carPart : ''}${dogPart}`;
+    }
+
+    async function copyNpdAndOpenMyNalog(serviceTitle, amount, btn) {
+      await copyToClipboard(serviceTitle);
+      if (btn) {
+        const old = btn.textContent;
+        btn.textContent = '✅ Скопировано!';
+        setTimeout(() => { btn.textContent = old; }, 1600);
+      }
+      notifyUser(`📋 Текст услуги скопирован:\n«${serviceTitle}»\n\nСумма: ${fmtMoney(amount)} ₽\n\nСейчас откроется «Мой налог» (или вставьте текст в ВТБ «Самозанятость»). После выдачи чека просто перешлите ссылку или картинку чека в бот @${BOT_USERNAME}!`);
+      openExternalUrl(MY_NALOG_URL);
+    }
+
     async function launchGpsSms(simRaw, cmdText, title, requireConfirm) {
       const ph = formatPhoneIntl(simRaw);
       if (!ph) return notifyUser('Сначала укажите и сохраните номер SIM-карты Tele2 трекера.');
@@ -512,8 +555,7 @@
       await copyToClipboard(cmdText);
       const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
       const sep = isIos ? '&' : '?';
-      const smsUrl = `sms:+${ph}${sep}body=${encodeURIComponent(cmdText)}`;
-      window.location.href = smsUrl;
+      window.location.href = `sms:+${ph}${sep}body=${encodeURIComponent(cmdText)}`;
     }
 
     function resolveInitData() {
@@ -673,7 +715,7 @@
       return { cls: 'st-service', label: '⚪ Без ИИ' };
     }
 
-    function updateBadges(pendingCount, newFinesCount, blacklistCount) {
+    function updateBadges(pendingCount, newFinesCount, blacklistCount, pendingNpdCount) {
       const canMod = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
       const setBadge = (elId, val) => {
         const el = document.getElementById(elId);
@@ -685,6 +727,7 @@
       setBadge('modBadge', pendingCount);
       setBadge('finesBadge', newFinesCount);
       setBadge('blBadge', blacklistCount);
+      setBadge('npdBadge', pendingNpdCount);
 
       const pBanner = document.getElementById('pendingBanner');
       if (canMod && Number(pendingCount) > 0) {
@@ -697,6 +740,12 @@
         document.getElementById('finesBannerText').textContent = `🚓 Новых штрафов ГИБДД: ${newFinesCount}`;
         fBanner.classList.remove('hidden');
       } else fBanner.classList.add('hidden');
+
+      const nBanner = document.getElementById('npdBanner');
+      if (canMod && Number(pendingNpdCount) > 0) {
+        document.getElementById('npdBannerText').textContent = `🧾 Невыбитых чеков НПД: ${pendingNpdCount}`;
+        nBanner.classList.remove('hidden');
+      } else nBanner.classList.add('hidden');
     }
 
     function parseExpiryInfo(rawStr) {
@@ -778,7 +827,7 @@
         if (currentUser.role === 'admin' || currentUser.role === 'manager') {
           ['tabDriversBtn', 'tabFinanceBtn', 'tabModBtn', 'tabFinesBtn', 'tabBlBtn'].forEach(id => document.getElementById(id).classList.remove('hidden'));
         }
-        updateBadges(data.pendingCount || 0, data.newFinesCount || 0, data.blacklistCount || 0);
+        updateBadges(data.pendingCount || 0, data.newFinesCount || 0, data.blacklistCount || 0, data.pendingNpdCount || 0);
         initFinanceSelectors();
 
         renderCars(); renderOsago(); renderTo(); renderOil();
@@ -993,7 +1042,7 @@
       finally { btn.textContent = old; btn.disabled = false; }
     }
 
-    /* ==================== ЭТАП 3: ФИНАНСЫ, РЕМОНТЫ И НАЛОГ НПД ==================== */
+    /* ==================== ЭТАП 3 + ЧЕКИ НПД: ФИНАНСЫ И РЕМОНТЫ ==================== */
 
     function toggleQuickExpForm() { document.getElementById('quickExpForm').classList.toggle('hidden'); }
 
@@ -1023,7 +1072,7 @@
       clearError();
       initFinanceSelectors();
       const box = document.getElementById('financeContent');
-      box.innerHTML = '<div class="msg">Считаем доходы, расходы и налог НПД...</div>';
+      box.innerHTML = '<div class="msg">Считаем доходы, расходы, НПД и очередь чеков...</div>';
       try {
         const period = document.getElementById('finPeriodSelect').value;
         const data = await callApi('financeSummary', { month: period }, 20000);
@@ -1037,6 +1086,43 @@
       const pct = Math.min(100, Number(npd.limitPct) || 0);
       const barCls = pct >= 90 ? 'bad' : (pct >= 75 ? 'warn' : '');
       const netColor = (t.netAfterNpd4 || 0) >= 0 ? '#16a34a' : '#dc2626';
+      const pendingChecks = Array.isArray(data.pendingChecks) ? data.pendingChecks : [];
+
+      const npdQueueHtml = pendingChecks.length
+        ? `
+          <div class="card card-npd-queue">
+            <div class="card-top">
+              <span style="font-weight:700;font-size:14px;">🧾 Невыбитые чеки НПД (${pendingChecks.length})</span>
+              <span class="status-pill st-booked">Ожидают чек</span>
+            </div>
+            <div class="meta" style="margin-bottom:8px;">
+              Совет: можно просто переслать ссылку или картинку чека из ВТБ / «Моего налога» в бот <strong>@${BOT_USERNAME}</strong> — он сам закроет строку и перешлёт чек водителю.
+            </div>
+            ${pendingChecks.map((it, i) => `
+              <div class="npd-item" data-npd-idx="${i}">
+                <div class="npd-item-top">
+                  <strong>${escapeHtml(it.driverName || 'Водитель')} (${escapeHtml(it.plate || '—')})</strong>
+                  <strong class="amt-ok">${fmtMoney(it.amount)} ₽</strong>
+                </div>
+                <div class="pay-item-meta">${escapeHtml(it.dateRu)} • ${escapeHtml(it.category)} • ${escapeHtml(it.method)}${it.comment ? ` • ${escapeHtml(it.comment)}` : ''}</div>
+                <div class="npd-service-box">${escapeHtml(it.serviceTitle)}</div>
+                <div class="doc-edit" style="margin-top:6px;">
+                  <div class="field-group full">
+                    <input type="url" id="npd_url_${i}" class="field-input" value="${escapeHtml(it.receiptUrl || '')}" placeholder="Ссылка на чек ФНС (необязательно)">
+                  </div>
+                  <label class="check-row" for="npd_send_${i}" style="padding:2px;">
+                    <input type="checkbox" id="npd_send_${i}" checked>
+                    <span>🤖 Отправить чек водителю в бот</span>
+                  </label>
+                  <button class="btn-tg js-npd-open" data-idx="${i}">📋 Текст + Мой налог</button>
+                  <button class="btn-oil-done js-npd-close" data-idx="${i}">✅ Чек выдан</button>
+                </div>
+              </div>`).join('')}
+          </div>`
+        : `
+          <div class="card">
+            <div style="font-size:13px;font-weight:600;color:#16a34a;">✅ Все чеки НПД по «Журналу оплат» закрыты!</div>
+          </div>`;
 
       const byCarHtml = (data.byCar && data.byCar.length)
         ? data.byCar.map(c => `
@@ -1066,6 +1152,8 @@
         : '<div class="pay-item-meta">За выбранный период расходов нет.</div>';
 
       box.innerHTML = `
+        ${npdQueueHtml}
+
         <div class="fin-grid">
           <div class="fin-kpi">
             <div class="fin-kpi-lbl">💰 Выручка</div>
@@ -1114,9 +1202,40 @@
           ${expRows}
         </div>`;
 
+      box.querySelectorAll('.js-npd-open').forEach(btn => {
+        const it = pendingChecks[Number(btn.dataset.idx)];
+        btn.addEventListener('click', () => copyNpdAndOpenMyNalog(it.serviceTitle, it.amount, btn));
+      });
+      box.querySelectorAll('.js-npd-close').forEach(btn => {
+        const idx = Number(btn.dataset.idx);
+        const it = pendingChecks[idx];
+        btn.addEventListener('click', () => closePendingNpdCheck(it, idx, btn));
+      });
       box.querySelectorAll('.js-exp-del').forEach(btn => {
         btn.addEventListener('click', () => deleteExpenseNow(btn.dataset.id, btn));
       });
+    }
+
+    async function closePendingNpdCheck(item, idx, btn) {
+      const receiptUrl = (document.getElementById('npd_url_' + idx) || {}).value ? document.getElementById('npd_url_' + idx).value.trim() : '';
+      const sendToDriver = (document.getElementById('npd_send_' + idx) || {}).checked !== false;
+
+      const old = btn.textContent; btn.textContent = 'Закрываем...'; btn.disabled = true;
+      try {
+        const res = await callApi('markNpdCheckIssued', {
+          payRow: String(item.payRow),
+          receiptUrl,
+          sendToDriver: sendToDriver ? 'true' : 'false'
+        }, 20000);
+        const note = res.sentToDriver
+          ? '\n🤖 Официальный чек отправлен водителю в бот!'
+          : (res.driverNoticeError ? `\nℹ️ ${res.driverNoticeError}` : '');
+        notifyUser(`✅ Чек НПД (${fmtMoney(item.amount)} ₽) отмечен как выданный!${note}`);
+        await loadInitial();
+      } catch (err) {
+        btn.textContent = old; btn.disabled = false;
+        showError(err);
+      }
     }
 
     async function deleteExpenseNow(expId, btn) {
@@ -1509,9 +1628,13 @@
       catch (err) { showError(err); }
     }
 
-    function findCarRateByPlate(plate) {
+    function findCarByPlate(plate) {
       const target = String(plate || '').trim().toUpperCase();
-      const found = allCars.find(c => String(c.plate || '').trim().toUpperCase() === target);
+      return allCars.find(c => String(c.plate || '').trim().toUpperCase() === target) || null;
+    }
+
+    function findCarRateByPlate(plate) {
+      const found = findCarByPlate(plate);
       return found && found.dailyRateRaw ? Number(found.dailyRateRaw) : 1500;
     }
 
@@ -1519,7 +1642,7 @@
       const name = d.name || 'Водитель', plate = d.plate || 'авто', debt = Number(d.debt) || 0, fines = Number(d.fines) || 0;
       if (type === 'pay') {
         const debtPart = debt > 0 ? ` Текущий долг: ${fmtMoney(debt)} ₽.` : '';
-        return `Здравствуйте, ${name}! Напоминаю об оплате аренды за авто ${plate} (тариф ${fmtMoney(rate)} ₽/сут).${debtPart} Перевод по СБП: ${OWNER_SBP_PHONE} (Айдаров И.М.).`;
+        return `Здравствуйте, ${name}! Напоминаю об оплате аренды за авто ${plate} (тариф ${fmtMoney(rate)} ₽/сут).${debtPart} Перевод по СБП: ${OWNER_SBP_PHONE} (Айдаров И.М.). Чек можно отправить прямо сюда.`;
       }
       if (type === 'fine') {
         const notePart = d.debtNote ? ` (${d.debtNote})` : '';
@@ -1553,7 +1676,9 @@
         const isReturned = statusText.toLowerCase() === 'сдал';
         const pillClass = isReturned ? 'st-service' : 'st-free';
         const tsInfo = parseDriverTimestamp(d.timestamp);
-        const defaultRate = findCarRateByPlate(d.plate);
+        const carObj = findCarByPlate(d.plate);
+        const defaultRate = carObj && carObj.dailyRateRaw ? Number(carObj.dailyRateRaw) : 1500;
+        const carModel = (carObj && carObj.model) ? carObj.model : (d.car || '');
         const defaultDays = diffDaysInclusive(tsInfo.dateIso, todayIso);
         const debtVal = Number(d.debt) || 0, finesVal = Number(d.fines) || 0;
         const hasDebtOrFines = debtVal > 0 || finesVal > 0;
@@ -1631,11 +1756,12 @@
                 <div class="field-group"><label class="field-lbl" for="${pp}method">Способ оплаты</label><select id="${pp}method"><option value="СБП">СБП</option><option value="Наличные">Наличные</option><option value="Перевод на карту">Перевод на карту</option><option value="Взаимозачёт">Взаимозачёт</option></select></div>
                 <div class="field-group"><label class="field-lbl" for="${pp}cat">Категория</label><select id="${pp}cat"><option value="Аренда">Аренда</option><option value="Погашение долга">Погашение долга</option><option value="Штраф / Доплата">Штраф / Доплата</option><option value="Залог">Залог</option><option value="ОСАГО">ОСАГО</option><option value="Возврат залога">Возврат залога</option></select></div>
                 <div class="field-group"><label class="field-lbl" for="${pp}date">Дата платежа</label><input type="date" id="${pp}date" class="field-input" value="${todayIso}"></div>
-                <div class="field-group full"><label class="field-lbl" for="${pp}check">Чек НПД / подтверждение</label><select id="${pp}check"><option value="Чек НПД выдан">Чек НПД выдан</option><option value="Ожидает чек НПД">Ожидает чек НПД</option><option value="Расписка в мессенджере">Расписка в мессенджере</option></select></div>
+                <div class="field-group full"><label class="field-lbl" for="${pp}check">Чек НПД / подтверждение</label><select id="${pp}check"><option value="Ожидает чек НПД">Ожидает чек НПД</option><option value="Чек НПД выдан">Чек НПД выдан</option><option value="Расписка в мессенджере">Расписка в мессенджере</option></select></div>
                 <div class="field-group full"><label class="field-lbl" for="${pp}comment">Комментарий / за какой день</label><input type="text" id="${pp}comment" class="field-input" placeholder="Напр. За ${parseExpiryInfo(todayIso).ru}"></div>
                 <label class="check-row" for="${pp}deduct"><input type="checkbox" id="${pp}deduct"><span>🔄 Автоматически списать эту сумму с долга / штрафа</span></label>
                 <button class="btn-oil-done js-pay-save">💰 Записать оплату</button>
-                <button class="btn-copy js-pay-receipt">📋 Расписка водителю</button>
+                <button class="btn-tg js-pay-npd">🧾 Текст + Мой налог</button>
+                <button class="btn-copy btn-full js-pay-receipt">📋 Скопировать расписку водителю</button>
               </div>
               <div class="pay-subhead">2. Выгрузить PDF Акт сверки в Telegram</div>
               <div class="doc-edit">
@@ -1701,14 +1827,18 @@
           card.querySelector('.js-send-tg').addEventListener('click', async () => { const ph = formatPhoneIntl(d.phone); if (!ph) return notifyUser('У водителя не указан номер телефона.'); await copyToClipboard(msgTa.value.trim()); openExternalUrl(`https://t.me/+${ph}?text=${encodeURIComponent(msgTa.value.trim())}`); });
           card.querySelector('.js-send-claim').addEventListener('click', (e) => sendDriverClaimPdf(d, e.target));
 
-          const methodSel = card.querySelector('#' + pp + 'method'), checkSel = card.querySelector('#' + pp + 'check'), catSel = card.querySelector('#' + pp + 'cat'), deductChk = card.querySelector('#' + pp + 'deduct');
+          const catSel = card.querySelector('#' + pp + 'cat'), deductChk = card.querySelector('#' + pp + 'deduct');
           const fromInp = card.querySelector('#' + pp + 'from'), toInp = card.querySelector('#' + pp + 'to'), daysInp = card.querySelector('#' + pp + 'days');
-          methodSel.addEventListener('change', () => { checkSel.value = methodSel.value === 'Наличные' ? 'Расписка в мессенджере' : 'Чек НПД выдан'; });
           catSel.addEventListener('change', () => { deductChk.checked = (catSel.value === 'Погашение долга' || catSel.value === 'Штраф / Доплата'); });
           const recalcDays = () => { if (fromInp.value && toInp.value) daysInp.value = diffDaysInclusive(fromInp.value, toInp.value); };
           fromInp.addEventListener('change', recalcDays); toInp.addEventListener('change', recalcDays);
 
           card.querySelector('.js-pay-save').addEventListener('click', (e) => saveDriverPayment(d, pp, panels.pay, e.target));
+          card.querySelector('.js-pay-npd').addEventListener('click', (e) => {
+            const amt = document.getElementById(pp + 'amount').value.trim();
+            const title = buildLocalNpdTitle(catSel.value, carModel, d.plate, d.contractNo);
+            copyNpdAndOpenMyNalog(title, amt, e.target);
+          });
           card.querySelector('.js-pay-receipt').addEventListener('click', (e) => copyDriverReceipt(d, pp, e.target, panels.pay));
           card.querySelector('.js-pay-pdf').addEventListener('click', (e) => exportDriverReconciliation(d, pp, e.target));
 
