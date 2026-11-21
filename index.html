@@ -236,6 +236,24 @@
       border: 1px solid rgba(128,128,128,0.3); background: var(--bg); color: var(--text); font-size: 12px; line-height: 1.4;
     }
 
+    .crm-toast {
+      position: fixed; left: 12px; right: 12px; bottom: 16px; z-index: 9998;
+      background: #1e293b; color: #ffffff; padding: 12px 14px; border-radius: 12px;
+      font-size: 13px; line-height: 1.45; white-space: pre-line;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.28); cursor: pointer;
+    }
+    .crm-modal-backdrop {
+      position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.52);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .crm-modal-box {
+      width: 100%; max-width: 340px; background: var(--card-bg); color: var(--text);
+      border-radius: 14px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .crm-modal-text { font-size: 13.5px; line-height: 1.45; white-space: pre-line; margin-bottom: 14px; }
+    .crm-modal-btns { display: flex; gap: 8px; }
+    .crm-modal-btns button { flex: 1; }
+
     .msg { padding: 16px; border-radius: 10px; background: var(--card-bg); text-align: center; font-size: 14px; margin-bottom: 10px; }
     .error { color: #d93025; border: 1px solid #f5c2c7; background: #f8d7da; }
     .hidden { display: none !important; }
@@ -356,7 +374,7 @@
           </div>
           <div class="field-group">
             <label class="field-lbl" for="qexp_amt">Сумма (₽) *</label>
-            <input type="number" inputmode="numeric" id="qexp_amt" class="field-input" placeholder="3500">
+            <input type="text" inputmode="numeric" id="qexp_amt" class="field-input" placeholder="3500">
           </div>
           <div class="field-group">
             <label class="field-lbl" for="qexp_date">Дата</label>
@@ -364,7 +382,7 @@
           </div>
           <div class="field-group">
             <label class="field-lbl" for="qexp_km">Пробег (км)</label>
-            <input type="number" inputmode="numeric" id="qexp_km" class="field-input" placeholder="Необязательно">
+            <input type="text" inputmode="numeric" id="qexp_km" class="field-input" placeholder="Необязательно">
           </div>
           <div class="field-group full">
             <label class="field-lbl" for="qexp_desc">Описание / сервис</label>
@@ -408,7 +426,7 @@
           <div class="field-group"><label class="field-lbl" for="bl_vu">ВУ</label><input type="text" id="bl_vu" class="field-input" placeholder="99 20 123456"></div>
           <div class="field-group"><label class="field-lbl" for="bl_plate">Госномер ТС</label><input type="text" id="bl_plate" class="field-input" placeholder="К707ТТ124"></div>
           <div class="field-group full"><label class="field-lbl" for="bl_reason">Причина *</label><input type="text" id="bl_reason" class="field-input" placeholder="Не отдал долг / скрыл ДТП / бросил авто"></div>
-          <div class="field-group full"><label class="field-lbl" for="bl_debt">Сумма долга / ущерба (₽)</label><input type="number" inputmode="numeric" id="bl_debt" class="field-input" value="0"></div>
+          <div class="field-group full"><label class="field-lbl" for="bl_debt">Сумма долга / ущерба (₽)</label><input type="text" inputmode="numeric" id="bl_debt" class="field-input" value="0"></div>
           <button class="btn-danger btn-full" id="btnSaveManualBl" onclick="saveManualBlacklist(this)">⛔ Внести в Чёрный список</button>
         </div>
       </div>
@@ -455,6 +473,17 @@
     </div>
   </div>
 
+  <div id="crmToast" class="crm-toast hidden" onclick="this.classList.add('hidden')"></div>
+  <div id="crmModal" class="crm-modal-backdrop hidden">
+    <div class="crm-modal-box">
+      <div id="crmModalText" class="crm-modal-text"></div>
+      <div class="crm-modal-btns">
+        <button type="button" id="crmModalCancel" class="btn-copy">Отмена</button>
+        <button type="button" id="crmModalOk" class="btn-save">Подтвердить</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbxjqMGkJBR045NHEBrVlgEWOYeCuqmMqOmTMwMJFkR0UKG90HNYVtuktVdDfcwS27x5YQ/exec';
     const BOT_USERNAME = 'Documents_TS_bot';
@@ -482,17 +511,46 @@
     let currentTab = 'fleet';
     let preferJsonp = false;
     let finPeriodsInitialized = false;
+    let toastTimer = null;
+
+    // Фикс потери фокуса клавиатуры в Telegram Desktop (Windows WebView2)
+    document.addEventListener('pointerdown', (e) => {
+      const el = e.target && e.target.closest ? e.target.closest('input, textarea, select') : null;
+      if (el && !el.disabled) {
+        try { window.focus(); } catch (err) {}
+      }
+    }, true);
+
+    function notifyUser(message) {
+      const el = document.getElementById('crmToast');
+      if (!el) return window.alert(message);
+      el.textContent = String(message || '');
+      el.classList.remove('hidden');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.add('hidden'), 5000);
+    }
 
     function askConfirm(message) {
       return new Promise(resolve => {
-        if (tg && typeof tg.showConfirm === 'function') tg.showConfirm(message, ok => resolve(!!ok));
-        else resolve(window.confirm(message));
+        const modal = document.getElementById('crmModal');
+        const txt = document.getElementById('crmModalText');
+        const okBtn = document.getElementById('crmModalOk');
+        const cancelBtn = document.getElementById('crmModalCancel');
+        if (!modal || !txt || !okBtn || !cancelBtn) return resolve(window.confirm(message));
+        txt.textContent = String(message || '');
+        modal.classList.remove('hidden');
+        const close = (val) => {
+          modal.classList.add('hidden');
+          okBtn.onclick = null;
+          cancelBtn.onclick = null;
+          modal.onclick = null;
+          try { window.focus(); } catch (e) {}
+          resolve(val);
+        };
+        okBtn.onclick = () => close(true);
+        cancelBtn.onclick = () => close(false);
+        modal.onclick = (e) => { if (e.target === modal) close(false); };
       });
-    }
-
-    function notifyUser(message) {
-      if (tg && typeof tg.showAlert === 'function') tg.showAlert(message);
-      else window.alert(message);
     }
 
     function openExternalUrl(url) {
@@ -524,6 +582,10 @@
       return false;
     }
 
+    function cleanNumStr(raw) {
+      return String(raw || '').replace(/[^\d.,]/g, '').replace(',', '.').trim();
+    }
+
     function buildLocalNpdTitle(category, model, plate, contractNo) {
       const cat = String(category || 'Аренда').trim();
       const carPart = [String(model || '').trim(), String(plate || '').trim()].filter(Boolean).join(' ');
@@ -541,7 +603,7 @@
         btn.textContent = '✅ Скопировано!';
         setTimeout(() => { btn.textContent = old; }, 1600);
       }
-      notifyUser(`📋 Текст услуги скопирован:\n«${serviceTitle}»\n\nСумма: ${fmtMoney(amount)} ₽\n\nСейчас откроется «Мой налог» (или вставьте текст в ВТБ «Самозанятость»). После выдачи чека просто перешлите ссылку или картинку чека в бот @${BOT_USERNAME}!`);
+      notifyUser(`📋 Текст услуги скопирован:\n«${serviceTitle}» (${fmtMoney(amount)} ₽)\nОткрываем «Мой налог» — после выдачи чека перешлите его в бот @${BOT_USERNAME}.`);
       openExternalUrl(MY_NALOG_URL);
     }
 
@@ -898,9 +960,9 @@
               <div class="pay-subhead" style="margin-top:0;">🔧 Записать расход / ремонт (${escapeHtml(c.plate)})</div>
               <div class="doc-edit">
                 <div class="field-group"><label class="field-lbl" for="${ep}cat">Категория</label><select id="${ep}cat"><option value="Ремонт">Ремонт</option><option value="ТО / Масло">ТО / Масло</option><option value="Шины / Шиномонтаж">Шины / Шиномонтаж</option><option value="Запчасти">Запчасти</option><option value="ОСАГО / Страховка">ОСАГО / Страховка</option><option value="Мойка / Химчистка">Мойка / Химчистка</option><option value="GPS / Связь Tele2">GPS / Связь Tele2</option><option value="Прочее">Прочее</option></select></div>
-                <div class="field-group"><label class="field-lbl" for="${ep}amt">Сумма (₽) *</label><input type="number" inputmode="numeric" id="${ep}amt" class="field-input" placeholder="2500"></div>
+                <div class="field-group"><label class="field-lbl" for="${ep}amt">Сумма (₽) *</label><input type="text" inputmode="numeric" id="${ep}amt" class="field-input" placeholder="2500"></div>
                 <div class="field-group"><label class="field-lbl" for="${ep}date">Дата</label><input type="date" id="${ep}date" class="field-input" value="${todayIso}"></div>
-                <div class="field-group"><label class="field-lbl" for="${ep}km">Пробег (км)</label><input type="number" inputmode="numeric" id="${ep}km" class="field-input" value="${c.currentMileage !== null ? c.currentMileage : ''}"></div>
+                <div class="field-group"><label class="field-lbl" for="${ep}km">Пробег (км)</label><input type="text" inputmode="numeric" id="${ep}km" class="field-input" value="${c.currentMileage !== null ? c.currentMileage : ''}"></div>
                 <div class="field-group full"><label class="field-lbl" for="${ep}desc">Что сделано / сервис</label><input type="text" id="${ep}desc" class="field-input" placeholder="Напр. Замена масла + фильтр"></div>
                 <button class="btn-oil-done btn-full js-exp-save">💾 Сохранить расход</button>
               </div>
@@ -932,12 +994,12 @@
                 <div class="field-group"><label class="field-lbl" for="${p}stsDate">Дата выдачи СТС</label><input type="date" id="${p}stsDate" class="field-input" value="${escapeHtml(stsDateIso)}"></div>
                 <div class="field-group"><label class="field-lbl" for="${p}frame">Кузов / VIN</label><input type="text" id="${p}frame" class="field-input" value="${escapeHtml(c.frame || '')}"></div>
                 <div class="field-group"><label class="field-lbl" for="${p}code">№ в парке</label><input type="text" id="${p}code" class="field-input" value="${escapeHtml(c.code || '')}"></div>
-                <div class="field-group"><label class="field-lbl" for="${p}year">Год выпуска</label><input type="number" inputmode="numeric" id="${p}year" class="field-input" value="${escapeHtml(c.year || '')}"></div>
+                <div class="field-group"><label class="field-lbl" for="${p}year">Год выпуска</label><input type="text" inputmode="numeric" id="${p}year" class="field-input" value="${escapeHtml(c.year || '')}"></div>
                 <div class="field-group"><label class="field-lbl" for="${p}color">Цвет кузова</label><input type="text" id="${p}color" class="field-input" value="${escapeHtml(c.color || '')}"></div>
-                <div class="field-group"><label class="field-lbl" for="${p}rate">Тариф (₽/сут)</label><input type="number" inputmode="numeric" id="${p}rate" class="field-input" value="${escapeHtml(c.dailyRateRaw !== '' ? c.dailyRateRaw : '')}"></div>
-                <div class="field-group"><label class="field-lbl" for="${p}dep">Залог (₽)</label><input type="number" inputmode="numeric" id="${p}dep" class="field-input" value="${escapeHtml(c.depositRaw !== '' ? c.depositRaw : '0')}"></div>
-                <div class="field-group"><label class="field-lbl" for="${p}val">Оценка ТС (₽)</label><input type="number" inputmode="numeric" id="${p}val" class="field-input" value="${escapeHtml(c.assessedValue !== '' ? c.assessedValue : '')}"></div>
-                <div class="field-group"><label class="field-lbl" for="${p}lim">Лимит (км/сут)</label><input type="number" inputmode="numeric" id="${p}lim" class="field-input" value="${escapeHtml(c.mileageLimit || '')}"></div>
+                <div class="field-group"><label class="field-lbl" for="${p}rate">Тариф (₽/сут)</label><input type="text" inputmode="numeric" id="${p}rate" class="field-input" value="${escapeHtml(c.dailyRateRaw !== '' ? c.dailyRateRaw : '')}"></div>
+                <div class="field-group"><label class="field-lbl" for="${p}dep">Залог (₽)</label><input type="text" inputmode="numeric" id="${p}dep" class="field-input" value="${escapeHtml(c.depositRaw !== '' ? c.depositRaw : '0')}"></div>
+                <div class="field-group"><label class="field-lbl" for="${p}val">Оценка ТС (₽)</label><input type="text" inputmode="numeric" id="${p}val" class="field-input" value="${escapeHtml(c.assessedValue !== '' ? c.assessedValue : '')}"></div>
+                <div class="field-group"><label class="field-lbl" for="${p}lim">Лимит (км/сут)</label><input type="text" inputmode="numeric" id="${p}lim" class="field-input" value="${escapeHtml(c.mileageLimit || '')}"></div>
                 <button class="btn-oil-done btn-full js-car-save">💾 Сохранить ТС во всех документах</button>
               </div>
             </div>`;
@@ -993,12 +1055,12 @@
         stsDate: document.getElementById(prefix + 'stsDate').value.trim(),
         frame: document.getElementById(prefix + 'frame').value.trim(),
         code: document.getElementById(prefix + 'code').value.trim(),
-        year: document.getElementById(prefix + 'year').value.trim(),
+        year: cleanNumStr(document.getElementById(prefix + 'year').value),
         color: document.getElementById(prefix + 'color').value.trim(),
-        dailyRate: document.getElementById(prefix + 'rate').value.trim(),
-        deposit: document.getElementById(prefix + 'dep').value.trim(),
-        assessedValue: document.getElementById(prefix + 'val').value.trim(),
-        mileageLimit: document.getElementById(prefix + 'lim').value.trim()
+        dailyRate: cleanNumStr(document.getElementById(prefix + 'rate').value),
+        deposit: cleanNumStr(document.getElementById(prefix + 'dep').value),
+        assessedValue: cleanNumStr(document.getElementById(prefix + 'val').value),
+        mileageLimit: cleanNumStr(document.getElementById(prefix + 'lim').value)
       };
       if (!payload.plate) return notifyUser('Госномер автомобиля не может быть пустым.');
       if (payload.plate !== String(car.plate || '').trim().toUpperCase()) {
@@ -1025,9 +1087,9 @@
 
     async function saveCarExpense(car, ep, btn) {
       const category = document.getElementById(ep + 'cat').value;
-      const amount = document.getElementById(ep + 'amt').value.trim();
+      const amount = cleanNumStr(document.getElementById(ep + 'amt').value);
       const date = document.getElementById(ep + 'date').value.trim();
-      const mileage = document.getElementById(ep + 'km').value.trim();
+      const mileage = cleanNumStr(document.getElementById(ep + 'km').value);
       const description = document.getElementById(ep + 'desc').value.trim();
       if (!amount || Number(amount) <= 0) return notifyUser('Укажите сумму расхода больше 0 ₽.');
 
@@ -1049,9 +1111,9 @@
     async function saveQuickExpense(btn) {
       const plate = document.getElementById('qexp_plate').value;
       const category = document.getElementById('qexp_cat').value;
-      const amount = document.getElementById('qexp_amt').value.trim();
+      const amount = cleanNumStr(document.getElementById('qexp_amt').value);
       const date = document.getElementById('qexp_date').value.trim();
-      const mileage = document.getElementById('qexp_km').value.trim();
+      const mileage = cleanNumStr(document.getElementById('qexp_km').value);
       const description = document.getElementById('qexp_desc').value.trim();
       if (!amount || Number(amount) <= 0) return notifyUser('Укажите сумму расхода больше 0 ₽.');
 
@@ -1371,8 +1433,8 @@
             <div class="doc-edit">
               <div class="field-group full"><label class="field-lbl" for="${fp}uin">УИН / Постановление (20 цифр)</label><input type="text" inputmode="numeric" id="${fp}uin" class="field-input" value="${escapeHtml(f.uin || '')}"></div>
               <div class="field-group full"><label class="field-lbl" for="${fp}drv">Водитель</label><select id="${fp}drv">${driverOptsBase}</select></div>
-              <div class="field-group"><label class="field-lbl" for="${fp}amt">Сумма полная (₽)</label><input type="number" inputmode="numeric" id="${fp}amt" class="field-input" value="${f.amount || ''}"></div>
-              <div class="field-group"><label class="field-lbl" for="${fp}disc">Со скидкой (₽)</label><input type="number" inputmode="numeric" id="${fp}disc" class="field-input" value="${f.discountAmount || ''}"></div>
+              <div class="field-group"><label class="field-lbl" for="${fp}amt">Сумма полная (₽)</label><input type="text" inputmode="numeric" id="${fp}amt" class="field-input" value="${f.amount || ''}"></div>
+              <div class="field-group"><label class="field-lbl" for="${fp}disc">Со скидкой (₽)</label><input type="text" inputmode="numeric" id="${fp}disc" class="field-input" value="${f.discountAmount || ''}"></div>
               <div class="field-group"><label class="field-lbl" for="${fp}vdate">Дата нарушения</label><input type="date" id="${fp}vdate" class="field-input" value="${escapeHtml(dateStrToIso(f.violDate || f.decDate))}"></div>
               <div class="field-group"><label class="field-lbl" for="${fp}vtime">Время фиксации</label><input type="time" id="${fp}vtime" class="field-input" value="${escapeHtml(f.violTime || '')}"></div>
               <div class="field-group full"><label class="field-lbl" for="${fp}art">Статья КоАП / Описание</label><input type="text" id="${fp}art" class="field-input" value="${escapeHtml(f.article || '')}"></div>
@@ -1400,7 +1462,7 @@
     function collectFineFields(f, fp) {
       return {
         fineId: f.fineId, uin: document.getElementById(fp + 'uin').value.trim(), driverRow: document.getElementById(fp + 'drv').value,
-        amount: document.getElementById(fp + 'amt').value.trim(), discountAmount: document.getElementById(fp + 'disc').value.trim(),
+        amount: cleanNumStr(document.getElementById(fp + 'amt').value), discountAmount: cleanNumStr(document.getElementById(fp + 'disc').value),
         violDate: document.getElementById(fp + 'vdate').value.trim(), violTime: document.getElementById(fp + 'vtime').value.trim(),
         article: document.getElementById(fp + 'art').value.trim()
       };
@@ -1477,7 +1539,7 @@
     }
 
     async function saveManualBlacklist(btn) {
-      const fio = document.getElementById('bl_fio').value.trim(), phone = document.getElementById('bl_phone').value.trim(), passport = document.getElementById('bl_passport').value.trim(), vu = document.getElementById('bl_vu').value.trim(), plate = document.getElementById('bl_plate').value.trim().toUpperCase(), reason = document.getElementById('bl_reason').value.trim(), debt = document.getElementById('bl_debt').value.trim();
+      const fio = document.getElementById('bl_fio').value.trim(), phone = document.getElementById('bl_phone').value.trim(), passport = document.getElementById('bl_passport').value.trim(), vu = document.getElementById('bl_vu').value.trim(), plate = document.getElementById('bl_plate').value.trim().toUpperCase(), reason = document.getElementById('bl_reason').value.trim(), debt = cleanNumStr(document.getElementById('bl_debt').value);
       if (!fio && !phone && !passport) return notifyUser('Укажите хотя бы ФИО, телефон или паспорт.');
       if (!reason) return notifyUser('Укажите причину внесения в Чёрный список.');
       const old = btn.textContent; btn.textContent = 'Сохраняем...'; btn.disabled = true;
@@ -1578,7 +1640,7 @@
         const c = item.car, info = item.info, card = document.createElement('div'); card.className = 'card';
         const curId = 'oil_cur_' + idx, lastId = 'oil_last_' + idx;
         const pcNote = c.lastPhotoControl ? `<br>📸 Последний фотоконтроль: <strong>${escapeHtml(c.lastPhotoControl)}</strong>` : '';
-        const editHtml = canEdit ? `<div class="doc-edit"><div class="field-group"><label class="field-lbl" for="${curId}">Текущий пробег (км)</label><input type="number" inputmode="numeric" id="${curId}" class="field-input" value="${info.cur !== null ? info.cur : ''}"></div><div class="field-group"><label class="field-lbl" for="${lastId}">Замена масла (км)</label><input type="number" inputmode="numeric" id="${lastId}" class="field-input" value="${info.last !== null ? info.last : ''}"></div><button class="btn-save js-oil-save">Сохранить пробег</button><button class="btn-oil-done js-oil-done">🛢️ Заменил масло</button></div>` : '';
+        const editHtml = canEdit ? `<div class="doc-edit"><div class="field-group"><label class="field-lbl" for="${curId}">Текущий пробег (км)</label><input type="text" inputmode="numeric" id="${curId}" class="field-input" value="${info.cur !== null ? info.cur : ''}"></div><div class="field-group"><label class="field-lbl" for="${lastId}">Замена масла (км)</label><input type="text" inputmode="numeric" id="${lastId}" class="field-input" value="${info.last !== null ? info.last : ''}"></div><button class="btn-save js-oil-save">Сохранить пробег</button><button class="btn-oil-done js-oil-done">🛢️ Заменил масло</button></div>` : '';
         card.innerHTML = `<div class="card-top"><span class="plate"><span class="order-num">${item.order}.</span>${escapeHtml(c.plate)}</span><span class="status-pill ${info.pillClass}">${escapeHtml(info.label)}</span></div><div class="model">${escapeHtml(c.model || '')}${c.code ? ' • ' + escapeHtml(c.code) : ''} (${escapeHtml(c.status || '—')})</div><div class="meta">Текущий пробег: <strong>${escapeHtml(fmtKm(info.cur))}</strong><br>Последняя замена: <strong>${escapeHtml(fmtKm(info.last))}</strong> → След.: <strong>${escapeHtml(fmtKm(info.next))}</strong>${pcNote}</div>${editHtml}`;
         list.appendChild(card);
         if (canEdit) {
@@ -1593,7 +1655,7 @@
     async function saveOsago(plate, polId, expId, btn) { const old = btn.textContent; btn.textContent = 'Сохранение...'; btn.disabled = true; try { await callApi('setOsago', { plate, policy: document.getElementById(polId).value.trim(), expiry: document.getElementById(expId).value.trim() }); await loadInitial(); } catch (err) { showError(err); } finally { btn.textContent = old; btn.disabled = false; } }
     async function saveTo(plate, numId, expId, btn) { const old = btn.textContent; btn.textContent = 'Сохранение...'; btn.disabled = true; try { await callApi('setTo', { plate, toNumber: document.getElementById(numId).value.trim(), toExpiry: document.getElementById(expId).value.trim() }); await loadInitial(); } catch (err) { showError(err); } finally { btn.textContent = old; btn.disabled = false; } }
     async function saveOil(plate, curId, lastId, markChanged, activeBtn, otherBtn) {
-      const curVal = document.getElementById(curId).value.trim(), lastVal = document.getElementById(lastId).value.trim();
+      const curVal = cleanNumStr(document.getElementById(curId).value), lastVal = cleanNumStr(document.getElementById(lastId).value);
       if (markChanged) {
         const baseVal = curVal || lastVal;
         if (!baseVal) return notifyUser('Сначала введите текущий пробег автомобиля (км).');
@@ -1704,8 +1766,8 @@
             <div class="expand-panel hidden js-debt-panel">
               <div class="pay-subhead" style="margin-top:0;">Задолженность и штрафы водителя</div>
               <div class="doc-edit">
-                <div class="field-group"><label class="field-lbl" for="${dp}debt">Задолженность (₽)</label><input type="number" inputmode="numeric" id="${dp}debt" class="field-input" value="${debtVal}"></div>
-                <div class="field-group"><label class="field-lbl" for="${dp}fines">Штрафы ГИБДД (₽)</label><input type="number" inputmode="numeric" id="${dp}fines" class="field-input" value="${finesVal}"></div>
+                <div class="field-group"><label class="field-lbl" for="${dp}debt">Задолженность (₽)</label><input type="text" inputmode="numeric" id="${dp}debt" class="field-input" value="${debtVal}"></div>
+                <div class="field-group"><label class="field-lbl" for="${dp}fines">Штрафы ГИБДД (₽)</label><input type="text" inputmode="numeric" id="${dp}fines" class="field-input" value="${finesVal}"></div>
                 <div class="field-group full"><label class="field-lbl" for="${dp}note">Примечание</label><input type="text" id="${dp}note" class="field-input" value="${escapeHtml(d.debtNote || '')}" placeholder="Напр. Долг за 19.11 + камера 750 ₽"></div>
                 <button class="btn-save js-debt-save">💾 Сохранить</button>
                 <button class="btn-oil-done js-debt-clear">✅ Погашено (0 ₽)</button>
@@ -1723,7 +1785,7 @@
               <div class="pay-subhead" style="margin-top:0;color:#dc2626;">⛔ Добавить в Чёрный список</div>
               <div class="doc-edit">
                 <div class="field-group full"><label class="field-lbl" for="${bp}reason">Причина *</label><input type="text" id="${bp}reason" class="field-input" placeholder="Не оплатил аренду / бросил авто / скрыл ДТП"></div>
-                <div class="field-group full"><label class="field-lbl" for="${bp}debt">Сумма долга / ущерба (₽)</label><input type="number" inputmode="numeric" id="${bp}debt" class="field-input" value="${debtVal + finesVal}"></div>
+                <div class="field-group full"><label class="field-lbl" for="${bp}debt">Сумма долга / ущерба (₽)</label><input type="text" inputmode="numeric" id="${bp}debt" class="field-input" value="${debtVal + finesVal}"></div>
                 <button class="btn-danger btn-full js-bl-save">⛔ Подтвердить внесение в ЧС</button>
               </div>
             </div>
@@ -1752,7 +1814,7 @@
               <div class="pay-summary js-pay-summary">Загрузка баланса и оплат...</div>
               <div class="pay-subhead">1. Принять оплату (СБП / Наличные)</div>
               <div class="doc-edit">
-                <div class="field-group"><label class="field-lbl" for="${pp}amount">Сумма (₽)</label><input type="number" inputmode="numeric" id="${pp}amount" class="field-input" value="${defaultRate}"></div>
+                <div class="field-group"><label class="field-lbl" for="${pp}amount">Сумма (₽)</label><input type="text" inputmode="numeric" id="${pp}amount" class="field-input" value="${defaultRate}"></div>
                 <div class="field-group"><label class="field-lbl" for="${pp}method">Способ оплаты</label><select id="${pp}method"><option value="СБП">СБП</option><option value="Наличные">Наличные</option><option value="Перевод на карту">Перевод на карту</option><option value="Взаимозачёт">Взаимозачёт</option></select></div>
                 <div class="field-group"><label class="field-lbl" for="${pp}cat">Категория</label><select id="${pp}cat"><option value="Аренда">Аренда</option><option value="Погашение долга">Погашение долга</option><option value="Штраф / Доплата">Штраф / Доплата</option><option value="Залог">Залог</option><option value="ОСАГО">ОСАГО</option><option value="Возврат залога">Возврат залога</option></select></div>
                 <div class="field-group"><label class="field-lbl" for="${pp}date">Дата платежа</label><input type="date" id="${pp}date" class="field-input" value="${todayIso}"></div>
@@ -1767,8 +1829,8 @@
               <div class="doc-edit">
                 <div class="field-group"><label class="field-lbl" for="${pp}from">Период с</label><input type="date" id="${pp}from" class="field-input" value="${escapeHtml(tsInfo.dateIso)}"></div>
                 <div class="field-group"><label class="field-lbl" for="${pp}to">Период по</label><input type="date" id="${pp}to" class="field-input" value="${todayIso}"></div>
-                <div class="field-group"><label class="field-lbl" for="${pp}days">Дней аренды</label><input type="number" inputmode="numeric" id="${pp}days" class="field-input" value="${defaultDays}"></div>
-                <div class="field-group"><label class="field-lbl" for="${pp}rate">Тариф (₽/сут)</label><input type="number" inputmode="numeric" id="${pp}rate" class="field-input" value="${defaultRate}"></div>
+                <div class="field-group"><label class="field-lbl" for="${pp}days">Дней аренды</label><input type="text" inputmode="numeric" id="${pp}days" class="field-input" value="${defaultDays}"></div>
+                <div class="field-group"><label class="field-lbl" for="${pp}rate">Тариф (₽/сут)</label><input type="text" inputmode="numeric" id="${pp}rate" class="field-input" value="${defaultRate}"></div>
                 <button class="btn-save btn-full js-pay-pdf">📄 Выгрузить PDF Акт сверки в Telegram</button>
               </div>
               <div class="pay-history js-pay-history"></div>
@@ -1835,7 +1897,7 @@
 
           card.querySelector('.js-pay-save').addEventListener('click', (e) => saveDriverPayment(d, pp, panels.pay, e.target));
           card.querySelector('.js-pay-npd').addEventListener('click', (e) => {
-            const amt = document.getElementById(pp + 'amount').value.trim();
+            const amt = cleanNumStr(document.getElementById(pp + 'amount').value);
             const title = buildLocalNpdTitle(catSel.value, carModel, d.plate, d.contractNo);
             copyNpdAndOpenMyNalog(title, amt, e.target);
           });
@@ -1852,7 +1914,7 @@
     }
 
     async function addDriverToBlacklist(driver, bp, btn) {
-      const reason = document.getElementById(bp + 'reason').value.trim(), debt = document.getElementById(bp + 'debt').value.trim();
+      const reason = document.getElementById(bp + 'reason').value.trim(), debt = cleanNumStr(document.getElementById(bp + 'debt').value);
       if (!reason) return notifyUser('Укажите причину добавления в Чёрный список.');
       if (!(await askConfirm(`Внести водителя ${driver.name} (${driver.plate || '—'}) в Чёрный список?`))) return;
       const old = btn.textContent; btn.textContent = 'Вносим в ЧС...'; btn.disabled = true;
@@ -1879,12 +1941,12 @@
     }
 
     async function saveDriverDebtFines(driver, debtInp, finesInp, noteInp, clearAll, activeBtn, otherBtn) {
-      const debt = clearAll ? 0 : Math.max(0, Number(String(debtInp.value || '0').replace(/\s+/g, '')) || 0);
-      const fines = clearAll ? 0 : Math.max(0, Number(String(finesInp.value || '0').replace(/\s+/g, '')) || 0);
+      const debt = clearAll ? 0 : Math.max(0, Number(cleanNumStr(debtInp.value)) || 0);
+      const fines = clearAll ? 0 : Math.max(0, Number(cleanNumStr(finesInp.value)) || 0);
       const note = clearAll ? '' : String(noteInp.value || '').trim();
       if (clearAll && !(await askConfirm(`Обнулить долг и штрафы для ${driver.name} до 0 ₽?`))) return;
       const old = activeBtn.textContent; activeBtn.textContent = 'Сохранение...'; activeBtn.disabled = true; if (otherBtn) otherBtn.disabled = true;
-      try { await callApi('setDriverDebtFines', { row: driver.row, debt: String(debt), fines: String(fines), note }, 20000); await loadDrivers(); }
+      try { await callApi('setDriverDebtFines', { row: driver.row, debt: String(debt), fines: String(fines), note }, 20000); notifyUser('✅ Долг и штрафы обновлены!'); await loadDrivers(); }
       catch (err) { activeBtn.textContent = old; activeBtn.disabled = false; if (otherBtn) otherBtn.disabled = false; showError(err); }
     }
 
@@ -1911,7 +1973,7 @@
     }
 
     async function saveDriverPayment(driver, pp, panel, btn) {
-      const amount = document.getElementById(pp + 'amount').value.trim(), method = document.getElementById(pp + 'method').value, category = document.getElementById(pp + 'cat').value, date = document.getElementById(pp + 'date').value, checkStatus = document.getElementById(pp + 'check').value, comment = document.getElementById(pp + 'comment').value.trim(), autoDeduct = document.getElementById(pp + 'deduct').checked;
+      const amount = cleanNumStr(document.getElementById(pp + 'amount').value), method = document.getElementById(pp + 'method').value, category = document.getElementById(pp + 'cat').value, date = document.getElementById(pp + 'date').value, checkStatus = document.getElementById(pp + 'check').value, comment = document.getElementById(pp + 'comment').value.trim(), autoDeduct = document.getElementById(pp + 'deduct').checked;
       if (!amount || Number(amount) <= 0) return notifyUser('Укажите сумму оплаты больше 0 ₽.');
       const old = btn.textContent; btn.textContent = 'Записываем...'; btn.disabled = true;
       try {
@@ -1926,14 +1988,14 @@
     }
 
     async function copyDriverReceipt(driver, pp, btn, panel) {
-      const amount = document.getElementById(pp + 'amount').value.trim(), method = document.getElementById(pp + 'method').value, category = document.getElementById(pp + 'cat').value, dateRu = parseExpiryInfo(document.getElementById(pp + 'date').value).ru, comment = document.getElementById(pp + 'comment').value.trim();
+      const amount = cleanNumStr(document.getElementById(pp + 'amount').value), method = document.getElementById(pp + 'method').value, category = document.getElementById(pp + 'cat').value, dateRu = parseExpiryInfo(document.getElementById(pp + 'date').value).ru, comment = document.getElementById(pp + 'comment').value.trim();
       const text = `Подтверждение оплаты по Договору № ${driver.contractNo || 'б/н'}:\nПринято ${fmtMoney(amount)} ₽ (${method}, ${category}) за авто ${driver.plate || '—'} от ${dateRu}${comment ? ` (${comment})` : ''}.\nАрендодатель: Айдаров И.М. (подтвердите ответным «+» по п. 7.2 Договора).`;
       if (await copyToClipboard(text)) { const old = btn.textContent; btn.textContent = '✅ Скопировано!'; btn.disabled = true; setTimeout(() => { btn.textContent = old; btn.disabled = false; }, 1800); }
       else { let box = panel.querySelector('.summary-fallback'); if (!box) { box = document.createElement('textarea'); box.className = 'summary-fallback'; box.readOnly = true; panel.appendChild(box); } box.value = text; box.focus(); box.select(); }
     }
 
     async function exportDriverReconciliation(driver, pp, btn) {
-      const dateFrom = document.getElementById(pp + 'from').value, dateTo = document.getElementById(pp + 'to').value, rentDays = document.getElementById(pp + 'days').value.trim(), dailyRate = document.getElementById(pp + 'rate').value.trim();
+      const dateFrom = document.getElementById(pp + 'from').value, dateTo = document.getElementById(pp + 'to').value, rentDays = cleanNumStr(document.getElementById(pp + 'days').value), dailyRate = cleanNumStr(document.getElementById(pp + 'rate').value);
       if (!(await askConfirm(`Сформировать PDF Акт сверки для ${driver.name} (${driver.plate})?`))) return;
       const old = btn.textContent; btn.textContent = 'Формируем PDF...'; btn.disabled = true;
       try { const res = await callApi('exportReconciliationPdf', { row: driver.row, driverName: driver.name, plate: driver.plate, contractNo: driver.contractNo || '', dateFrom, dateTo, rentDays, dailyRate }, 40000); notifyUser(`✅ PDF Акт сверки отправлен в Telegram!\n${res.balanceText || ''}`); }
