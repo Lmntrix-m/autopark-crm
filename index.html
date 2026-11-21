@@ -42,6 +42,13 @@
     .pending-banner.npd-banner { background: #e0f2fe; color: #075985; border-color: #0284c7; }
     .pending-banner span:last-child { text-decoration: underline; white-space: nowrap; }
 
+    .info-tip {
+      background: var(--card-bg); border: 1px dashed rgba(36, 129, 204, 0.45);
+      border-radius: 10px; padding: 9px 11px; margin-bottom: 10px;
+      font-size: 12px; color: var(--hint); line-height: 1.45;
+    }
+    .info-tip strong { color: var(--text); }
+
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
     .stat-box { background: var(--card-bg); padding: 10px 6px; border-radius: 10px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
     .stat-val { font-size: 18px; font-weight: 700; }
@@ -141,6 +148,15 @@
       border: 1px dashed rgba(128,128,128,0.35); border-radius: 7px; padding: 6px 8px;
       margin: 6px 0; word-break: break-word; line-height: 1.35;
     }
+
+    .mh-item {
+      padding: 8px 9px; border-radius: 9px; background: var(--bg);
+      border: 1px solid rgba(128,128,128,0.2); margin-bottom: 6px; font-size: 12px; line-height: 1.4;
+    }
+    .mh-item:last-child { margin-bottom: 0; }
+    .mh-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .mh-meta { font-size: 11.5px; color: var(--hint); margin-top: 2px; word-break: break-word; }
+    .mh-over { color: #dc2626; font-weight: 700; }
 
     .fin-row {
       display: flex; justify-content: space-between; align-items: center; gap: 8px;
@@ -437,6 +453,9 @@
     </div>
 
     <div id="osagoSection" class="hidden">
+      <div class="evening-bar hidden" id="osagoSyncBar">
+        <button class="btn-evening" id="btnSyncOsago" onclick="syncOsagoFromGmailNow(this)">🔄 Проверить и обновить ОСАГО из Gmail (30 дн.)</button>
+      </div>
       <div class="filters">
         <button class="chip active" onclick="filterOsago('all', this)">По порядку парка</button>
         <button class="chip" onclick="filterOsago('urgent', this)">Сначала срочные</button>
@@ -448,6 +467,9 @@
     </div>
 
     <div id="toSection" class="hidden">
+      <div class="info-tip">
+        💡 <strong>Автообновление ТО:</strong> перешлите PDF или фото диагностической карты ЕАИСТО в бот <strong>@Documents_TS_bot</strong> — ИИ сам обновит номер карты, дату и пробег.
+      </div>
       <div class="filters">
         <button class="chip active" onclick="filterTo('all', this)">По порядку парка</button>
         <button class="chip" onclick="filterTo('urgent', this)">Сначала срочные</button>
@@ -459,7 +481,7 @@
     </div>
 
     <div id="oilSection" class="hidden">
-      <div class="evening-bar">
+      <div class="evening-bar hidden" id="oilBroadcastBar">
         <button class="btn-evening green-bar-btn" onclick="sendWeeklyPhotoControlNow(this)">📸 Разослать фотоконтроль всем водителям (в бот)</button>
       </div>
       <div class="filters">
@@ -887,7 +909,8 @@
         document.getElementById('stService').textContent = data.counts.service;
 
         if (currentUser.role === 'admin' || currentUser.role === 'manager') {
-          ['tabDriversBtn', 'tabFinanceBtn', 'tabModBtn', 'tabFinesBtn', 'tabBlBtn'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+          ['tabDriversBtn', 'tabFinanceBtn', 'tabModBtn', 'tabFinesBtn', 'tabBlBtn', 'osagoSyncBar', 'oilBroadcastBar']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); });
         }
         updateBadges(data.pendingCount || 0, data.newFinesCount || 0, data.blacklistCount || 0, data.pendingNpdCount || 0);
         initFinanceSelectors();
@@ -916,6 +939,21 @@
       try {
         const res = await callApi('sendWeeklyPhotoControl', {}, 30000);
         notifyUser(`✅ Рассылка фотоконтроля завершена!\nОтправлено в бот: ${res.sent || 0}\nБез бота: ${res.noBot || 0}`);
+      } catch (err) { showError(err); }
+      finally { btn.textContent = old; btn.disabled = false; }
+    }
+
+    async function syncOsagoFromGmailNow(btn) {
+      const old = btn.textContent; btn.textContent = 'ИИ проверяет полисы в Gmail...'; btn.disabled = true;
+      try {
+        const res = await callApi('syncOsagoGmail', { daysBack: '30' }, 55000);
+        notifyUser(
+          `🛡️ Проверка ОСАГО в Gmail завершена!\n` +
+          `• Новых писем обработано: ${res.checked || 0}\n` +
+          `• Обновлено в таблице: ${res.updated || 0}\n` +
+          `• Пропущено старых: ${res.skippedOlder || 0}`
+        );
+        await loadInitial();
       } catch (err) { showError(err); }
       finally { btn.textContent = old; btn.disabled = false; }
     }
@@ -1559,7 +1597,7 @@
       catch (err) { showError(err); btn.textContent = old; btn.disabled = false; }
     }
 
-    /* ==================== ОСАГО / ТО / МАСЛО ==================== */
+    /* ==================== ОСАГО / ТО / МАСЛО + ИСТОРИЯ ПРОБЕГОВ ==================== */
 
     function buildFilteredDocsList(expiryField, activeFilter) {
       const enriched = allCars.map((c, idx) => ({ car: c, order: idx + 1, info: parseExpiryInfo(c[expiryField]) }));
@@ -1625,6 +1663,44 @@
       });
     }
 
+    async function loadCarMileageHistory(plate, panel) {
+      panel.innerHTML = '<div class="pay-item-meta">Загрузка истории пробегов...</div>';
+      try {
+        const data = await callApi('mileageHistory', { plate }, 20000);
+        const items = (data && data.items) ? data.items : [];
+        const lim = (data && data.car && data.car.mileageLimit) ? data.car.mileageLimit : 300;
+        if (!items.length) {
+          panel.innerHTML = '<div class="pay-item-meta">Записей фотоконтроля или ТО с пробегом по этой машине пока нет.</div>';
+          return;
+        }
+        panel.innerHTML =
+          `<div class="pay-subhead" style="margin-top:0;">📈 История пробега (лимит ${lim} км/сут)</div>` +
+          items.map(it => {
+            let deltaHtml = '';
+            if (it.diffKm !== null && it.diffKm !== undefined) {
+              const ratePart = it.kmPerDay !== null
+                ? `, <span class="${it.overLimit ? 'mh-over' : ''}">~${it.kmPerDay} км/сут${it.overLimit ? ' ⚠️' : ''}</span>`
+                : '';
+              deltaHtml = ` • +${Number(it.diffKm).toLocaleString('ru-RU')} км${ratePart}`;
+            }
+            const linkHtml = it.folderUrl
+              ? ` • <a href="${escapeHtml(it.folderUrl)}" target="_blank" rel="noopener" style="color:var(--btn);font-weight:600;text-decoration:none;">📁 Фото</a>`
+              : '';
+            return `
+              <div class="mh-item">
+                <div class="mh-top">
+                  <strong>${escapeHtml(it.dateRu)} • ${escapeHtml(it.badge || '')}</strong>
+                  <strong>${Number(it.km).toLocaleString('ru-RU')} км</strong>
+                </div>
+                <div class="mh-meta">${it.driver ? `👤 ${escapeHtml(it.driver)}` : ''}${deltaHtml}${linkHtml}</div>
+                ${it.note ? `<div class="mh-meta">${escapeHtml(it.note)}</div>` : ''}
+              </div>`;
+          }).join('');
+      } catch (err) {
+        panel.innerHTML = `<div style="color:#dc2626;font-size:12px;">Ошибка загрузки: ${escapeHtml(err.message || err)}</div>`;
+      }
+    }
+
     function renderOil() {
       const list = document.getElementById('oilList'); list.innerHTML = '';
       const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
@@ -1640,13 +1716,28 @@
         const c = item.car, info = item.info, card = document.createElement('div'); card.className = 'card';
         const curId = 'oil_cur_' + idx, lastId = 'oil_last_' + idx;
         const pcNote = c.lastPhotoControl ? `<br>📸 Последний фотоконтроль: <strong>${escapeHtml(c.lastPhotoControl)}</strong>` : '';
-        const editHtml = canEdit ? `<div class="doc-edit"><div class="field-group"><label class="field-lbl" for="${curId}">Текущий пробег (км)</label><input type="text" inputmode="numeric" id="${curId}" class="field-input" value="${info.cur !== null ? info.cur : ''}"></div><div class="field-group"><label class="field-lbl" for="${lastId}">Замена масла (км)</label><input type="text" inputmode="numeric" id="${lastId}" class="field-input" value="${info.last !== null ? info.last : ''}"></div><button class="btn-save js-oil-save">Сохранить пробег</button><button class="btn-oil-done js-oil-done">🛢️ Заменил масло</button></div>` : '';
+        const editHtml = canEdit
+          ? `<div class="doc-edit">
+              <div class="field-group"><label class="field-lbl" for="${curId}">Текущий пробег (км)</label><input type="text" inputmode="numeric" id="${curId}" class="field-input" value="${info.cur !== null ? info.cur : ''}"></div>
+              <div class="field-group"><label class="field-lbl" for="${lastId}">Замена масла (км)</label><input type="text" inputmode="numeric" id="${lastId}" class="field-input" value="${info.last !== null ? info.last : ''}"></div>
+              <button class="btn-save js-oil-save">Сохранить пробег</button>
+              <button class="btn-oil-done js-oil-done">🛢️ Заменил масло</button>
+              <button class="btn-copy btn-full js-mh-toggle">📈 История пробега и фотоконтроля</button>
+            </div>
+            <div class="expand-panel hidden js-mh-panel"></div>`
+          : '';
         card.innerHTML = `<div class="card-top"><span class="plate"><span class="order-num">${item.order}.</span>${escapeHtml(c.plate)}</span><span class="status-pill ${info.pillClass}">${escapeHtml(info.label)}</span></div><div class="model">${escapeHtml(c.model || '')}${c.code ? ' • ' + escapeHtml(c.code) : ''} (${escapeHtml(c.status || '—')})</div><div class="meta">Текущий пробег: <strong>${escapeHtml(fmtKm(info.cur))}</strong><br>Последняя замена: <strong>${escapeHtml(fmtKm(info.last))}</strong> → След.: <strong>${escapeHtml(fmtKm(info.next))}</strong>${pcNote}</div>${editHtml}`;
         list.appendChild(card);
         if (canEdit) {
           const sBtn = card.querySelector('.js-oil-save'), dBtn = card.querySelector('.js-oil-done');
+          const mhBtn = card.querySelector('.js-mh-toggle'), mhPanel = card.querySelector('.js-mh-panel');
           sBtn.addEventListener('click', () => saveOil(c.plate, curId, lastId, false, sBtn, dBtn));
           dBtn.addEventListener('click', () => saveOil(c.plate, curId, lastId, true, dBtn, sBtn));
+          mhBtn.addEventListener('click', () => {
+            const opening = mhPanel.classList.contains('hidden');
+            mhPanel.classList.toggle('hidden');
+            if (opening) loadCarMileageHistory(c.plate, mhPanel);
+          });
         }
       });
     }
