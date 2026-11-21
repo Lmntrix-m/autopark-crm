@@ -36,11 +36,12 @@
     .pending-banner {
       display: flex; justify-content: space-between; align-items: center; gap: 8px;
       background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; border-radius: 10px;
-      padding: 9px 12px; margin-bottom: 12px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+      padding: 9px 12px; margin-bottom: 10px; font-size: 12.5px; font-weight: 600; cursor: pointer;
     }
+    .pending-banner.fine-banner { background: #fee2e2; color: #991b1b; border-color: #ef4444; }
     .pending-banner span:last-child { text-decoration: underline; white-space: nowrap; }
 
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
     .stat-box { background: var(--card-bg); padding: 10px 6px; border-radius: 10px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
     .stat-val { font-size: 18px; font-weight: 700; }
     .stat-lbl { font-size: 11px; color: var(--hint); margin-top: 2px; }
@@ -51,7 +52,7 @@
     }
     .tab {
       -webkit-appearance: none; appearance: none; flex: 1 0 auto; min-width: 56px;
-      padding: 9px 8px; border: none; border-radius: 10px; background: var(--card-bg); color: var(--text);
+      padding: 9px 9px; border: none; border-radius: 10px; background: var(--card-bg); color: var(--text);
       font-weight: 600; font-size: 11.5px; cursor: pointer; white-space: nowrap;
       display: inline-flex; align-items: center; justify-content: center; gap: 4px;
     }
@@ -65,14 +66,16 @@
     .chip { -webkit-appearance: none; appearance: none; padding: 6px 12px; border-radius: 16px; border: 1px solid rgba(128,128,128,0.25); background: var(--card-bg); color: var(--text); font-size: 12px; white-space: nowrap; cursor: pointer; }
     .chip.active { background: var(--btn); color: var(--btn-text); border-color: var(--btn); }
 
-    .evening-bar { margin-bottom: 10px; }
+    .evening-bar { margin-bottom: 10px; display: flex; gap: 6px; }
     .btn-evening {
       -webkit-appearance: none; appearance: none; width: 100%; padding: 9px 12px; border-radius: 10px;
       border: 1px solid rgba(36, 129, 204, 0.35); background: var(--card-bg); color: var(--btn);
       font-size: 12.5px; font-weight: 700; cursor: pointer;
     }
+    .btn-evening.bl-add-btn { border-color: rgba(220, 38, 38, 0.45); color: #dc2626; }
 
     .card { background: var(--card-bg); border-radius: 12px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .card.card-bl-alert { border: 1.5px solid #dc2626; }
     .card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
     .plate { font-weight: 700; font-size: 16px; }
     .order-num { color: var(--hint); font-weight: 600; font-size: 14px; margin-right: 4px; }
@@ -81,6 +84,7 @@
     .st-rented { background: #fce8e6; color: #d93025; }
     .st-booked { background: #fef7e0; color: #b45309; }
     .st-service { background: #e8eaed; color: #5f6368; }
+    .st-info { background: #e0f2fe; color: #0369a1; }
 
     .model { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
     .meta { font-size: 12.5px; color: var(--hint); margin-bottom: 8px; line-height: 1.45; }
@@ -91,10 +95,7 @@
       padding: 8px 10px; margin-bottom: 8px; border-radius: 9px;
       background: var(--bg); border: 1px solid rgba(128,128,128,0.24); font-size: 12.5px; line-height: 1.4;
     }
-    .debt-bar.has-debt {
-      border-color: rgba(239, 68, 68, 0.55);
-      background: rgba(239, 68, 68, 0.10);
-    }
+    .debt-bar.has-debt { border-color: rgba(239, 68, 68, 0.55); background: rgba(239, 68, 68, 0.10); }
     .debt-info { flex: 1; min-width: 0; }
     .debt-note { font-size: 11.5px; color: var(--hint); margin-top: 3px; word-break: break-word; }
     .amt-bad { color: #ef4444; font-weight: 700; }
@@ -104,7 +105,12 @@
       border: 1px solid rgba(128,128,128,0.35); background: var(--card-bg); color: var(--text);
       font-size: 11.5px; font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
     }
-    .btn-mini:active { opacity: 0.75; }
+
+    .bl-warning-box {
+      padding: 8px 10px; border-radius: 8px; background: rgba(220, 38, 38, 0.12);
+      border: 1px solid #dc2626; color: #dc2626; font-size: 12.5px; font-weight: 700;
+      margin-bottom: 8px; line-height: 1.4;
+    }
 
     .bot-status-row {
       display: flex; justify-content: space-between; align-items: center; gap: 8px;
@@ -122,18 +128,9 @@
       border: 1px solid rgba(128,128,128,0.3); background: var(--bg); color: var(--text);
       font-size: 13px; line-height: 1.4; resize: vertical;
     }
-    .btn-wa {
-      -webkit-appearance: none; appearance: none; padding: 8px 10px; border: none; border-radius: 8px;
-      background: #25D366; color: #ffffff; font-weight: 600; font-size: 12.5px; cursor: pointer;
-    }
-    .btn-tg {
-      -webkit-appearance: none; appearance: none; padding: 8px 10px; border: none; border-radius: 8px;
-      background: #229ED9; color: #ffffff; font-weight: 600; font-size: 12.5px; cursor: pointer;
-    }
-    .btn-warn {
-      -webkit-appearance: none; appearance: none; padding: 8px 10px; border: none; border-radius: 8px;
-      background: #d97706; color: #ffffff; font-weight: 600; font-size: 12.5px; cursor: pointer;
-    }
+    .btn-wa { -webkit-appearance: none; appearance: none; padding: 8px 10px; border: none; border-radius: 8px; background: #25D366; color: #ffffff; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+    .btn-tg { -webkit-appearance: none; appearance: none; padding: 8px 10px; border: none; border-radius: 8px; background: #229ED9; color: #ffffff; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+    .btn-warn { -webkit-appearance: none; appearance: none; padding: 8px 10px; border: none; border-radius: 8px; background: #d97706; color: #ffffff; font-weight: 600; font-size: 12.5px; cursor: pointer; }
 
     .mod-box {
       padding: 8px 10px; border-radius: 8px; background: var(--bg); font-size: 12px; line-height: 1.45;
@@ -156,9 +153,7 @@
       font-size: 12.5px; color: var(--text); padding: 4px 2px; cursor: pointer;
     }
     .check-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--btn); flex-shrink: 0; }
-    .expand-panel {
-      margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(128,128,128,0.28);
-    }
+    .expand-panel { margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(128,128,128,0.28); }
 
     .pay-summary {
       padding: 8px 10px; border-radius: 8px; background: var(--bg); font-size: 12px; line-height: 1.45; margin-bottom: 8px;
@@ -166,10 +161,7 @@
     }
     .pay-subhead { font-size: 12px; font-weight: 700; margin: 10px 0 4px; color: var(--btn); }
     .pay-history { margin-top: 8px; font-size: 12px; }
-    .pay-item {
-      display: flex; justify-content: space-between; gap: 8px; padding: 5px 0;
-      border-bottom: 1px solid rgba(128,128,128,0.14);
-    }
+    .pay-item { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid rgba(128,128,128,0.14); }
     .pay-item:last-child { border-bottom: none; }
     .pay-item-meta { color: var(--hint); font-size: 11px; }
 
@@ -182,6 +174,10 @@
     .btn-copy { -webkit-appearance: none; appearance: none; padding: 8px 10px; border: 1px solid rgba(128,128,128,0.3); border-radius: 8px; background: var(--bg); color: var(--text); font-weight: 600; font-size: 12.5px; cursor: pointer; }
     .btn-oil-done { -webkit-appearance: none; appearance: none; padding: 8px 10px; border: none; border-radius: 8px; background: #16a34a; color: #ffffff; font-weight: 600; font-size: 12.5px; cursor: pointer; }
     .btn-danger { -webkit-appearance: none; appearance: none; padding: 8px 10px; border: none; border-radius: 8px; background: #dc2626; color: #ffffff; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+    .btn-danger-outline {
+      -webkit-appearance: none; appearance: none; padding: 8px 10px; border: 1px solid rgba(220, 38, 38, 0.45);
+      border-radius: 8px; background: var(--bg); color: #dc2626; font-weight: 600; font-size: 12.5px; cursor: pointer;
+    }
     .btn-return {
       -webkit-appearance: none; appearance: none; width: 100%; padding: 9px 12px; margin-top: 6px;
       border: none; border-radius: 8px; background: #dc2626; color: #ffffff; font-weight: 600; font-size: 13px; cursor: pointer;
@@ -211,7 +207,7 @@
   <div class="header">
     <h1 id="userName">Автопарк CRM</h1>
     <div class="header-right">
-      <a href="form.html?v=20261120_6" class="btn-new-form" title="Открыть анкету водителя">+ Новая анкета</a>
+      <a href="form.html?v=20261120_6" class="btn-new-form" title="Открыть анкету водителя">+ Анкета</a>
       <button class="btn-refresh" onclick="loadInitial()" title="Обновить">↻</button>
       <span id="userRole" class="role-badge">...</span>
     </div>
@@ -223,6 +219,10 @@
     <div id="pendingBanner" class="pending-banner hidden" onclick="switchTab('moderation')">
       <span id="pendingBannerText">🕵️ Заявок на проверке: 0</span>
       <span>Проверить →</span>
+    </div>
+    <div id="finesBanner" class="pending-banner fine-banner hidden" onclick="switchTab('fines')">
+      <span id="finesBannerText">🚓 Новых штрафов ГИБДД: 0</span>
+      <span>Разобрать →</span>
     </div>
 
     <div class="stats">
@@ -237,6 +237,12 @@
       <button class="tab hidden" id="tabDriversBtn" data-tab="drivers" onclick="switchTab('drivers')">Водители</button>
       <button class="tab hidden" id="tabModBtn" data-tab="moderation" onclick="switchTab('moderation')">
         Проверка <span id="modBadge" class="tab-badge hidden">0</span>
+      </button>
+      <button class="tab hidden" id="tabFinesBtn" data-tab="fines" onclick="switchTab('fines')">
+        🚓 Штрафы <span id="finesBadge" class="tab-badge hidden">0</span>
+      </button>
+      <button class="tab hidden" id="tabBlBtn" data-tab="blacklist" onclick="switchTab('blacklist')">
+        ⛔ ЧС <span id="blBadge" class="tab-badge hidden">0</span>
       </button>
       <button class="tab" id="tabOsagoBtn" data-tab="osago" onclick="switchTab('osago')">ОСАГО</button>
       <button class="tab" id="tabToBtn" data-tab="to" onclick="switchTab('to')">ТО</button>
@@ -269,6 +275,43 @@
 
     <div id="moderationSection" class="hidden">
       <div id="moderationList"></div>
+    </div>
+
+    <div id="finesSection" class="hidden">
+      <div class="evening-bar">
+        <button class="btn-evening" id="btnSyncFines" onclick="syncFinesFromGmailNow(this)">🔄 Проверить новые штрафы ГИБДД в Gmail (14 дн.)</button>
+      </div>
+      <div class="filters">
+        <button class="chip active" onclick="filterFines('all', this)">Все</button>
+        <button class="chip" onclick="filterFines('новый', this)">Новые</button>
+        <button class="chip" onclick="filterFines('начислен водителю', this)">Начислены</button>
+        <button class="chip" onclick="filterFines('жалоба отправлена', this)">Жалоба</button>
+        <button class="chip" onclick="filterFines('оплачен', this)">Оплачены</button>
+      </div>
+      <div id="finesList"></div>
+    </div>
+
+    <div id="blacklistSection" class="hidden">
+      <div class="evening-bar">
+        <button class="btn-evening bl-add-btn" onclick="toggleManualBlForm()">➕ Добавить водителя в Чёрный список</button>
+      </div>
+      <div id="manualBlForm" class="card hidden">
+        <div class="pay-subhead" style="margin-top:0;color:#dc2626;">Новая запись в Чёрный список</div>
+        <div class="doc-edit">
+          <div class="field-group full"><label class="field-lbl" for="bl_fio">ФИО водителя *</label><input type="text" id="bl_fio" class="field-input" placeholder="Иванов Иван Иванович"></div>
+          <div class="field-group"><label class="field-lbl" for="bl_phone">Телефон</label><input type="tel" id="bl_phone" class="field-input" placeholder="+79991234567"></div>
+          <div class="field-group"><label class="field-lbl" for="bl_passport">Паспорт</label><input type="text" id="bl_passport" class="field-input" placeholder="0415 123456"></div>
+          <div class="field-group"><label class="field-lbl" for="bl_vu">ВУ</label><input type="text" id="bl_vu" class="field-input" placeholder="99 20 123456"></div>
+          <div class="field-group"><label class="field-lbl" for="bl_plate">Госномер ТС</label><input type="text" id="bl_plate" class="field-input" placeholder="К707ТТ124"></div>
+          <div class="field-group full"><label class="field-lbl" for="bl_reason">Причина *</label><input type="text" id="bl_reason" class="field-input" placeholder="Не отдал долг / скрыл ДТП / бросил авто"></div>
+          <div class="field-group full"><label class="field-lbl" for="bl_debt">Сумма долга / ущерба (₽)</label><input type="number" inputmode="numeric" id="bl_debt" class="field-input" value="0"></div>
+          <button class="btn-danger btn-full" id="btnSaveManualBl" onclick="saveManualBlacklist(this)">⛔ Внести в Чёрный список</button>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <input type="text" id="blSearch" class="field-input" placeholder="🔍 Поиск по ФИО, телефону, паспорту или ВУ..." oninput="renderBlacklist()">
+      </div>
+      <div id="blacklistList"></div>
     </div>
 
     <div id="osagoSection" class="hidden">
@@ -318,9 +361,12 @@
     let allCars = [];
     let allDrivers = [];
     let allPending = [];
+    let allFines = [];
+    let allBlacklist = [];
     let currentUser = null;
     let currentFilter = 'all';
     let currentDriverFilter = 'all';
+    let currentFineFilter = 'all';
     let currentOsagoFilter = 'all';
     let currentToFilter = 'all';
     let currentOilFilter = 'all';
@@ -329,30 +375,20 @@
 
     function askConfirm(message) {
       return new Promise(resolve => {
-        if (tg && typeof tg.showConfirm === 'function') {
-          tg.showConfirm(message, ok => resolve(!!ok));
-        } else {
-          resolve(window.confirm(message));
-        }
+        if (tg && typeof tg.showConfirm === 'function') tg.showConfirm(message, ok => resolve(!!ok));
+        else resolve(window.confirm(message));
       });
     }
 
     function notifyUser(message) {
-      if (tg && typeof tg.showAlert === 'function') {
-        tg.showAlert(message);
-      } else {
-        window.alert(message);
-      }
+      if (tg && typeof tg.showAlert === 'function') tg.showAlert(message);
+      else window.alert(message);
     }
 
     function openExternalUrl(url) {
-      if (tg && typeof tg.openLink === 'function' && !url.startsWith('https://t.me/')) {
-        tg.openLink(url);
-      } else if (tg && typeof tg.openTelegramLink === 'function' && url.startsWith('https://t.me/')) {
-        tg.openTelegramLink(url);
-      } else {
-        window.open(url, '_blank', 'noopener');
-      }
+      if (tg && typeof tg.openLink === 'function' && !url.startsWith('https://t.me/')) tg.openLink(url);
+      else if (tg && typeof tg.openTelegramLink === 'function' && url.startsWith('https://t.me/')) tg.openTelegramLink(url);
+      else window.open(url, '_blank', 'noopener');
     }
 
     function formatPhoneIntl(raw) {
@@ -364,22 +400,13 @@
 
     async function copyToClipboard(text) {
       if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-        try {
-          await navigator.clipboard.writeText(text);
-          return true;
-        } catch (e) {}
+        try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
       }
       try {
         const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.setAttribute('readonly', '');
-        ta.style.position = 'fixed';
-        ta.style.top = '-9999px';
-        ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
-        ta.setSelectionRange(0, ta.value.length);
+        ta.value = text; ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed'; ta.style.top = '-9999px'; ta.style.left = '-9999px';
+        document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0, ta.value.length);
         const ok = document.execCommand('copy');
         document.body.removeChild(ta);
         if (ok) return true;
@@ -399,20 +426,11 @@
         try { sessionStorage.setItem('crm_tg_init_data', fromUrl); } catch (e) {}
         return fromUrl;
       }
-      try {
-        return sessionStorage.getItem('crm_tg_init_data') || '';
-      } catch (e) {
-        return '';
-      }
+      try { return sessionStorage.getItem('crm_tg_init_data') || ''; } catch (e) { return ''; }
     }
 
     function buildQueryParams(action, extraParams, callbackName) {
-      const params = new URLSearchParams({
-        action: action,
-        initData: resolveInitData(),
-        _t: String(Date.now()),
-        ...extraParams
-      });
+      const params = new URLSearchParams({ action, initData: resolveInitData(), _t: String(Date.now()), ...extraParams });
       if (callbackName) params.set('callback', callbackName);
       return params.toString();
     }
@@ -422,18 +440,12 @@
       const timer = controller ? setTimeout(() => controller.abort(), timeoutMs || 8000) : null;
       try {
         const res = await fetch(API_URL + '?' + buildQueryParams(action, extraParams), {
-          method: 'GET',
-          credentials: 'omit',
-          redirect: 'follow',
+          method: 'GET', credentials: 'omit', redirect: 'follow',
           signal: controller ? controller.signal : undefined
         });
         const text = await res.text();
-        let json;
-        try { json = JSON.parse(text); } catch (e) { throw new Error('TRANSPORT_NON_JSON'); }
-        return json;
-      } finally {
-        if (timer) clearTimeout(timer);
-      }
+        try { return JSON.parse(text); } catch (e) { throw new Error('TRANSPORT_NON_JSON'); }
+      } finally { if (timer) clearTimeout(timer); }
     }
 
     function callApiJsonp(action, extraParams, timeoutMs) {
@@ -441,35 +453,16 @@
         const cbName = '__crmJsonpCb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
         const script = document.createElement('script');
         let settled = false;
-
         const cleanup = () => {
           if (script.parentNode) script.parentNode.removeChild(script);
           try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
         };
-
         const timer = setTimeout(() => {
-          if (settled) return;
-          settled = true;
-          cleanup();
-          reject(new Error('Превышено время ожидания ответа сервера (JSONP). Проверьте доступ «Все» в Google Apps Script.'));
+          if (settled) return; settled = true; cleanup();
+          reject(new Error('Превышено время ожидания ответа сервера (JSONP).'));
         }, timeoutMs || 15000);
-
-        window[cbName] = (json) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          cleanup();
-          resolve(json);
-        };
-
-        script.onerror = () => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          cleanup();
-          reject(new Error('Не удалось загрузить данные через резервный канал (JSONP). Убедитесь, что в Apps Script выпущена «Новая версия» с доступом «Все».'));
-        };
-
+        window[cbName] = (json) => { if (settled) return; settled = true; clearTimeout(timer); cleanup(); resolve(json); };
+        script.onerror = () => { if (settled) return; settled = true; clearTimeout(timer); cleanup(); reject(new Error('Ошибка сети при обращении к Apps Script.')); };
         script.src = API_URL + '?' + buildQueryParams(action, extraParams, cbName);
         document.head.appendChild(script);
       });
@@ -489,8 +482,7 @@
 
     function showError(err) {
       const box = document.getElementById('statusMsg');
-      box.className = 'msg error';
-      box.classList.remove('hidden');
+      box.className = 'msg error'; box.classList.remove('hidden');
       box.textContent = (err && err.message) ? err.message : String(err);
     }
 
@@ -501,15 +493,13 @@
     function fmtKm(n) { if (n === null || n === undefined || n === '' || isNaN(Number(n))) return 'Не указан'; return Number(n).toLocaleString('ru-RU') + ' км'; }
 
     function todayIsoLocal() {
-      const d = new Date();
-      const pad = n => String(n).padStart(2, '0');
+      const d = new Date(), pad = n => String(n).padStart(2, '0');
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     }
 
     function diffDaysInclusive(isoFrom, isoTo) {
       if (!isoFrom || !isoTo) return 1;
-      const f = isoFrom.split('-').map(Number);
-      const t = isoTo.split('-').map(Number);
+      const f = isoFrom.split('-').map(Number), t = isoTo.split('-').map(Number);
       const d = Math.round((Date.UTC(t[0], t[1] - 1, t[2]) - Date.UTC(f[0], f[1] - 1, f[2])) / 86400000);
       return d >= 0 ? d + 1 : 1;
     }
@@ -524,8 +514,7 @@
     }
 
     function parseDriverTimestamp(rawStr) {
-      const s = String(rawStr || '').trim();
-      const pad = n => String(n).padStart(2, '0');
+      const s = String(rawStr || '').trim(), pad = n => String(n).padStart(2, '0');
       const ru = s.match(/(\d{2})\.(\d{2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
       if (ru) {
         const hh = ru[4] ? pad(ru[4]) : '12', mm = ru[5] || '00';
@@ -541,8 +530,7 @@
     }
 
     function formatDriverExpText(expYearRaw) {
-      const s = String(expYearRaw || '').trim();
-      const m = s.match(/\b(19\d{2}|20\d{2})\b/);
+      const s = String(expYearRaw || '').trim(), m = s.match(/\b(19\d{2}|20\d{2})\b/);
       if (!m) return s || 'не указан';
       const y = Number(m[1]), years = Math.max(0, new Date().getFullYear() - y);
       const mod10 = years % 10, mod100 = years % 100;
@@ -553,7 +541,7 @@
     }
 
     function cleanVuForSummary(vuRaw) {
-      let s = String(vuRaw || '').trim();
+      const s = String(vuRaw || '').trim();
       if (!s) return 'не указано';
       return s.replace(/,?\s*стаж\s+с\s+\d{4}\s*г\.?/i, '').replace(/\(\s*\)/g, '').replace(/\s{2,}/g, ' ').trim() || s;
     }
@@ -566,6 +554,15 @@
       return 'st-service';
     }
 
+    function fineStatusClass(s) {
+      const v = String(s || '').toLowerCase().trim();
+      if (v === 'новый') return 'st-rented';
+      if (v === 'начислен водителю') return 'st-booked';
+      if (v === 'жалоба отправлена') return 'st-info';
+      if (v === 'оплачен') return 'st-free';
+      return 'st-service';
+    }
+
     function aiVerdictMeta(verdict) {
       const v = String(verdict || '').toUpperCase().trim();
       if (v === 'OK') return { cls: 'st-free', label: '🟢 ИИ: ОК' };
@@ -574,15 +571,32 @@
       return { cls: 'st-service', label: '⚪ Без ИИ' };
     }
 
-    function updatePendingIndicators(count) {
-      const n = Number(count || 0);
+    function updateBadges(pendingCount, newFinesCount, blacklistCount) {
       const canMod = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
-      const badge = document.getElementById('modBadge');
-      const banner = document.getElementById('pendingBanner');
-      const bannerTxt = document.getElementById('pendingBannerText');
-      if (!canMod || n <= 0) { badge.classList.add('hidden'); banner.classList.add('hidden'); return; }
-      badge.textContent = String(n); badge.classList.remove('hidden');
-      bannerTxt.textContent = `🕵️ Заявок на проверке: ${n}`; banner.classList.remove('hidden');
+
+      const setBadge = (elId, val) => {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        const n = Number(val || 0);
+        if (!canMod || n <= 0) { el.classList.add('hidden'); return; }
+        el.textContent = String(n); el.classList.remove('hidden');
+      };
+
+      setBadge('modBadge', pendingCount);
+      setBadge('finesBadge', newFinesCount);
+      setBadge('blBadge', blacklistCount);
+
+      const pBanner = document.getElementById('pendingBanner');
+      if (canMod && Number(pendingCount) > 0) {
+        document.getElementById('pendingBannerText').textContent = `🕵️ Заявок на проверке: ${pendingCount}`;
+        pBanner.classList.remove('hidden');
+      } else pBanner.classList.add('hidden');
+
+      const fBanner = document.getElementById('finesBanner');
+      if (canMod && Number(newFinesCount) > 0) {
+        document.getElementById('finesBannerText').textContent = `🚓 Новых штрафов ГИБДД: ${newFinesCount}`;
+        fBanner.classList.remove('hidden');
+      } else fBanner.classList.add('hidden');
     }
 
     function parseExpiryInfo(rawStr) {
@@ -595,8 +609,7 @@
       else if (isoMatch) { y = Number(isoMatch[1]); m = Number(isoMatch[2]); d = Number(isoMatch[3]); }
       else return { state: 'nodate', daysLeft: null, label: s, pillClass: 'st-service', iso: '', ru: s };
 
-      const expDate = new Date(y, m - 1, d);
-      const now = new Date();
+      const expDate = new Date(y, m - 1, d), now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const daysLeft = Math.round((expDate.getTime() - today.getTime()) / 86400000);
       const pad = n => String(n).padStart(2, '0');
@@ -619,9 +632,7 @@
 
     async function loadInitial() {
       const box = document.getElementById('statusMsg');
-      box.className = 'msg';
-      box.textContent = 'Загрузка данных автопарка...';
-      box.classList.remove('hidden');
+      box.className = 'msg'; box.textContent = 'Загрузка данных автопарка...'; box.classList.remove('hidden');
 
       try {
         const data = await callApi('init');
@@ -639,50 +650,44 @@
         document.getElementById('stService').textContent = data.counts.service;
 
         if (currentUser.role === 'admin' || currentUser.role === 'manager') {
-          document.getElementById('tabDriversBtn').classList.remove('hidden');
-          document.getElementById('tabModBtn').classList.remove('hidden');
+          ['tabDriversBtn', 'tabModBtn', 'tabFinesBtn', 'tabBlBtn'].forEach(id => document.getElementById(id).classList.remove('hidden'));
         }
-        updatePendingIndicators(data.pendingCount || 0);
+        updateBadges(data.pendingCount || 0, data.newFinesCount || 0, data.blacklistCount || 0);
 
         renderCars(); renderOsago(); renderTo(); renderOil();
         if (currentTab === 'drivers') loadDrivers();
         if (currentTab === 'moderation') loadPendingReviews();
-      } catch (err) {
-        showError(err);
-      }
+        if (currentTab === 'fines') loadFines();
+        if (currentTab === 'blacklist') loadBlacklist();
+      } catch (err) { showError(err); }
     }
 
     async function runEveningSummaryNow(btn) {
-      const old = btn.textContent;
-      btn.textContent = 'Формируем сводку...';
-      btn.disabled = true;
+      const old = btn.textContent; btn.textContent = 'Формируем сводку...'; btn.disabled = true;
       try {
         const res = await callApi('runEveningSummary', {}, 25000);
         notifyUser(`✅ Вечерняя сводка отправлена в Telegram!\nОплатили: ${res.paid || 0} • Не оплатили: ${res.unpaid || 0}`);
-      } catch (err) {
-        showError(err);
-      } finally {
-        btn.textContent = old;
-        btn.disabled = false;
-      }
+      } catch (err) { showError(err); }
+      finally { btn.textContent = old; btn.disabled = false; }
     }
 
     function filterCars(filter, btn) { currentFilter = filter; document.querySelectorAll('#fleetSection .chip').forEach(c => c.classList.remove('active')); if (btn) btn.classList.add('active'); renderCars(); }
     function filterDrivers(filter, btn) { currentDriverFilter = filter; document.querySelectorAll('#driversSection .chip').forEach(c => c.classList.remove('active')); if (btn) btn.classList.add('active'); renderDrivers(); }
+    function filterFines(filter, btn) { currentFineFilter = filter; document.querySelectorAll('#finesSection .chip').forEach(c => c.classList.remove('active')); if (btn) btn.classList.add('active'); renderFines(); }
     function filterOsago(filter, btn) { currentOsagoFilter = filter; document.querySelectorAll('#osagoSection .chip').forEach(c => c.classList.remove('active')); if (btn) btn.classList.add('active'); renderOsago(); }
     function filterTo(filter, btn) { currentToFilter = filter; document.querySelectorAll('#toSection .chip').forEach(c => c.classList.remove('active')); if (btn) btn.classList.add('active'); renderTo(); }
     function filterOil(filter, btn) { currentOilFilter = filter; document.querySelectorAll('#oilSection .chip').forEach(c => c.classList.remove('active')); if (btn) btn.classList.add('active'); renderOil(); }
 
+    /* ==================== АВТОПАРК ==================== */
+
     function renderCars() {
-      const list = document.getElementById('carsList');
-      list.innerHTML = '';
+      const list = document.getElementById('carsList'); list.innerHTML = '';
       const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
       const filtered = allCars.map((c, idx) => ({ car: c, order: idx + 1 })).filter(item => currentFilter === 'all' || String(item.car.status || '').toLowerCase().trim() === currentFilter);
       if (!filtered.length) { list.innerHTML = '<div class="msg">Нет автомобилей с выбранным статусом</div>'; return; }
 
       filtered.forEach((item, idx) => {
-        const c = item.car, card = document.createElement('div');
-        card.className = 'card';
+        const c = item.car, card = document.createElement('div'); card.className = 'card';
         const selectId = 'st_sel_' + idx, p = 'car_ed_' + idx + '_';
         const stsDisplay = (c.sts || '—') + (c.stsDate ? (' от ' + c.stsDate) : '');
         const stsDateIso = dateStrToIso(c.stsDate);
@@ -748,31 +753,30 @@
         if (!(await askConfirm(`Изменить госномер с ${car.plate} на ${payload.plate} во всех документах?`))) return;
       }
       const oldText = btn.textContent; btn.textContent = 'Сохранение...'; btn.disabled = true;
-      try {
-        await callApi('updateCarCard', payload, 25000);
-        notifyUser(`✅ Данные автомобиля ${payload.plate} обновлены!`);
-        btn.textContent = oldText; btn.disabled = false;
-        await loadInitial();
-      } catch (err) { btn.textContent = oldText; btn.disabled = false; showError(err); }
+      try { await callApi('updateCarCard', payload, 25000); notifyUser(`✅ Данные ${payload.plate} обновлены!`); await loadInitial(); }
+      catch (err) { showError(err); }
+      finally { btn.textContent = oldText; btn.disabled = false; }
     }
+
+    /* ==================== МОДЕРАЦИЯ (С ПРЕДУПРЕЖДЕНИЕМ О ЧС) ==================== */
 
     async function loadPendingReviews() {
       clearError();
       document.getElementById('moderationList').innerHTML = '<div class="msg">Загрузка заявок на проверке...</div>';
       try {
         allPending = (await callApi('pendingReviews')) || [];
-        updatePendingIndicators(allPending.length);
         renderPendingReviews();
       } catch (err) { showError(err); }
     }
 
     function renderPendingReviews() {
-      const list = document.getElementById('moderationList');
-      list.innerHTML = '';
+      const list = document.getElementById('moderationList'); list.innerHTML = '';
       if (!allPending.length) { list.innerHTML = '<div class="msg">✅ Новых заявок на проверке нет — всё разобрано!</div>'; return; }
 
       allPending.forEach(item => {
-        const card = document.createElement('div'); card.className = 'card';
+        const isBl = String(item.duplicates || '').indexOf('ЧЁРНЫЙ СПИСОК') !== -1;
+        const card = document.createElement('div');
+        card.className = 'card' + (isBl ? ' card-bl-alert' : '');
         const ai = aiVerdictMeta(item.aiVerdict);
         const dupIcon = (item.duplicates && item.duplicates !== 'Дубликатов нет') ? '⚠️' : '✅';
         const links = [];
@@ -782,10 +786,11 @@
         if (item.folderId) links.push(`<a class="photo-link" href="https://drive.google.com/drive/folders/${escapeHtml(item.folderId)}" target="_blank" rel="noopener">📁 Папка на Диске</a>`);
 
         card.innerHTML = `
+          ${isBl ? `<div class="bl-warning-box">🚨 ВОДИТЕЛЬ НАЙДЕН В ЧЁРНОМ СПИСКЕ!<br>${escapeHtml(item.duplicates)}</div>` : ''}
           <div class="card-top"><span class="plate">${escapeHtml(item.fio || 'Без имени')}</span><span class="status-pill ${ai.cls}">${escapeHtml(ai.label)}</span></div>
           <div class="model"><strong>${escapeHtml(item.car || 'Авто не указано')}</strong> • ${escapeHtml(item.date || '')}</div>
           <div class="meta">ID: <strong>${escapeHtml(item.appId)}</strong><br>Тел: <strong>${escapeHtml(item.phone || '—')}</strong> • Гражданство: ${escapeHtml(item.citizenship || '—')}</div>
-          <div class="mod-box"><div>${dupIcon} <strong>Дубли фото:</strong> ${escapeHtml(item.duplicates || 'Дубликатов нет')}</div><div style="margin-top:4px;">🤖 <strong>ИИ-отчёт:</strong> ${escapeHtml(item.aiSummary || '—')}</div></div>
+          <div class="mod-box"><div>${dupIcon} <strong>Проверка:</strong> ${escapeHtml(item.duplicates || 'Дубликатов нет')}</div><div style="margin-top:4px;">🤖 <strong>ИИ-отчёт:</strong> ${escapeHtml(item.aiSummary || '—')}</div></div>
           ${links.length ? `<div class="photo-links">${links.join('')}</div>` : ''}
           <div class="actions"><button class="btn-oil-done js-mod-approve" style="flex:1;">✅ Одобрить и 3 PDF</button><button class="btn-danger js-mod-spam" style="flex:1;">🗑 Удалить спам</button></div>`;
         list.appendChild(card);
@@ -799,22 +804,270 @@
     async function approvePendingApp(item, approveBtn, spamBtn) {
       if (!(await askConfirm(`Одобрить заявку ${item.fio} (${item.car || 'ТС'}) и выпустить 3 PDF?`))) return;
       const oldText = approveBtn.textContent; approveBtn.textContent = 'Оформляем 3 PDF...'; approveBtn.disabled = true; spamBtn.disabled = true;
-      try {
-        const res = await callApi('approveApp', { appId: item.appId }, 45000);
-        notifyUser(`✅ ${res.message || 'Заявка одобрена!'}`);
-        await loadInitial();
-      } catch (err) { approveBtn.textContent = oldText; approveBtn.disabled = false; spamBtn.disabled = false; showError(err); }
+      try { const res = await callApi('approveApp', { appId: item.appId }, 45000); notifyUser(`✅ ${res.message || 'Заявка одобрена!'}`); await loadInitial(); }
+      catch (err) { approveBtn.textContent = oldText; approveBtn.disabled = false; spamBtn.disabled = false; showError(err); }
     }
 
     async function deleteSpamPendingApp(item, spamBtn, approveBtn) {
       if (!(await askConfirm(`Удалить заявку ${item.fio} как спам и отправить фото в корзину Диска?`))) return;
       const oldText = spamBtn.textContent; spamBtn.textContent = 'Удаляем...'; spamBtn.disabled = true; approveBtn.disabled = true;
-      try {
-        await callApi('deleteSpamApp', { appId: item.appId }, 20000);
-        notifyUser('🗑 Спам-заявка удалена.');
-        await loadInitial();
-      } catch (err) { spamBtn.textContent = oldText; spamBtn.disabled = false; approveBtn.disabled = false; showError(err); }
+      try { await callApi('deleteSpamApp', { appId: item.appId }, 20000); notifyUser('🗑 Спам-заявка удалена.'); await loadInitial(); }
+      catch (err) { spamBtn.textContent = oldText; spamBtn.disabled = false; approveBtn.disabled = false; showError(err); }
     }
+
+    /* ==================== ЭТАП 2: ШТРАФЫ ГИБДД ИЗ GMAIL ==================== */
+
+    async function loadFines() {
+      clearError();
+      document.getElementById('finesList').innerHTML = '<div class="msg">Загрузка штрафов ГИБДД...</div>';
+      try {
+        const tasks = [callApi('fines')];
+        if (!allDrivers.length) tasks.push(callApi('drivers'));
+        const res = await Promise.all(tasks);
+        allFines = res[0] || [];
+        if (res[1]) allDrivers = res[1] || [];
+        renderFines();
+      } catch (err) { showError(err); }
+    }
+
+    async function syncFinesFromGmailNow(btn) {
+      const old = btn.textContent; btn.textContent = 'Проверяем Gmail...'; btn.disabled = true;
+      try {
+        const res = await callApi('syncFines', { daysBack: '14' }, 45000);
+        notifyUser(`✅ Проверка Gmail завершена!\nНовых штрафов: ${res.added || 0}\nОбновлено сумм: ${res.updated || 0}\nОтмечено оплаченными: ${res.paidMarked || 0}`);
+        await loadInitial();
+      } catch (err) { showError(err); }
+      finally { btn.textContent = old; btn.disabled = false; }
+    }
+
+    function renderFines() {
+      const list = document.getElementById('finesList'); list.innerHTML = '';
+      const filtered = allFines.filter(f => currentFineFilter === 'all' || String(f.status || '').toLowerCase().trim() === currentFineFilter);
+      if (!filtered.length) {
+        list.innerHTML = '<div class="msg">Штрафов по выбранному фильтру нет. Нажмите «Проверить новые штрафы ГИБДД в Gmail».</div>';
+        return;
+      }
+
+      const driverOptsBase = '<option value="">— Выберите водителя —</option>' +
+        allDrivers.map(d => `<option value="${d.row}">${escapeHtml(d.name)} (${escapeHtml(d.plate || '—')}, ${escapeHtml(d.rentalStatus)})</option>`).join('');
+
+      filtered.forEach((f, idx) => {
+        const card = document.createElement('div'); card.className = 'card';
+        const fp = 'fn_' + idx + '_';
+        const sumTxt = f.amount > 0
+          ? `<strong>${fmtMoney(f.amount)} ₽</strong>${f.discountAmount > 0 ? ` (со скидкой: <strong>${fmtMoney(f.discountAmount)} ₽</strong>)` : ''}`
+          : '<span class="amt-bad">Укажите сумму</span>';
+
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="plate">${escapeHtml(f.plate || 'Без номера')}</span>
+            <span class="status-pill ${fineStatusClass(f.status)}">${escapeHtml(f.status || 'Новый')}</span>
+          </div>
+          <div class="model">УИН: <strong>${escapeHtml(f.uin || '—')}</strong> • от ${escapeHtml(f.decDate || '—')}</div>
+          <div class="meta">
+            Сумма: ${sumTxt}<br>
+            Водитель: <strong>${escapeHtml(f.driverName || 'Не определён')}</strong> ${f.charged ? '✅ <em>(начислен)</em>' : ''}<br>
+            Нарушение: ${escapeHtml(f.violDate || '—')} ${escapeHtml(f.violTime || '')} • ${escapeHtml(f.article || '—')}
+            ${f.mailLink ? `<br><a href="${escapeHtml(f.mailLink)}" target="_blank" rel="noopener" style="color:var(--btn);font-weight:600;">📧 Открыть письмо в Gmail</a>` : ''}
+          </div>
+          <div class="actions">
+            <button class="btn-warn js-fn-charge" style="flex:1;" ${f.charged ? 'disabled' : ''}>${f.charged ? '✅ Начислен' : '➕ Начислить'}</button>
+            <button class="btn-save js-fn-pdf" style="flex:1;">🚓 PDF Жалоба</button>
+            <button class="btn-copy js-fn-edit-toggle">✏️</button>
+          </div>
+          <div class="expand-panel hidden js-fn-panel">
+            <div class="doc-edit">
+              <div class="field-group full">
+                <label class="field-lbl" for="${fp}drv">Водитель</label>
+                <select id="${fp}drv">${driverOptsBase}</select>
+              </div>
+              <div class="field-group">
+                <label class="field-lbl" for="${fp}amt">Сумма полная (₽)</label>
+                <input type="number" inputmode="numeric" id="${fp}amt" class="field-input" value="${f.amount || ''}" placeholder="750">
+              </div>
+              <div class="field-group">
+                <label class="field-lbl" for="${fp}disc">Со скидкой (₽)</label>
+                <input type="number" inputmode="numeric" id="${fp}disc" class="field-input" value="${f.discountAmount || ''}" placeholder="562.5">
+              </div>
+              <div class="field-group">
+                <label class="field-lbl" for="${fp}vdate">Дата нарушения</label>
+                <input type="date" id="${fp}vdate" class="field-input" value="${escapeHtml(dateStrToIso(f.violDate || f.decDate))}">
+              </div>
+              <div class="field-group">
+                <label class="field-lbl" for="${fp}vtime">Время фиксации</label>
+                <input type="time" id="${fp}vtime" class="field-input" value="${escapeHtml(f.violTime || '')}">
+              </div>
+              <div class="field-group full">
+                <label class="field-lbl" for="${fp}art">Статья КоАП / Описание</label>
+                <input type="text" id="${fp}art" class="field-input" value="${escapeHtml(f.article || '')}" placeholder="ч. 2 ст. 12.9 КоАП РФ">
+              </div>
+              <button class="btn-save js-fn-save">💾 Сохранить</button>
+              <button class="btn-oil-done js-fn-paid">✅ Оплачен</button>
+            </div>
+          </div>`;
+        list.appendChild(card);
+
+        const drvSel = card.querySelector('#' + fp + 'drv');
+        if (f.driverRow) drvSel.value = String(f.driverRow);
+
+        const panel = card.querySelector('.js-fn-panel');
+        card.querySelector('.js-fn-edit-toggle').addEventListener('click', () => panel.classList.toggle('hidden'));
+        card.querySelector('.js-fn-save').addEventListener('click', (e) => saveFineEdits(f, fp, e.target));
+        card.querySelector('.js-fn-paid').addEventListener('click', (e) => markFinePaid(f, e.target));
+        card.querySelector('.js-fn-charge').addEventListener('click', (e) => chargeFineNow(f, fp, e.target));
+        card.querySelector('.js-fn-pdf').addEventListener('click', (e) => exportFineComplaintNow(f, fp, e.target));
+      });
+    }
+
+    function collectFineFields(f, fp) {
+      return {
+        fineId: f.fineId,
+        driverRow: document.getElementById(fp + 'drv').value,
+        amount: document.getElementById(fp + 'amt').value.trim(),
+        discountAmount: document.getElementById(fp + 'disc').value.trim(),
+        violDate: document.getElementById(fp + 'vdate').value.trim(),
+        violTime: document.getElementById(fp + 'vtime').value.trim(),
+        article: document.getElementById(fp + 'art').value.trim()
+      };
+    }
+
+    async function saveFineEdits(f, fp, btn) {
+      const old = btn.textContent; btn.textContent = 'Сохранение...'; btn.disabled = true;
+      try {
+        await callApi('updateFine', collectFineFields(f, fp), 20000);
+        notifyUser('✅ Данные штрафа сохранены!');
+        await loadFines();
+      } catch (err) { showError(err); }
+      finally { btn.textContent = old; btn.disabled = false; }
+    }
+
+    async function markFinePaid(f, btn) {
+      const old = btn.textContent; btn.textContent = '...'; btn.disabled = true;
+      try {
+        await callApi('updateFine', { fineId: f.fineId, status: 'Оплачен' }, 20000);
+        await loadInitial();
+      } catch (err) { showError(err); }
+      finally { btn.textContent = old; btn.disabled = false; }
+    }
+
+    async function chargeFineNow(f, fp, btn) {
+      const vals = collectFineFields(f, fp);
+      const amt = vals.amount || String(f.amount || f.discountAmount || '');
+      const dRow = vals.driverRow || String(f.driverRow || '');
+      if (!dRow) return notifyUser('Нажмите «✏️» и выберите водителя для этого штрафа.');
+      if (!amt || Number(amt) <= 0) return notifyUser('Нажмите «✏️» и укажите сумму штрафа в рублях.');
+      if (!(await askConfirm(`Начислить штраф ${fmtMoney(amt)} ₽ в карточку водителя?\n\nЕсли у водителя подключён бот — ему сразу придёт уведомление.`))) return;
+
+      const old = btn.textContent; btn.textContent = 'Начисляем...'; btn.disabled = true;
+      try {
+        const res = await callApi('chargeFine', { fineId: f.fineId, amount: amt, driverRow: dRow }, 25000);
+        notifyUser(`✅ Штраф начислен: ${res.fio} (всего штрафов: ${fmtMoney(res.newFines)} ₽).${res.sentToDriver ? '\n🤖 Водитель уведомлён в Telegram.' : ''}`);
+        await loadInitial();
+      } catch (err) { showError(err); btn.textContent = old; btn.disabled = false; }
+    }
+
+    async function exportFineComplaintNow(f, fp, btn) {
+      const vals = collectFineFields(f, fp);
+      if (!vals.driverRow && !f.driverRow) return notifyUser('Нажмите «✏️» и выберите водителя, на которого переводится штраф.');
+      if (!(await askConfirm(`Сформировать PDF Жалобы в ГИБДД по УИН ${f.uin || f.fineId}?\n\nPDF придёт в ваш Telegram и сохранится в папку 07_Штрафы_и_Претензии.`))) return;
+
+      const old = btn.textContent; btn.textContent = 'Формируем PDF...'; btn.disabled = true;
+      try {
+        await callApi('updateFine', vals, 15000);
+        await callApi('exportFinePdf', { fineId: f.fineId }, 40000);
+        notifyUser('✅ PDF Жалобы на штраф ГИБДД отправлен в Telegram!');
+        await loadInitial();
+      } catch (err) { showError(err); }
+      finally { btn.textContent = old; btn.disabled = false; }
+    }
+
+    /* ==================== ЭТАП 2: ЧЁРНЫЙ СПИСОК ==================== */
+
+    function toggleManualBlForm() {
+      document.getElementById('manualBlForm').classList.toggle('hidden');
+    }
+
+    async function loadBlacklist() {
+      clearError();
+      document.getElementById('blacklistList').innerHTML = '<div class="msg">Загрузка Чёрного списка...</div>';
+      try {
+        allBlacklist = (await callApi('blacklist')) || [];
+        renderBlacklist();
+      } catch (err) { showError(err); }
+    }
+
+    function renderBlacklist() {
+      const list = document.getElementById('blacklistList'); list.innerHTML = '';
+      const q = String(document.getElementById('blSearch').value || '').trim().toLowerCase();
+      const filtered = allBlacklist.filter(it => {
+        if (!q) return true;
+        return [it.fio, it.phone, it.passport, it.vu, it.plate, it.reason].join(' ').toLowerCase().includes(q);
+      });
+
+      if (!filtered.length) {
+        list.innerHTML = `<div class="msg">${q ? 'По вашему запросу совпадений в Чёрном списке нет ✅' : 'Чёрный список пока пуст.'}</div>`;
+        return;
+      }
+
+      filtered.forEach(it => {
+        const card = document.createElement('div'); card.className = 'card card-bl-alert';
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="plate">${escapeHtml(it.fio || 'Без имени')}</span>
+            <span class="status-pill st-rented">⛔ В ЧС</span>
+          </div>
+          <div class="meta">
+            📅 ${escapeHtml(it.date || '—')} ${it.plate ? `• 🚗 <strong>${escapeHtml(it.plate)}</strong>` : ''}<br>
+            📱 Тел: <strong>${escapeHtml(it.phone || '—')}</strong><br>
+            🛂 Паспорт: <strong>${escapeHtml(it.passport || '—')}</strong> • 🪪 ВУ: <strong>${escapeHtml(it.vu || '—')}</strong>
+          </div>
+          <div class="bl-warning-box" style="margin-bottom:8px;">
+            Причина: ${escapeHtml(it.reason || '—')}
+            ${it.debt > 0 ? `<br>💸 Долг / ущерб: ${fmtMoney(it.debt)} ₽` : ''}
+          </div>
+          <div class="actions">
+            <button class="btn-copy js-bl-del" style="width:100%;">🔓 Убрать из Чёрного списка</button>
+          </div>`;
+        list.appendChild(card);
+        card.querySelector('.js-bl-del').addEventListener('click', (e) => removeBlacklistItem(it, e.target));
+      });
+    }
+
+    async function saveManualBlacklist(btn) {
+      const fio = document.getElementById('bl_fio').value.trim();
+      const phone = document.getElementById('bl_phone').value.trim();
+      const passport = document.getElementById('bl_passport').value.trim();
+      const vu = document.getElementById('bl_vu').value.trim();
+      const plate = document.getElementById('bl_plate').value.trim().toUpperCase();
+      const reason = document.getElementById('bl_reason').value.trim();
+      const debt = document.getElementById('bl_debt').value.trim();
+
+      if (!fio && !phone && !passport) return notifyUser('Укажите хотя бы ФИО, телефон или паспорт.');
+      if (!reason) return notifyUser('Укажите причину внесения в Чёрный список.');
+
+      const old = btn.textContent; btn.textContent = 'Сохраняем...'; btn.disabled = true;
+      try {
+        await callApi('addBlacklist', { fio, phone, passport, vu, plate, reason, debt }, 20000);
+        ['bl_fio', 'bl_phone', 'bl_passport', 'bl_vu', 'bl_plate', 'bl_reason'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('bl_debt').value = '0';
+        document.getElementById('manualBlForm').classList.add('hidden');
+        notifyUser('⛔ Водитель добавлен в Чёрный список!');
+        await loadInitial();
+      } catch (err) { showError(err); }
+      finally { btn.textContent = old; btn.disabled = false; }
+    }
+
+    async function removeBlacklistItem(it, btn) {
+      if (!(await askConfirm(`Убрать ${it.fio || it.phone} из Чёрного списка?`))) return;
+      const old = btn.textContent; btn.textContent = 'Удаляем...'; btn.disabled = true;
+      try {
+        await callApi('removeBlacklist', { blId: it.blId }, 15000);
+        notifyUser('🔓 Запись снята с Чёрного списка.');
+        await loadInitial();
+      } catch (err) { showError(err); btn.textContent = old; btn.disabled = false; }
+    }
+
+    /* ==================== ОСАГО / ТО / МАСЛО ==================== */
 
     function buildFilteredDocsList(expiryField, activeFilter) {
       const enriched = allCars.map((c, idx) => ({ car: c, order: idx + 1, info: parseExpiryInfo(c[expiryField]) }));
@@ -937,13 +1190,17 @@
     function switchTab(tab) {
       clearError(); currentTab = tab;
       document.querySelectorAll('#navTabs .tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
-      ['fleet', 'drivers', 'moderation', 'osago', 'to', 'oil'].forEach(t => document.getElementById(t + 'Section').classList.toggle('hidden', tab !== t));
+      ['fleet', 'drivers', 'moderation', 'fines', 'blacklist', 'osago', 'to', 'oil'].forEach(t => document.getElementById(t + 'Section').classList.toggle('hidden', tab !== t));
       if (tab === 'drivers') loadDrivers();
       if (tab === 'moderation') loadPendingReviews();
+      if (tab === 'fines') loadFines();
+      if (tab === 'blacklist') loadBlacklist();
       if (tab === 'osago') renderOsago();
       if (tab === 'to') renderTo();
       if (tab === 'oil') renderOil();
     }
+
+    /* ==================== ВОДИТЕЛИ ==================== */
 
     async function loadDrivers() {
       clearError();
@@ -959,11 +1216,7 @@
     }
 
     function buildDriverTemplate(type, d, rate) {
-      const name = d.name || 'Водитель';
-      const plate = d.plate || 'авто';
-      const debt = Number(d.debt) || 0;
-      const fines = Number(d.fines) || 0;
-
+      const name = d.name || 'Водитель', plate = d.plate || 'авто', debt = Number(d.debt) || 0, fines = Number(d.fines) || 0;
       if (type === 'pay') {
         const debtPart = debt > 0 ? ` Текущий долг: ${fmtMoney(debt)} ₽.` : '';
         return `Здравствуйте, ${name}! Напоминаю об оплате аренды за авто ${plate} (тариф ${fmtMoney(rate)} ₽/сут).${debtPart} Перевод по СБП: ${OWNER_SBP_PHONE} (Айдаров И.М.).`;
@@ -975,8 +1228,7 @@
       if (type === 'photo') {
         return `Здравствуйте, ${name}! Просьба сегодня прислать фотоконтроль авто ${plate}: 4 стороны кузова, салон и фото приборной панели с пробегом.`;
       }
-      const total = debt + fines;
-      return `Здравствуйте, ${name}! По договору № ${d.contractNo || 'б/н'} (${plate}) образовалась задолженность: долг ${fmtMoney(debt)} ₽, штрафы ${fmtMoney(fines)} ₽ (итого ${fmtMoney(total)} ₽). Просьба погасить в течение 12 часов по СБП ${OWNER_SBP_PHONE} или связаться со мной.`;
+      return `Здравствуйте, ${name}! По договору № ${d.contractNo || 'б/н'} (${plate}) образовалась задолженность: долг ${fmtMoney(debt)} ₽, штрафы ${fmtMoney(fines)} ₽ (итого ${fmtMoney(debt + fines)} ₽). Просьба погасить в течение 12 часов по СБП ${OWNER_SBP_PHONE} или связаться со мной.`;
     }
 
     function renderDrivers() {
@@ -1009,7 +1261,7 @@
 
         const card = document.createElement('div'); card.className = 'card';
         const dateId = 'drv_date_' + idx, timeId = 'drv_time_' + idx, numId = 'drv_num_' + idx, fileChkId = 'drv_file_' + idx;
-        const pp = 'pay_' + idx + '_', dp = 'debt_' + idx + '_', mp = 'msg_' + idx + '_';
+        const pp = 'pay_' + idx + '_', dp = 'debt_' + idx + '_', mp = 'msg_' + idx + '_', bp = 'blc_' + idx + '_';
 
         const debtBarHtml = `
           <div class="debt-bar ${hasDebtOrFines ? 'has-debt' : ''}">
@@ -1035,9 +1287,19 @@
             </div>
 
             <div class="actions">
-              <button class="btn-oil-done js-pay-toggle" style="flex:1;">💰 Оплата / Сверка</button>
+              <button class="btn-oil-done js-pay-toggle" style="flex:1;">💰 Оплата</button>
               <button class="btn-save js-msg-toggle" style="flex:1;">✉️ Сообщение</button>
-              <button class="btn-copy js-docs-toggle" style="flex:1;">📅 Дата и 3 PDF</button>
+              <button class="btn-copy js-docs-toggle" style="flex:1;">📅 3 PDF</button>
+              <button class="btn-danger-outline js-bl-toggle" title="В чёрный список">⛔</button>
+            </div>
+
+            <div class="expand-panel hidden js-bl-panel">
+              <div class="pay-subhead" style="margin-top:0;color:#dc2626;">⛔ Добавить в Чёрный список</div>
+              <div class="doc-edit">
+                <div class="field-group full"><label class="field-lbl" for="${bp}reason">Причина *</label><input type="text" id="${bp}reason" class="field-input" placeholder="Не оплатил аренду / бросил авто / скрыл ДТП"></div>
+                <div class="field-group full"><label class="field-lbl" for="${bp}debt">Сумма долга / ущерба (₽)</label><input type="number" inputmode="numeric" id="${bp}debt" class="field-input" value="${debtVal + finesVal}"></div>
+                <button class="btn-danger btn-full js-bl-save">⛔ Подтвердить внесение в ЧС</button>
+              </div>
             </div>
 
             <div class="expand-panel hidden js-msg-panel">
@@ -1051,9 +1313,9 @@
                 <button type="button" class="tpl-chip js-tpl-photo">📸 Фотоконтроль</button>
                 <button type="button" class="tpl-chip js-tpl-debt">⚠️ Долг</button>
               </div>
-              <textarea id="${mp}text" class="msg-textarea" placeholder="Выберите шаблон выше или напишите сообщение водителю...">${escapeHtml(buildDriverTemplate('pay', d, defaultRate))}</textarea>
+              <textarea id="${mp}text" class="msg-textarea">${escapeHtml(buildDriverTemplate('pay', d, defaultRate))}</textarea>
               <div class="doc-edit">
-                <button class="btn-save btn-full js-send-bot" ${hasBot ? '' : 'title="Сначала водитель должен перейти по ссылке бота"'}>🤖 Отправить в бот Telegram</button>
+                <button class="btn-save btn-full js-send-bot">🤖 Отправить в бот Telegram</button>
                 <button class="btn-wa js-send-wa">💬 WhatsApp</button>
                 <button class="btn-tg js-send-tg">✈️ Telegram чат</button>
                 <button class="btn-warn btn-full js-send-claim">⚖️ PDF Претензия о долге (в мой Telegram)</button>
@@ -1109,6 +1371,7 @@
         if (canEdit && d.row) {
           const panels = {
             debt: card.querySelector('.js-debt-panel'),
+            bl: card.querySelector('.js-bl-panel'),
             msg: card.querySelector('.js-msg-panel'),
             pay: card.querySelector('.js-pay-panel'),
             docs: card.querySelector('.js-docs-panel')
@@ -1121,19 +1384,21 @@
           };
 
           card.querySelector('.js-debt-toggle').addEventListener('click', () => toggleOnly('debt'));
+          card.querySelector('.js-bl-toggle').addEventListener('click', () => toggleOnly('bl'));
           card.querySelector('.js-msg-toggle').addEventListener('click', () => toggleOnly('msg'));
           card.querySelector('.js-docs-toggle').addEventListener('click', () => toggleOnly('docs'));
-          card.querySelector('.js-pay-toggle').addEventListener('click', () => {
-            if (toggleOnly('pay')) loadDriverPayments(d, panels.pay, pp);
-          });
+          card.querySelector('.js-pay-toggle').addEventListener('click', () => { if (toggleOnly('pay')) loadDriverPayments(d, panels.pay, pp); });
 
-          // Долги и штрафы
+          // Долги
           const debtInp = card.querySelector('#' + dp + 'debt'), finesInp = card.querySelector('#' + dp + 'fines'), noteInp = card.querySelector('#' + dp + 'note');
           const dSave = card.querySelector('.js-debt-save'), dClr = card.querySelector('.js-debt-clear');
           dSave.addEventListener('click', () => saveDriverDebtFines(d, debtInp, finesInp, noteInp, false, dSave, dClr));
           dClr.addEventListener('click', () => saveDriverDebtFines(d, debtInp, finesInp, noteInp, true, dClr, dSave));
 
-          // Сообщения водителю
+          // В чёрный список из карточки
+          card.querySelector('.js-bl-save').addEventListener('click', (e) => addDriverToBlacklist(d, bp, e.target));
+
+          // Сообщения
           const msgTa = card.querySelector('#' + mp + 'text');
           card.querySelector('.js-tpl-pay').addEventListener('click', () => { msgTa.value = buildDriverTemplate('pay', d, defaultRate); });
           card.querySelector('.js-tpl-fine').addEventListener('click', () => { msgTa.value = buildDriverTemplate('fine', d, defaultRate); });
@@ -1142,12 +1407,9 @@
 
           card.querySelector('.js-bot-link').addEventListener('click', async (e) => {
             const inviteText = `Здравствуйте! Подключите, пожалуйста, уведомления нашего автопарка (нажмите «Старт»): ${botInviteLink}`;
-            if (await copyToClipboard(inviteText)) {
-              const old = e.target.textContent; e.target.textContent = '✅ Скопировано!';
-              setTimeout(() => { e.target.textContent = old; }, 1800);
-            } else { notifyUser(botInviteLink); }
+            if (await copyToClipboard(inviteText)) { const old = e.target.textContent; e.target.textContent = '✅ Скопировано!'; setTimeout(() => { e.target.textContent = old; }, 1800); }
+            else notifyUser(botInviteLink);
           });
-
           card.querySelector('.js-send-bot').addEventListener('click', (e) => sendDriverBotMessage(d, msgTa, e.target));
           card.querySelector('.js-send-wa').addEventListener('click', () => {
             const ph = formatPhoneIntl(d.phone);
@@ -1162,15 +1424,12 @@
           });
           card.querySelector('.js-send-claim').addEventListener('click', (e) => sendDriverClaimPdf(d, e.target));
 
-          // Оплаты + автосписание
+          // Оплаты
           const methodSel = card.querySelector('#' + pp + 'method'), checkSel = card.querySelector('#' + pp + 'check');
           const catSel = card.querySelector('#' + pp + 'cat'), deductChk = card.querySelector('#' + pp + 'deduct');
           const fromInp = card.querySelector('#' + pp + 'from'), toInp = card.querySelector('#' + pp + 'to'), daysInp = card.querySelector('#' + pp + 'days');
-
           methodSel.addEventListener('change', () => { checkSel.value = methodSel.value === 'Наличные' ? 'Расписка в мессенджере' : 'Чек НПД выдан'; });
-          catSel.addEventListener('change', () => {
-            deductChk.checked = (catSel.value === 'Погашение долга' || catSel.value === 'Штраф / Доплата');
-          });
+          catSel.addEventListener('change', () => { deductChk.checked = (catSel.value === 'Погашение долга' || catSel.value === 'Штраф / Доплата'); });
           const recalcDays = () => { if (fromInp.value && toInp.value) daysInp.value = diffDaysInclusive(fromInp.value, toInp.value); };
           fromInp.addEventListener('change', recalcDays); toInp.addEventListener('change', recalcDays);
 
@@ -1178,7 +1437,7 @@
           card.querySelector('.js-pay-receipt').addEventListener('click', (e) => copyDriverReceipt(d, pp, e.target, panels.pay));
           card.querySelector('.js-pay-pdf').addEventListener('click', (e) => exportDriverReconciliation(d, pp, e.target));
 
-          // Дата / 3 PDF
+          // 3 PDF
           const sDoc = card.querySelector('.js-docs-send'), fDoc = card.querySelector('.js-docs-file');
           sDoc.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, true, sDoc, fDoc));
           fDoc.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, false, fDoc, sDoc));
@@ -1190,46 +1449,47 @@
       });
     }
 
+    async function addDriverToBlacklist(driver, bp, btn) {
+      const reason = document.getElementById(bp + 'reason').value.trim();
+      const debt = document.getElementById(bp + 'debt').value.trim();
+      if (!reason) return notifyUser('Укажите причину добавления в Чёрный список.');
+      if (!(await askConfirm(`Внести водителя ${driver.name} (${driver.plate || '—'}) в Чёрный список?\n\nПри повторной подаче анкеты система сразу подсветит его красным.`))) return;
+
+      const old = btn.textContent; btn.textContent = 'Вносим в ЧС...'; btn.disabled = true;
+      try {
+        await callApi('addBlacklist', { row: driver.row, reason, debt }, 20000);
+        notifyUser(`⛔ Водитель ${driver.name} внесён в Чёрный список!`);
+        await loadInitial();
+      } catch (err) { showError(err); }
+      finally { btn.textContent = old; btn.disabled = false; }
+    }
+
     async function sendDriverBotMessage(driver, msgTa, btn) {
       const text = msgTa.value.trim();
       if (!text) return notifyUser('Введите текст сообщения.');
-      const old = btn.textContent; btn.textContent = 'Отправляем в бот...'; btn.disabled = true;
-      try {
-        await callApi('sendDriverMessage', { row: driver.row, text }, 20000);
-        notifyUser(`✅ Сообщение доставлено водителю ${driver.name} через Telegram-бот!`);
-      } catch (err) {
-        notifyUser(err.message || String(err));
-      } finally {
-        btn.textContent = old; btn.disabled = false;
-      }
+      const old = btn.textContent; btn.textContent = 'Отправляем...'; btn.disabled = true;
+      try { await callApi('sendDriverMessage', { row: driver.row, text }, 20000); notifyUser(`✅ Сообщение доставлено водителю ${driver.name}!`); }
+      catch (err) { notifyUser(err.message || String(err)); }
+      finally { btn.textContent = old; btn.disabled = false; }
     }
 
     async function sendDriverClaimPdf(driver, btn) {
-      if (!(await askConfirm(`Сформировать PDF Досудебной претензии для ${driver.name} (${driver.plate})?\n\nPDF придёт в ваш Telegram и сохранится в папку 07_Штрафы_и_Претензии.`))) return;
-      const old = btn.textContent; btn.textContent = 'Формируем PDF претензии...'; btn.disabled = true;
-      try {
-        await callApi('sendDriverClaimPdf', { row: driver.row }, 35000);
-        notifyUser(`✅ PDF Досудебной претензии по ${driver.name} отправлен в ваш Telegram!`);
-      } catch (err) {
-        showError(err);
-      } finally {
-        btn.textContent = old; btn.disabled = false;
-      }
+      if (!(await askConfirm(`Сформировать PDF Досудебной претензии для ${driver.name} (${driver.plate})?`))) return;
+      const old = btn.textContent; btn.textContent = 'Формируем PDF...'; btn.disabled = true;
+      try { await callApi('sendDriverClaimPdf', { row: driver.row }, 35000); notifyUser(`✅ PDF Претензии по ${driver.name} отправлен в Telegram!`); }
+      catch (err) { showError(err); }
+      finally { btn.textContent = old; btn.disabled = false; }
     }
 
     async function saveDriverDebtFines(driver, debtInp, finesInp, noteInp, clearAll, activeBtn, otherBtn) {
-      let debt = clearAll ? 0 : Math.max(0, Number(String(debtInp.value || '0').replace(/\s+/g, '')) || 0);
-      let fines = clearAll ? 0 : Math.max(0, Number(String(finesInp.value || '0').replace(/\s+/g, '')) || 0);
-      let note = clearAll ? '' : String(noteInp.value || '').trim();
+      const debt = clearAll ? 0 : Math.max(0, Number(String(debtInp.value || '0').replace(/\s+/g, '')) || 0);
+      const fines = clearAll ? 0 : Math.max(0, Number(String(finesInp.value || '0').replace(/\s+/g, '')) || 0);
+      const note = clearAll ? '' : String(noteInp.value || '').trim();
       if (clearAll && !(await askConfirm(`Обнулить долг и штрафы для ${driver.name} до 0 ₽?`))) return;
 
       const old = activeBtn.textContent; activeBtn.textContent = 'Сохранение...'; activeBtn.disabled = true; if (otherBtn) otherBtn.disabled = true;
-      try {
-        await callApi('setDriverDebtFines', { row: driver.row, debt: String(debt), fines: String(fines), note }, 20000);
-        await loadDrivers();
-      } catch (err) {
-        activeBtn.textContent = old; activeBtn.disabled = false; if (otherBtn) otherBtn.disabled = false; showError(err);
-      }
+      try { await callApi('setDriverDebtFines', { row: driver.row, debt: String(debt), fines: String(fines), note }, 20000); await loadDrivers(); }
+      catch (err) { activeBtn.textContent = old; activeBtn.disabled = false; if (otherBtn) otherBtn.disabled = false; showError(err); }
     }
 
     function renderPaySummaryHtml(data, panel, pp) {
@@ -1237,12 +1497,10 @@
       const t = data.totals || {}, sbpAll = (t.sbp || 0) + (t.cardOrOther || 0);
       const balColor = (t.rentBalance || 0) < 0 ? '#ef4444' : '#22c55e';
       const balText = (t.rentBalance || 0) < 0 ? `Долг: ${fmtMoney(Math.abs(t.rentBalance))} ₽` : ((t.rentBalance || 0) > 0 ? `Аванс: +${fmtMoney(t.rentBalance)} ₽` : '0 ₽ (закрыто)');
-
       sumBox.innerHTML =
         `💳 СБП/карта: <strong>${fmtMoney(sbpAll)} ₽</strong> • 💵 Нал: <strong>${fmtMoney(t.cash || 0)} ₽</strong><br>` +
         `📅 Аренда (${data.defaultDays || 0} дн.): оплачено <strong>${fmtMoney(t.paidRent || 0)} ₽</strong> из <strong>${fmtMoney(t.accruedRent || 0)} ₽</strong><br>` +
         `🔒 Залог: <strong>${fmtMoney(t.depositBalance || 0)} ₽</strong> • Баланс: <strong style="color:${balColor};">${balText}</strong>`;
-
       if (data.dailyRate) { const rInp = document.getElementById(pp + 'rate'); if (rInp) rInp.value = data.dailyRate; }
       const items = data.items || [];
       if (!items.length) { histBox.innerHTML = '<div class="pay-item-meta">По этому водителю ещё нет записей в «Журнале оплат».</div>'; return; }
@@ -1257,24 +1515,14 @@
     }
 
     async function saveDriverPayment(driver, pp, panel, btn) {
-      const amount = document.getElementById(pp + 'amount').value.trim();
-      const method = document.getElementById(pp + 'method').value;
-      const category = document.getElementById(pp + 'cat').value;
-      const date = document.getElementById(pp + 'date').value;
-      const checkStatus = document.getElementById(pp + 'check').value;
-      const comment = document.getElementById(pp + 'comment').value.trim();
-      const autoDeduct = document.getElementById(pp + 'deduct').checked;
+      const amount = document.getElementById(pp + 'amount').value.trim(), method = document.getElementById(pp + 'method').value, category = document.getElementById(pp + 'cat').value, date = document.getElementById(pp + 'date').value, checkStatus = document.getElementById(pp + 'check').value, comment = document.getElementById(pp + 'comment').value.trim(), autoDeduct = document.getElementById(pp + 'deduct').checked;
       if (!amount || Number(amount) <= 0) return notifyUser('Укажите сумму оплаты больше 0 ₽.');
-
       const old = btn.textContent; btn.textContent = 'Записываем...'; btn.disabled = true;
       try {
-        const res = await callApi('addPayment', {
-          row: driver.row, driverName: driver.name, plate: driver.plate, contractNo: driver.contractNo || '',
-          amount, method, category, date, checkStatus, comment, autoDeduct: autoDeduct ? 'true' : 'false'
-        }, 20000);
+        const res = await callApi('addPayment', { row: driver.row, driverName: driver.name, plate: driver.plate, contractNo: driver.contractNo || '', amount, method, category, date, checkStatus, comment, autoDeduct: autoDeduct ? 'true' : 'false' }, 20000);
         document.getElementById(pp + 'comment').value = '';
         if (res && res.summary) renderPaySummaryHtml(res.summary, panel, pp);
-        const dedNote = res && res.autoDeducted ? `\n🔄 Остаток в карточке: долг ${fmtMoney(res.updatedDebt)} ₽, штрафы ${fmtMoney(res.updatedFines)} ₽.` : '';
+        const dedNote = res && res.autoDeducted ? `\n🔄 Остаток: долг ${fmtMoney(res.updatedDebt)} ₽, штрафы ${fmtMoney(res.updatedFines)} ₽.` : '';
         notifyUser(`✅ Оплата ${fmtMoney(amount)} ₽ (${method}) записана!${dedNote}`);
         if (res && res.autoDeducted) await loadDrivers();
       } catch (err) { showError(err); }
