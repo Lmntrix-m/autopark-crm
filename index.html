@@ -326,7 +326,7 @@
   <div class="header">
     <h1 id="userName">Автопарк CRM</h1>
     <div class="header-right">
-      <a href="form.html?v=20261122_1" class="btn-new-form" title="Открыть анкету водителя">+ Анкета</a>
+      <a href="form.html?v=20261122_1" id="btnNewForm" class="btn-new-form" title="Открыть анкету водителя">+ Анкета</a>
       <button class="btn-refresh" onclick="loadInitial()" title="Обновить">↻</button>
       <span id="userRole" class="role-badge">...</span>
     </div>
@@ -387,14 +387,14 @@
     </div>
 
     <div id="driversSection" class="hidden">
-      <div class="evening-bar">
+      <div class="evening-bar" id="driversEveningBar">
         <button class="btn-evening" id="btnEveningNow" onclick="runEveningSummaryNow(this)">🌙 Сводка «Кто не оплатил сегодня?» → в Telegram</button>
       </div>
       <div class="filters">
         <button class="chip active" onclick="filterDrivers('all', this)">Все</button>
         <button class="chip" onclick="filterDrivers('ездит', this)">Ездит</button>
         <button class="chip" onclick="filterDrivers('сдал', this)">Сдал</button>
-        <button class="chip" onclick="filterDrivers('debt', this)">С долгом / штрафом</button>
+        <button class="chip" id="drvFilterDebt" onclick="filterDrivers('debt', this)">С долгом / штрафом</button>
       </div>
       <div id="driversList"></div>
     </div>
@@ -572,7 +572,6 @@
     let finPeriodsInitialized = false;
     let toastTimer = null;
 
-    // Фикс потери фокуса клавиатуры в Telegram Desktop (Windows WebView2)
     document.addEventListener('pointerdown', (e) => {
       const el = e.target && e.target.closest ? e.target.closest('input, textarea, select') : null;
       if (el && !el.disabled) {
@@ -942,26 +941,33 @@
         currentUser = data.user;
         allCars = data.cars || [];
 
+        const isAdminOrMgr = currentUser.role === 'admin' || currentUser.role === 'manager';
+        const isMechanic = currentUser.role === 'mechanic';
+
         document.getElementById('userName').textContent = currentUser.name || 'Автопарк CRM';
-        document.getElementById('userRole').textContent = currentUser.role;
+        document.getElementById('userRole').textContent = isMechanic ? 'механик' : currentUser.role;
         document.getElementById('stFree').textContent = data.counts.free;
         document.getElementById('stRented').textContent = data.counts.rented;
         document.getElementById('stBooked').textContent = data.counts.booked;
         document.getElementById('stService').textContent = data.counts.service;
 
-        if (currentUser.role === 'admin' || currentUser.role === 'manager') {
-          ['tabDriversBtn', 'tabFinanceBtn', 'tabModBtn', 'tabFinesBtn', 'tabBlBtn', 'osagoSyncBar', 'oilBroadcastBar']
-            .forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); });
-        }
+        document.getElementById('btnNewForm').classList.toggle('hidden', !isAdminOrMgr);
+        document.getElementById('driversEveningBar').classList.toggle('hidden', !isAdminOrMgr);
+        document.getElementById('drvFilterDebt').classList.toggle('hidden', !isAdminOrMgr);
+
+        ['tabFinanceBtn', 'tabModBtn', 'tabFinesBtn', 'tabBlBtn', 'osagoSyncBar', 'oilBroadcastBar']
+          .forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('hidden', !isAdminOrMgr); });
+        document.getElementById('tabDriversBtn').classList.toggle('hidden', !(isAdminOrMgr || isMechanic));
+
         updateBadges(data.pendingCount || 0, data.newFinesCount || 0, data.blacklistCount || 0, data.pendingNpdCount || 0);
         initFinanceSelectors();
 
         renderCars(); renderOsago(); renderTo(); renderOil();
         if (currentTab === 'drivers') loadDrivers();
-        if (currentTab === 'finance') loadFinance();
-        if (currentTab === 'moderation') loadPendingReviews();
-        if (currentTab === 'fines') loadFines();
-        if (currentTab === 'blacklist') loadBlacklist();
+        if (currentTab === 'finance' && isAdminOrMgr) loadFinance();
+        if (currentTab === 'moderation' && isAdminOrMgr) loadPendingReviews();
+        if (currentTab === 'fines' && isAdminOrMgr) loadFines();
+        if (currentTab === 'blacklist' && isAdminOrMgr) loadBlacklist();
       } catch (err) { showError(err); }
     }
 
@@ -1084,10 +1090,14 @@
             </div>`;
         }
 
+        const secondMetaLine = canEdit
+          ? `Тариф: <strong>${escapeHtml(fmtUnit(c.dailyRate, '₽'))}/сут</strong> • Депозит: <strong>${escapeHtml(fmtUnit(c.deposit, '₽'))}</strong> • Пробег: <strong>${escapeHtml(fmtKm(c.currentMileage))}</strong>${pcBadge}`
+          : `Пробег: <strong>${escapeHtml(fmtKm(c.currentMileage))}</strong>${c.driverName ? ` • 👤 <strong>${escapeHtml(c.driverName)}</strong>` : ''}${pcBadge}`;
+
         card.innerHTML = `
           <div class="card-top"><span class="plate"><span class="order-num">${item.order}.</span>${escapeHtml(c.plate)}</span><span class="status-pill ${statusClass(c.status)}">${escapeHtml(c.status || '—')}</span></div>
           <div class="model">${escapeHtml(c.model || '')}${c.code ? ' • ' + escapeHtml(c.code) : ''} (${escapeHtml(c.year || '—')} г., ${escapeHtml(c.color || '—')})</div>
-          <div class="meta">Кузов: <strong>${escapeHtml(c.frame || '—')}</strong> • СТС: <strong>${escapeHtml(stsDisplay)}</strong><br>Тариф: <strong>${escapeHtml(fmtUnit(c.dailyRate, '₽'))}/сут</strong> • Депозит: <strong>${escapeHtml(fmtUnit(c.deposit, '₽'))}</strong> • Пробег: <strong>${escapeHtml(fmtKm(c.currentMileage))}</strong>${pcBadge}</div>
+          <div class="meta">Кузов: <strong>${escapeHtml(c.frame || '—')}</strong> • СТС: <strong>${escapeHtml(stsDisplay)}</strong><br>${secondMetaLine}</div>
           ${editHtml}`;
         list.appendChild(card);
 
@@ -1889,14 +1899,18 @@
         const c = item.car, info = item.info, card = document.createElement('div'); card.className = 'card';
         const polId = 'osago_pol_' + idx, expId = 'osago_exp_' + idx;
         const stsText = (c.sts || 'Не указан') + (c.stsDate ? (' от ' + c.stsDate) : '');
-        const driverLine = c.driverName ? `<br>Водитель: <strong>${escapeHtml(c.driverName)}</strong>${c.driverExpYear ? ' (стаж ' + escapeHtml(formatDriverExpText(c.driverExpYear)) + ')' : ''}` : '';
+        const driverLine = c.driverName
+          ? `<br>Водитель: <strong>${escapeHtml(c.driverName)}</strong>${canEdit && c.driverExpYear ? ' (стаж ' + escapeHtml(formatDriverExpText(c.driverExpYear)) + ')' : ''}`
+          : '';
         const editHtml = canEdit
           ? `<div class="doc-edit"><input type="text" id="${polId}" class="field-input" value="${escapeHtml(c.osagoPolicy || '')}" placeholder="Номер полиса"><input type="date" id="${expId}" class="field-input" value="${escapeHtml(info.iso)}"><button class="btn-save js-osago-save">Сохранить ОСАГО</button><button class="btn-copy js-osago-copy">📋 Сводка менеджеру</button></div>`
-          : `<div class="actions"><button class="btn-copy js-osago-copy" style="width:100%;">📋 Скопировать сводку менеджеру</button></div>`;
+          : '';
         card.innerHTML = `<div class="card-top"><span class="plate"><span class="order-num">${item.order}.</span>${escapeHtml(c.plate)}</span><span class="status-pill ${info.pillClass}">${escapeHtml(info.label)}</span></div><div class="model">${escapeHtml(c.model || '')}${c.code ? ' • ' + escapeHtml(c.code) : ''} (${escapeHtml(c.status || '—')})</div><div class="meta">СТС: <strong>${escapeHtml(stsText)}</strong> • Кузов: <strong>${escapeHtml(c.frame || '—')}</strong><br>Полис: <strong>${escapeHtml(c.osagoPolicy || 'Не указан')}</strong><br>Действует до: <strong>${escapeHtml(info.ru || 'Не указан')}</strong>${driverLine}</div>${editHtml}`;
         list.appendChild(card);
-        if (canEdit) card.querySelector('.js-osago-save').addEventListener('click', (e) => saveOsago(c.plate, polId, expId, e.target));
-        card.querySelector('.js-osago-copy').addEventListener('click', (e) => copyOsagoSummary(c, info, canEdit ? polId : null, canEdit ? expId : null, e.target, card));
+        if (canEdit) {
+          card.querySelector('.js-osago-save').addEventListener('click', (e) => saveOsago(c.plate, polId, expId, e.target));
+          card.querySelector('.js-osago-copy').addEventListener('click', (e) => copyOsagoSummary(c, info, polId, expId, e.target, card));
+        }
       });
     }
 
@@ -2065,16 +2079,16 @@
       const list = document.getElementById('driversList'); list.innerHTML = '';
       if (!allDrivers.length) { list.innerHTML = '<div class="msg">Список водителей пуст</div>'; return; }
 
+      const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
       const sorted = [...allDrivers].sort((a, b) => (String(a.rentalStatus || '').toLowerCase() === 'сдал' ? 1 : 0) - (String(b.rentalStatus || '').toLowerCase() === 'сдал' ? 1 : 0));
       const filtered = sorted.filter(d => {
         const st = String(d.rentalStatus || 'ездит').toLowerCase().trim();
         if (currentDriverFilter === 'all') return true;
-        if (currentDriverFilter === 'debt') return (Number(d.debt) || 0) > 0 || (Number(d.fines) || 0) > 0;
+        if (currentDriverFilter === 'debt') return canEdit && ((Number(d.debt) || 0) > 0 || (Number(d.fines) || 0) > 0);
         return st === currentDriverFilter;
       });
       if (!filtered.length) { list.innerHTML = '<div class="msg">Нет водителей по выбранному фильтру</div>'; return; }
 
-      const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
       const todayIso = todayIsoLocal();
 
       filtered.forEach((d, idx) => {
@@ -2095,14 +2109,15 @@
         const dateId = 'drv_date_' + idx, timeId = 'drv_time_' + idx, numId = 'drv_num_' + idx, fileChkId = 'drv_file_' + idx;
         const pp = 'pay_' + idx + '_', dp = 'debt_' + idx + '_', mp = 'msg_' + idx + '_', bp = 'blc_' + idx + '_';
 
-        const debtBarHtml = `
-          <div class="debt-bar ${hasDebtOrFines ? 'has-debt' : ''}">
-            <div class="debt-info">
-              <div>💸 Долг: <strong class="${debtVal > 0 ? 'amt-bad' : 'amt-ok'}">${fmtMoney(debtVal)} ₽</strong> &nbsp;•&nbsp; 🚓 Штрафы: <strong class="${finesVal > 0 ? 'amt-bad' : 'amt-ok'}">${fmtMoney(finesVal)} ₽</strong></div>
-              ${d.debtNote ? `<div class="debt-note">💬 ${escapeHtml(d.debtNote)}</div>` : ''}
-            </div>
-            ${canEdit && d.row ? `<button class="btn-mini js-debt-toggle">✏️ Изменить</button>` : ''}
-          </div>`;
+        const debtBarHtml = canEdit
+          ? `<div class="debt-bar ${hasDebtOrFines ? 'has-debt' : ''}">
+              <div class="debt-info">
+                <div>💸 Долг: <strong class="${debtVal > 0 ? 'amt-bad' : 'amt-ok'}">${fmtMoney(debtVal)} ₽</strong> &nbsp;•&nbsp; 🚓 Штрафы: <strong class="${finesVal > 0 ? 'amt-bad' : 'amt-ok'}">${fmtMoney(finesVal)} ₽</strong></div>
+                ${d.debtNote ? `<div class="debt-note">💬 ${escapeHtml(d.debtNote)}</div>` : ''}
+              </div>
+              ${d.row ? `<button class="btn-mini js-debt-toggle">✏️ Изменить</button>` : ''}
+            </div>`
+          : '';
 
         let editBlocksHtml = '';
         if (canEdit && d.row) {
@@ -2197,11 +2212,18 @@
         }
 
         const actionBtnHtml = (!isReturned && canEdit && d.row) ? '<button class="btn-return">🔓 Сдал авто (Акт возврата)</button>' : '';
+        const phoneIntl = formatPhoneIntl(d.phone);
+        const phoneLinkHtml = phoneIntl
+          ? `<a href="tel:+${phoneIntl}" style="color:var(--btn);text-decoration:none;font-weight:600;">${escapeHtml(d.phone)}</a>`
+          : escapeHtml(d.phone || '—');
+        const driverMetaHtml = canEdit
+          ? `Договор №: <strong>${escapeHtml(d.contractNo || '—')}</strong> • Выдача: <strong>${escapeHtml(tsInfo.ruDisplay)}</strong><br>Тел: ${escapeHtml(d.phone || '—')} • Гражданство: ${escapeHtml(d.nationality || '—')} • Срок: ${escapeHtml(d.rentDays || '365')} сут.`
+          : `📱 Телефон: ${phoneLinkHtml}`;
 
         card.innerHTML = `
           <div class="card-top"><span class="plate">${escapeHtml(d.name || 'Без имени')}</span><span class="status-pill ${pillClass}">${escapeHtml(statusText)}</span></div>
-          <div class="model"><strong>${escapeHtml(d.plate || '—')}</strong> • ${escapeHtml(d.car || '')} ${hasBot ? '🤖' : ''}</div>
-          <div class="meta">Договор №: <strong>${escapeHtml(d.contractNo || '—')}</strong> • Выдача: <strong>${escapeHtml(tsInfo.ruDisplay)}</strong><br>Тел: ${escapeHtml(d.phone || '—')} • Гражданство: ${escapeHtml(d.nationality || '—')} • Срок: ${escapeHtml(d.rentDays || '365')} сут.</div>
+          <div class="model"><strong>${escapeHtml(d.plate || '—')}</strong> • ${escapeHtml(d.car || '')} ${canEdit && hasBot ? '🤖' : ''}</div>
+          <div class="meta">${driverMetaHtml}</div>
           ${debtBarHtml}${editBlocksHtml}${actionBtnHtml}`;
         list.appendChild(card);
 
