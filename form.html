@@ -240,20 +240,27 @@
         </div>
       </div>
 
-      <!-- 3. Водительское удостоверение -->
+      <!-- 3. Водительское удостоверение (раздельные поля) -->
       <div class="card">
         <div class="sec-title">3. Водительское удостоверение (ВУ)</div>
 
         <div class="field">
-          <label for="vuDetailsRaw">Серия, номер и дата выдачи ВУ <span class="req">*</span></label>
-          <input type="text" id="vuDetailsRaw" placeholder="99 20 123456 от 12.04.2021">
+          <label for="vuNumber">Серия и номер ВУ <span class="req">*</span></label>
+          <input type="text" id="vuNumber" placeholder="99 20 123456" autocomplete="off" required>
           <div class="hint">РФ: 00 00 000000 • РТ/УЗБ: AA 0000000 • КР: 000000000 / AA 000000 • АРМ/АЗЕР: AA 000000</div>
         </div>
 
-        <div class="field">
-          <label for="vuStartYear">Год начала водительского стажа <span class="req">*</span></label>
-          <input type="number" inputmode="numeric" id="vuStartYear" min="1960" max="2026" placeholder="2018">
-          <div class="hint">Указан в графе «Стаж с ...» на обратной стороне ВУ</div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="vuIssueDate">Дата выдачи ВУ <span class="req">*</span></label>
+            <input type="date" id="vuIssueDate" required>
+            <div class="hint">Пункт 4a на лицевой стороне ВУ</div>
+          </div>
+          <div class="field">
+            <label for="vuStartYear">Год начала стажа <span class="req">*</span></label>
+            <input type="number" inputmode="numeric" id="vuStartYear" min="1960" max="2026" placeholder="2018" required>
+            <div class="hint">Графа «Стаж с ...» с обратной стороны</div>
+          </div>
         </div>
       </div>
 
@@ -464,7 +471,6 @@
         document.getElementById('stayPhotosLbl').innerHTML = '📘 Фото штампа РВП в паспорте (1–2 фото) <span class="req">*</span>';
       }
 
-      // Для лица без гражданства ВНЖ заменяет паспорт
       document.getElementById('passportNumField').classList.toggle('hidden', lbg);
       document.getElementById('passPhotosField').classList.toggle('hidden', lbg);
       document.getElementById('passportIssuedLbl').innerHTML = lbg
@@ -629,8 +635,12 @@
       const regAddress = document.getElementById('regAddress').value.trim();
       const sameAddr = document.getElementById('sameAddressChk').checked;
       const factAddress = sameAddr ? regAddress : document.getElementById('factAddress').value.trim();
-      const vuDetailsRaw = document.getElementById('vuDetailsRaw').value.trim();
+
+      const vuNumber = document.getElementById('vuNumber').value.trim();
+      const vuIssueDateIso = document.getElementById('vuIssueDate').value.trim();
+      const vuIssueDateRu = formatDateRu(vuIssueDateIso);
       const vuStartYear = document.getElementById('vuStartYear').value.trim();
+
       const carSelection = document.getElementById('carSelection').value;
       const durationRaw = document.getElementById('durationRaw').value;
       const opdConsent = document.getElementById('opdConsent').checked;
@@ -645,14 +655,28 @@
       if (!passportIssued) return showErr('Укажите, кем и когда выдан документ.');
       if (!regAddress) return showErr('Укажите адрес регистрации (прописки).');
       if (!sameAddr && !factAddress) return showErr('Укажите фактический адрес проживания.');
-      if (!vuDetailsRaw) return showErr('Укажите серию, номер и дату выдачи ВУ.');
-      if (!vuStartYear || Number(vuStartYear) < 1960 || Number(vuStartYear) > 2026) return showErr('Укажите корректный год начала стажа (например, 2018).');
+
+      if (!vuNumber || vuNumber.length < 5) return showErr('Укажите серию и номер водительского удостоверения (ВУ).');
+      if (!vuIssueDateIso) return showErr('Укажите дату выдачи ВУ (пункт 4a на лицевой стороне прав).');
+      const vuParts = vuIssueDateIso.split('-').map(Number);
+      if (Date.UTC(vuParts[0], vuParts[1] - 1, vuParts[2]) > Date.now() + 86400000) {
+        return showErr('Дата выдачи ВУ не может быть в будущем.');
+      }
+      if (!vuStartYear || Number(vuStartYear) < 1960 || Number(vuStartYear) > 2026) {
+        return showErr('Укажите корректный год начала стажа (например, 2018).');
+      }
+      if (Number(vuStartYear) > vuParts[0]) {
+        return showErr('Год начала стажа не может быть позже года выдачи ВУ.');
+      }
+
       if (!carSelection) return showErr('Выберите автомобиль из списка.');
       if (!photoStore.vu.length) return showErr('Прикрепите фото водительского удостоверения (ВУ).');
       if (!lbg && !photoStore.pass.length) return showErr('Прикрепите фото паспорта.');
       if (needStay && !photoStore.stay.length) return showErr('Прикрепите фото ВНЖ или штампа РВП.');
       if (!photoStore.reg.length) return showErr('Прикрепите фото прописки / регистрации.');
       if (!opdConsent) return showErr('Необходимо дать согласие на обработку персональных данных (152-ФЗ).');
+
+      const vuDetailsRaw = `${vuNumber} (выдано ${vuIssueDateRu}, стаж с ${vuStartYear} г.)`;
 
       const btn = document.getElementById('submitBtn');
       const oldText = btn.textContent;
@@ -674,6 +698,8 @@
         passportIssued,
         regAddress,
         factAddress,
+        vuNumber,
+        vuIssueDate: vuIssueDateRu,
         vuDetailsRaw,
         vuStartYear,
         carSelection,
@@ -701,7 +727,6 @@
           if (!json || !json.ok) throw new Error((json && json.error) || 'Ошибка сервера');
           resultData = json.data || {};
         } catch (fetchErr) {
-          // Если браузер/WebView заблокировал чтение CORS-ответа — проверяем статус или досылаем no-cors с тем же submissionId
           resultData = await pollWebFormResult(submissionId, 8000);
           if (!resultData) {
             try {
