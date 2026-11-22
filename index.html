@@ -200,6 +200,21 @@
       padding: 8px 10px; border-radius: 8px; background: var(--bg); font-size: 12px; line-height: 1.45;
       margin-bottom: 8px; border: 1px solid rgba(128,128,128,0.22);
     }
+    .ai-fixes-box {
+      padding: 8px 10px; border-radius: 8px; background: rgba(22, 163, 74, 0.11);
+      border: 1px solid rgba(22, 163, 74, 0.45); color: #15803d; font-size: 12px; line-height: 1.45;
+      margin-bottom: 8px;
+    }
+    .ai-warn-box {
+      padding: 8px 10px; border-radius: 8px; background: rgba(217, 119, 6, 0.12);
+      border: 1px solid rgba(217, 119, 6, 0.48); color: #b45309; font-size: 12px; line-height: 1.45;
+      margin-bottom: 8px;
+    }
+    .vu-edit-box {
+      grid-column: span 2; padding: 8px; border-radius: 9px;
+      background: rgba(36, 129, 204, 0.08); border: 1px solid rgba(36, 129, 204, 0.28);
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    }
     .photo-links { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
     .photo-link {
       display: inline-block; padding: 5px 9px; border-radius: 8px; font-size: 12px; font-weight: 600;
@@ -285,6 +300,7 @@
     <option value="Toyota Aqua">
     <option value="Toyota Corolla Fielder">
   </datalist>
+  <datalist id="fleetPlatesList"></datalist>
 
   <div class="header">
     <h1 id="userName">Автопарк CRM</h1>
@@ -887,6 +903,10 @@
       const plateSel = document.getElementById('qexp_plate');
       plateSel.innerHTML = '<option value="ОБЩИЕ">ОБЩИЕ (расходы автопарка)</option>' +
         allCars.map(c => `<option value="${escapeHtml(c.plate)}">${escapeHtml(c.plate)} — ${escapeHtml(c.model)}${c.code ? ' (' + escapeHtml(c.code) + ')' : ''}</option>`).join('');
+      const dl = document.getElementById('fleetPlatesList');
+      if (dl) {
+        dl.innerHTML = allCars.map(c => `<option value="${escapeHtml(c.plate)}">${escapeHtml(c.model || '')}${c.status ? ' • ' + escapeHtml(c.status) : ''}</option>`).join('');
+      }
     }
 
     async function loadInitial() {
@@ -1345,7 +1365,25 @@
       catch (err) { btn.disabled = false; showError(err); }
     }
 
-    /* ==================== МОДЕРАЦИЯ ==================== */
+    /* ==================== МОДЕРАЦИЯ + АВТОПРАВКА ИИ + РУЧНОЕ РЕДАКТИРОВАНИЕ ==================== */
+
+    function parseVuPartsForEdit(d) {
+      let num = String((d && d.vuNumber) || '').trim();
+      let dt = String((d && d.vuIssueDate) || '').trim();
+      const raw = String((d && (d.formattedVu || d.vuDetailsRaw)) || '').trim();
+      if (!dt && raw) {
+        const m = raw.match(/(\d{2}\.\d{2}\.\d{4})/);
+        if (m) dt = m[1];
+      }
+      if (!num && raw) {
+        num = raw
+          .replace(/\(.*?\)/g, '')
+          .replace(/,?\s*\d{2}\.\d{2}\.\d{4}/g, '')
+          .replace(/,\s*$/, '')
+          .trim();
+      }
+      return { num, dt };
+    }
 
     async function loadPendingReviews() {
       clearError();
@@ -1358,32 +1396,228 @@
       const list = document.getElementById('moderationList'); list.innerHTML = '';
       if (!allPending.length) { list.innerHTML = '<div class="msg">✅ Новых заявок на проверке нет — всё разобрано!</div>'; return; }
 
-      allPending.forEach(item => {
+      const citList = [
+        'РФ (Российская Федерация)',
+        'Республика Таджикистан',
+        'Кыргызская Республика (Кыргызстан)',
+        'Республика Узбекистан',
+        'Республика Армения',
+        'Азербайджанская Республика',
+        'Лицо без гражданства (ВНЖ ЛБГ)'
+      ];
+      const stayList = [
+        '',
+        'Временное пребывание (миграционная карта / патент)',
+        'РВП (разрешение на временное проживание)',
+        'ВНЖ (вид на жительство)'
+      ];
+
+      allPending.forEach((item, idx) => {
+        const d = item.formData || {};
+        const vu = parseVuPartsForEdit(d);
         const isBl = String(item.duplicates || '').indexOf('ЧЁРНЫЙ СПИСОК') !== -1;
         const card = document.createElement('div');
         card.className = 'card' + (isBl ? ' card-bl-alert' : '');
         const ai = aiVerdictMeta(item.aiVerdict);
         const dupIcon = (item.duplicates && item.duplicates !== 'Дубликатов нет') ? '⚠️' : '✅';
+        const mp = 'mod_ed_' + idx + '_';
+
         const links = [];
         if (Array.isArray(item.photoUrls)) {
-          item.photoUrls.forEach((p, i) => { if (p && p.url) links.push(`<a class="photo-link" href="${escapeHtml(p.url)}" target="_blank" rel="noopener">📷 ${escapeHtml(p.label || ('Фото ' + (i + 1)))}</a>`); });
+          item.photoUrls.forEach((p, i) => {
+            if (p && p.url) links.push(`<a class="photo-link" href="${escapeHtml(p.url)}" target="_blank" rel="noopener">📷 ${escapeHtml(p.label || ('Фото ' + (i + 1)))}</a>`);
+          });
         }
-        if (item.folderId) links.push(`<a class="photo-link" href="https://drive.google.com/drive/folders/${escapeHtml(item.folderId)}" target="_blank" rel="noopener">📁 Папка на Диске</a>`);
+        if (item.folderId) {
+          links.push(`<a class="photo-link" href="https://drive.google.com/drive/folders/${escapeHtml(item.folderId)}" target="_blank" rel="noopener">📁 Папка на Диске</a>`);
+        }
+
+        const aiFixes = Array.isArray(item.aiFixes) ? item.aiFixes : [];
+        const aiWarnings = Array.isArray(item.aiWarnings) ? item.aiWarnings : [];
+
+        // Убираем из общего текста ИИ дубли строк, которые показаны в отдельных цветных блоках
+        const cleanSummaryLines = String(item.aiSummary || '—').split('\n').filter(line => {
+          if (aiFixes.length && line.indexOf('✏️ Автоисправлено ИИ:') === 0) return false;
+          if (aiWarnings.length && line.indexOf('⚠️ Проверить вручную:') === 0) return false;
+          return true;
+        });
+        const summaryHtml = escapeHtml(cleanSummaryLines.join('\n') || '—').replace(/\n/g, '<br>');
+
+        const fixesHtml = aiFixes.length
+          ? `<div class="ai-fixes-box"><strong>✏️ Автоисправлено ИИ по фото:</strong><br>${aiFixes.map(f =>
+              `• ${escapeHtml(f.label)}: <s>${escapeHtml(f.oldVal)}</s> → <strong>${escapeHtml(f.newVal)}</strong>`
+            ).join('<br>')}</div>`
+          : '';
+
+        const warnsHtml = aiWarnings.length
+          ? `<div class="ai-warn-box"><strong>⚠️ Проверить вручную:</strong><br>${aiWarnings.map(w => `• ${escapeHtml(w)}`).join('<br>')}</div>`
+          : '';
+
+        const curCit = String(d.citizenship || item.citizenship || citList[0]).trim();
+        const citOpts = (citList.includes(curCit) ? citList : [curCit, ...citList])
+          .map(v => `<option value="${escapeHtml(v)}" ${v === curCit ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('');
+
+        const curStay = String(d.stayStatus || '').trim();
+        const stayOpts = (stayList.includes(curStay) ? stayList : [...stayList, curStay])
+          .map(v => `<option value="${escapeHtml(v)}" ${v === curStay ? 'selected' : ''}>${escapeHtml(v || '— Не требуется (гражданин РФ) —')}</option>`).join('');
+
+        const stayDateVal = d.stayDocDateRu || (d.stayDocDate && d.stayDocDate.includes('-') ? parseExpiryInfo(d.stayDocDate).ru : (d.stayDocDate || ''));
+        const stayExpVal = d.stayDocExpiryRu || (d.stayDocExpiry && d.stayDocExpiry.includes('-') ? parseExpiryInfo(d.stayDocExpiry).ru : (d.stayDocExpiry || ''));
+        const vuDisp = d.formattedVu || d.vuDetailsRaw || '—';
+        const stayLineHtml = (d.stayDocNum || stayDateVal)
+          ? `<br>📘 ${d.isRvp ? 'РВП' : 'ВНЖ'}: <strong>${escapeHtml(d.stayDocNum || '—')}</strong>${stayDateVal ? ' от ' + escapeHtml(stayDateVal) : ''}${stayExpVal ? ' до ' + escapeHtml(stayExpVal) : ''}`
+          : '';
 
         card.innerHTML = `
           ${isBl ? `<div class="bl-warning-box">🚨 ВОДИТЕЛЬ НАЙДЕН В ЧЁРНОМ СПИСКЕ!<br>${escapeHtml(item.duplicates)}</div>` : ''}
-          <div class="card-top"><span class="plate">${escapeHtml(item.fio || 'Без имени')}</span><span class="status-pill ${ai.cls}">${escapeHtml(ai.label)}</span></div>
-          <div class="model"><strong>${escapeHtml(item.car || 'Авто не указано')}</strong> • ${escapeHtml(item.date || '')}</div>
-          <div class="meta">ID: <strong>${escapeHtml(item.appId)}</strong><br>Тел: <strong>${escapeHtml(item.phone || '—')}</strong> • Гражданство: ${escapeHtml(item.citizenship || '—')}</div>
-          <div class="mod-box"><div>${dupIcon} <strong>Проверка:</strong> ${escapeHtml(item.duplicates || 'Дубликатов нет')}</div><div style="margin-top:4px;">🤖 <strong>ИИ-отчёт:</strong> ${escapeHtml(item.aiSummary || '—')}</div></div>
+          <div class="card-top">
+            <span class="plate">${escapeHtml(item.fio || 'Без имени')}</span>
+            <span class="status-pill ${ai.cls}">${escapeHtml(ai.label)}</span>
+          </div>
+          <div class="model"><strong>${escapeHtml(item.car || 'Авто не указано')}</strong> • ${escapeHtml(item.date || '')}${item.manualEdited ? ' • <span style="color:var(--btn);font-size:12px;">✏️ Правлено</span>' : ''}</div>
+          <div class="meta">
+            ID: <strong>${escapeHtml(item.appId)}</strong>${d.birthDate ? ` • Д.р.: <strong>${escapeHtml(d.birthDate)}</strong>` : ''}<br>
+            Тел: <strong>${escapeHtml(item.phone || '—')}</strong> • ${escapeHtml(item.citizenship || '—')}<br>
+            🛂 Паспорт: <strong>${escapeHtml(d.passportNum || '—')}</strong><br>
+            🪪 ВУ: <strong>${escapeHtml(vuDisp)}</strong>${stayLineHtml}
+            ${d.regAddress ? `<br>🏠 Прописка: ${escapeHtml(d.regAddress)}` : ''}
+          </div>
+          ${fixesHtml}
+          ${warnsHtml}
+          <div class="mod-box">
+            <div>${dupIcon} <strong>Проверка:</strong> ${escapeHtml(item.duplicates || 'Дубликатов нет')}</div>
+            <div style="margin-top:4px;">🤖 <strong>ИИ-отчёт:</strong> ${summaryHtml}</div>
+          </div>
           ${links.length ? `<div class="photo-links">${links.join('')}</div>` : ''}
-          <div class="actions"><button class="btn-oil-done js-mod-approve" style="flex:1;">✅ Одобрить и 3 PDF</button><button class="btn-danger js-mod-spam" style="flex:1;">🗑 Удалить спам</button></div>`;
+
+          <div class="actions">
+            <button class="btn-warn js-mod-edit-toggle" style="flex:1;">✏️ Поправить</button>
+            <button class="btn-oil-done js-mod-approve" style="flex:1.4;">✅ Одобрить и 3 PDF</button>
+            <button class="btn-danger js-mod-spam" style="flex:0.9;">🗑 Спам</button>
+          </div>
+
+          <div class="expand-panel hidden js-mod-edit-panel">
+            <div class="pay-subhead" style="margin-top:0;">✏️ Редактирование анкеты до одобрения</div>
+            <div class="doc-edit">
+              <div class="field-group full"><label class="field-lbl" for="${mp}fio">ФИО полностью</label><input type="text" id="${mp}fio" class="field-input" value="${escapeHtml(d.fio || item.fio || '')}"></div>
+              <div class="field-group"><label class="field-lbl" for="${mp}birth">Дата рожд. (ДД.ММ.ГГГГ)</label><input type="text" id="${mp}birth" class="field-input" value="${escapeHtml(d.birthDate || '')}" placeholder="15.05.1995"></div>
+              <div class="field-group"><label class="field-lbl" for="${mp}phone">Телефон</label><input type="tel" id="${mp}phone" class="field-input" value="${escapeHtml(d.phone || item.phone || '')}" placeholder="79991234567"></div>
+              <div class="field-group full"><label class="field-lbl" for="${mp}cit">Гражданство</label><select id="${mp}cit">${citOpts}</select></div>
+              <div class="field-group full"><label class="field-lbl" for="${mp}staySt">Статус в РФ</label><select id="${mp}staySt">${stayOpts}</select></div>
+              <div class="field-group"><label class="field-lbl" for="${mp}pass">Паспорт (серия/№)</label><input type="text" id="${mp}pass" class="field-input" value="${escapeHtml(d.passportNum || '')}"></div>
+              <div class="field-group"><label class="field-lbl" for="${mp}stayNum">№ ВНЖ / РВП (если есть)</label><input type="text" id="${mp}stayNum" class="field-input" value="${escapeHtml(d.stayDocNum || '')}"></div>
+              <div class="field-group"><label class="field-lbl" for="${mp}stayDate">Выдан ВНЖ/РВП</label><input type="text" id="${mp}stayDate" class="field-input" value="${escapeHtml(stayDateVal)}" placeholder="ДД.ММ.ГГГГ"></div>
+              <div class="field-group"><label class="field-lbl" for="${mp}stayExp">ВНЖ/РВП до</label><input type="text" id="${mp}stayExp" class="field-input" value="${escapeHtml(stayExpVal)}" placeholder="пусто = бессрочно"></div>
+              <div class="field-group full"><label class="field-lbl" for="${mp}passIss">Кем и когда выдан документ</label><input type="text" id="${mp}passIss" class="field-input" value="${escapeHtml(d.passportIssued || '')}"></div>
+              <div class="field-group full"><label class="field-lbl" for="${mp}reg">Адрес регистрации (прописка)</label><input type="text" id="${mp}reg" class="field-input" value="${escapeHtml(d.regAddress || '')}"></div>
+              <div class="field-group full"><label class="field-lbl" for="${mp}fact">Фактический адрес</label><input type="text" id="${mp}fact" class="field-input" value="${escapeHtml(d.factAddress || '')}"></div>
+
+              <div class="vu-edit-box">
+                <div class="field-group full" style="font-size:11.5px;font-weight:700;color:var(--btn);">🪪 ВУ (при сохранении соединится в одну строку)</div>
+                <div class="field-group full"><label class="field-lbl" for="${mp}vuNum">Серия и номер ВУ</label><input type="text" id="${mp}vuNum" class="field-input" value="${escapeHtml(vu.num)}" placeholder="99 20 123456"></div>
+                <div class="field-group"><label class="field-lbl" for="${mp}vuDate">Дата выдачи (4a)</label><input type="text" id="${mp}vuDate" class="field-input" value="${escapeHtml(vu.dt)}" placeholder="ДД.ММ.ГГГГ"></div>
+                <div class="field-group"><label class="field-lbl" for="${mp}vuYear">Год стажа</label><input type="text" inputmode="numeric" id="${mp}vuYear" class="field-input" value="${escapeHtml(d.vuStartYear || '')}" placeholder="2020"></div>
+              </div>
+
+              <div class="field-group"><label class="field-lbl" for="${mp}plate">Госномер авто</label><input type="text" list="fleetPlatesList" id="${mp}plate" class="field-input" value="${escapeHtml(d.cleanPlate || item.car || '')}"></div>
+              <div class="field-group"><label class="field-lbl" for="${mp}days">Срок аренды (сут.)</label><input type="text" inputmode="numeric" id="${mp}days" class="field-input" value="${escapeHtml(d.rentalDays || 365)}"></div>
+
+              <button class="btn-save btn-full js-mod-edit-save">💾 Сохранить правки в анкете</button>
+            </div>
+          </div>`;
         list.appendChild(card);
 
-        const aBtn = card.querySelector('.js-mod-approve'), sBtn = card.querySelector('.js-mod-spam');
+        const aBtn = card.querySelector('.js-mod-approve');
+        const sBtn = card.querySelector('.js-mod-spam');
+        const eToggle = card.querySelector('.js-mod-edit-toggle');
+        const ePanel = card.querySelector('.js-mod-edit-panel');
+        const eSave = card.querySelector('.js-mod-edit-save');
+
+        eToggle.addEventListener('click', () => ePanel.classList.toggle('hidden'));
+        eSave.addEventListener('click', () => savePendingEdits(item, mp, eSave, aBtn));
         aBtn.addEventListener('click', () => approvePendingApp(item, aBtn, sBtn));
         sBtn.addEventListener('click', () => deleteSpamPendingApp(item, sBtn, aBtn));
       });
+    }
+
+    async function savePendingEdits(item, mp, saveBtn, approveBtn) {
+      const d = item.formData || {};
+      const oldVu = parseVuPartsForEdit(d);
+      const oldStayDate = d.stayDocDateRu || (d.stayDocDate && d.stayDocDate.includes('-') ? parseExpiryInfo(d.stayDocDate).ru : (d.stayDocDate || ''));
+      const oldStayExp = d.stayDocExpiryRu || (d.stayDocExpiry && d.stayDocExpiry.includes('-') ? parseExpiryInfo(d.stayDocExpiry).ru : (d.stayDocExpiry || ''));
+
+      const vals = {
+        fio: document.getElementById(mp + 'fio').value.trim(),
+        birthDate: document.getElementById(mp + 'birth').value.trim(),
+        phone: document.getElementById(mp + 'phone').value.trim(),
+        citizenship: document.getElementById(mp + 'cit').value,
+        stayStatus: document.getElementById(mp + 'staySt').value,
+        passportNum: document.getElementById(mp + 'pass').value.trim(),
+        stayDocNum: document.getElementById(mp + 'stayNum').value.trim(),
+        stayDocDateRu: document.getElementById(mp + 'stayDate').value.trim(),
+        stayDocExpiryRu: document.getElementById(mp + 'stayExp').value.trim(),
+        passportIssued: document.getElementById(mp + 'passIss').value.trim(),
+        regAddress: document.getElementById(mp + 'reg').value.trim(),
+        factAddress: document.getElementById(mp + 'fact').value.trim(),
+        vuNumber: document.getElementById(mp + 'vuNum').value.trim(),
+        vuIssueDate: document.getElementById(mp + 'vuDate').value.trim(),
+        vuStartYear: cleanNumStr(document.getElementById(mp + 'vuYear').value),
+        cleanPlate: document.getElementById(mp + 'plate').value.trim().toUpperCase(),
+        rentalDays: cleanNumStr(document.getElementById(mp + 'days').value)
+      };
+
+      if (!vals.fio) return notifyUser('ФИО водителя не может быть пустым.');
+
+      // Отправляем только изменившиеся поля (чтобы GET-запрос оставался коротким и быстрым)
+      const prevMap = {
+        fio: String(d.fio || item.fio || '').trim(),
+        birthDate: String(d.birthDate || '').trim(),
+        phone: String(d.phone || item.phone || '').trim(),
+        citizenship: String(d.citizenship || item.citizenship || '').trim(),
+        stayStatus: String(d.stayStatus || '').trim(),
+        passportNum: String(d.passportNum || '').trim(),
+        stayDocNum: String(d.stayDocNum || '').trim(),
+        stayDocDateRu: String(oldStayDate || '').trim(),
+        stayDocExpiryRu: String(oldStayExp || '').trim(),
+        passportIssued: String(d.passportIssued || '').trim(),
+        regAddress: String(d.regAddress || '').trim(),
+        factAddress: String(d.factAddress || '').trim(),
+        vuNumber: oldVu.num,
+        vuIssueDate: oldVu.dt,
+        vuStartYear: String(d.vuStartYear || '').trim(),
+        cleanPlate: String(d.cleanPlate || item.car || '').trim().toUpperCase(),
+        rentalDays: String(d.rentalDays || 365).trim()
+      };
+
+      const payload = { appId: item.appId };
+      let vuChanged = !d.vuNumber && !!vals.vuNumber;
+      Object.keys(vals).forEach(k => {
+        if (vals[k] !== prevMap[k]) {
+          payload[k] = vals[k];
+          if (k === 'vuNumber' || k === 'vuIssueDate' || k === 'vuStartYear') vuChanged = true;
+        }
+      });
+      if (vuChanged) {
+        payload.vuNumber = vals.vuNumber;
+        payload.vuIssueDate = vals.vuIssueDate;
+        payload.vuStartYear = vals.vuStartYear;
+      }
+
+      const oldText = saveBtn.textContent;
+      saveBtn.textContent = 'Сохранение...';
+      saveBtn.disabled = true;
+      if (approveBtn) approveBtn.disabled = true;
+
+      try {
+        const res = await callApi('updatePendingApp', payload, 25000);
+        notifyUser(`✅ ${res.message || 'Правки сохранены!'}\nВУ: ${res.formattedVu || '—'}`);
+        await loadInitial();
+      } catch (err) {
+        saveBtn.textContent = oldText;
+        saveBtn.disabled = false;
+        if (approveBtn) approveBtn.disabled = false;
+        showError(err);
+      }
     }
 
     async function approvePendingApp(item, approveBtn, spamBtn) {
