@@ -547,32 +547,34 @@
 
     <div id="accessSection" class="hidden">
       <div class="info-tip">
-        🔑 <strong>Управление правами галочками:</strong> включайте и отключайте разделы каждому сотруднику. Также доступно в чате бота командой <strong>/access</strong>.
+        🔑 <strong>Управление правами галочками:</strong> можно добавлять по <strong>@username</strong> или числовому ID и сразу выбирать нужные разделы. Также доступно в чате бота командой <strong>/access</strong>.
       </div>
       <div class="evening-bar">
         <button class="btn-evening green-bar-btn" onclick="toggleAddAccessForm()">➕ Добавить нового сотрудника</button>
       </div>
       <div id="addAccessForm" class="card hidden">
         <div class="pay-subhead" style="margin-top:0;">Новый сотрудник / помощник</div>
-        <div class="doc-edit">
+        <div class="doc-edit" style="margin-bottom:8px;">
           <div class="field-group full">
-            <label class="field-lbl" for="acc_new_tgid">Telegram ID * (сотрудник может узнать командой /myid в боте)</label>
-            <input type="text" inputmode="numeric" id="acc_new_tgid" class="field-input" placeholder="123456789">
+            <label class="field-lbl" for="acc_new_tgid">@username или Telegram ID *</label>
+            <input type="text" id="acc_new_tgid" class="field-input" placeholder="@ruslan_avto или 123456789">
           </div>
-          <div class="field-group">
+          <div class="field-group full">
             <label class="field-lbl" for="acc_new_name">Имя *</label>
             <input type="text" id="acc_new_name" class="field-input" placeholder="Руслан">
           </div>
-          <div class="field-group">
-            <label class="field-lbl" for="acc_new_preset">Начальный набор</label>
-            <select id="acc_new_preset">
-              <option value="mechanic">🔧 Механик (ТО + просмотр)</option>
-              <option value="viewer">👀 Только просмотр</option>
-              <option value="manager">💼 Управляющий (все права)</option>
-            </select>
-          </div>
-          <button class="btn-oil-done btn-full" onclick="saveNewAccessUser(this)">✅ Добавить сотрудника</button>
         </div>
+        <div class="meta" style="margin-bottom:6px;">
+          Выберите права (отмечено: <strong id="acc_new_perm_cnt">0</strong>):
+        </div>
+        <div class="preset-row">
+          <button type="button" class="tpl-chip" onclick="applyNewAccessPreset('mechanic')">🔧 Механик</button>
+          <button type="button" class="tpl-chip" onclick="applyNewAccessPreset('viewer')">👀 Просмотр</button>
+          <button type="button" class="tpl-chip" onclick="applyNewAccessPreset('manager')">💼 Управляющий</button>
+          <button type="button" class="tpl-chip" onclick="applyNewAccessPreset('none')">⬜ Снять все</button>
+        </div>
+        <div class="perm-grid" id="acc_new_perms_grid"></div>
+        <button type="button" class="btn-oil-done" style="width:100%;" onclick="saveNewAccessUser(this)">✅ Добавить сотрудника с выбранными правами</button>
       </div>
       <div id="accessList"></div>
     </div>
@@ -597,6 +599,26 @@
     const OWNER_SBP_PHONE = '+7 908 020-00-17';
     const OIL_INTERVAL_KM = 7000;
     const OIL_WARN_KM = 1000;
+
+    const FALLBACK_PERMS_META = [
+      { key: 'fleet_view',     icon: '🚗', shortLabel: 'Авто: просм.' },
+      { key: 'fleet_edit',     icon: '✏️', shortLabel: 'Авто: правка' },
+      { key: 'drivers_view',   icon: '👤', shortLabel: 'Водит.: просм.' },
+      { key: 'drivers_manage', icon: '📋', shortLabel: 'Водит.: управл.' },
+      { key: 'payments',       icon: '💰', shortLabel: 'Оплаты' },
+      { key: 'finance',        icon: '📊', shortLabel: 'Финансы / НПД' },
+      { key: 'moderation',     icon: '🕵️', shortLabel: 'Проверка анкет' },
+      { key: 'fines',          icon: '🚓', shortLabel: 'Штрафы ГИБДД' },
+      { key: 'blacklist',      icon: '⛔', shortLabel: 'Чёрный список' },
+      { key: 'osago_to_view',  icon: '🛡️', shortLabel: 'ОСАГО/ТО: пр.' },
+      { key: 'osago_to_edit',  icon: '🔧', shortLabel: 'ОСАГО/ТО: ред.' },
+      { key: 'service_bot',    icon: '🔩', shortLabel: 'Бот: ТО и чеки' }
+    ];
+    const FALLBACK_PRESETS = {
+      mechanic: ['fleet_view', 'drivers_view', 'osago_to_view', 'service_bot'],
+      viewer:   ['fleet_view', 'drivers_view', 'osago_to_view'],
+      manager:  FALLBACK_PERMS_META.map(p => p.key)
+    };
 
     const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     if (tg) { tg.ready(); tg.expand(); }
@@ -644,7 +666,7 @@
       el.textContent = String(message || '');
       el.classList.remove('hidden');
       if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => el.classList.add('hidden'), 5000);
+      toastTimer = setTimeout(() => el.classList.add('hidden'), 5500);
     }
 
     function askConfirm(message) {
@@ -804,9 +826,11 @@
     }
 
     function showError(err) {
+      const msgText = (err && err.message) ? err.message : String(err);
       const box = document.getElementById('statusMsg');
       box.className = 'msg error'; box.classList.remove('hidden');
-      box.textContent = (err && err.message) ? err.message : String(err);
+      box.textContent = msgText;
+      notifyUser('⚠️ ' + msgText);
     }
 
     function clearError() { document.getElementById('statusMsg').classList.add('hidden'); }
@@ -2635,16 +2659,78 @@
 
     /* ==================== УПРАВЛЕНИЕ ДОСТУПАМИ (👥 ДОСТУПЫ — ТОЛЬКО ВЛАДЕЛЕЦ) ==================== */
 
+    function getPermsMetaList() {
+      return (accessData && Array.isArray(accessData.permsMeta) && accessData.permsMeta.length)
+        ? accessData.permsMeta
+        : FALLBACK_PERMS_META;
+    }
+
+    function getPresetsMap() {
+      return (accessData && accessData.presets) ? accessData.presets : FALLBACK_PRESETS;
+    }
+
+    function renderNewAccessPermsGrid(forceReset) {
+      const grid = document.getElementById('acc_new_perms_grid');
+      if (!grid) return;
+      if (!forceReset && grid.children.length > 0) return;
+
+      const meta = getPermsMetaList();
+      const defKeys = getPresetsMap().mechanic || FALLBACK_PRESETS.mechanic;
+      grid.innerHTML = meta.map(pm => {
+        const checked = defKeys.includes(pm.key);
+        return `
+          <label class="perm-item ${checked ? 'on' : ''}">
+            <input type="checkbox" class="js-new-perm-chk" data-key="${escapeHtml(pm.key)}" ${checked ? 'checked' : ''}>
+            <span>${pm.icon} ${escapeHtml(pm.shortLabel)}</span>
+          </label>`;
+      }).join('');
+
+      grid.querySelectorAll('.js-new-perm-chk').forEach(chk => {
+        chk.addEventListener('change', refreshNewAccessPermsUi);
+      });
+      refreshNewAccessPermsUi();
+    }
+
+    function refreshNewAccessPermsUi() {
+      const grid = document.getElementById('acc_new_perms_grid');
+      const cntEl = document.getElementById('acc_new_perm_cnt');
+      if (!grid) return;
+      let n = 0;
+      grid.querySelectorAll('.js-new-perm-chk').forEach(c => {
+        c.parentElement.classList.toggle('on', c.checked);
+        if (c.checked) n++;
+      });
+      if (cntEl) cntEl.textContent = `${n} из ${getPermsMetaList().length}`;
+    }
+
+    function applyNewAccessPreset(presetKey) {
+      renderNewAccessPermsGrid(false);
+      const grid = document.getElementById('acc_new_perms_grid');
+      if (!grid) return;
+      const presets = getPresetsMap();
+      const keys = presetKey === 'none' ? [] : (presets[presetKey] || []);
+      const set = new Set(keys);
+      grid.querySelectorAll('.js-new-perm-chk').forEach(c => {
+        c.checked = set.has(c.dataset.key);
+      });
+      refreshNewAccessPermsUi();
+    }
+
     function toggleAddAccessForm() {
-      document.getElementById('addAccessForm').classList.toggle('hidden');
+      const form = document.getElementById('addAccessForm');
+      const opening = form.classList.contains('hidden');
+      form.classList.toggle('hidden');
+      if (opening) renderNewAccessPermsGrid(false);
     }
 
     async function loadAccessUsers() {
       if (!hasPerm('admin_only')) return;
       clearError();
+      renderNewAccessPermsGrid(false);
       document.getElementById('accessList').innerHTML = '<div class="msg">Загрузка списка сотрудников и прав...</div>';
       try {
         accessData = await callApi('accessUsers', {}, 20000);
+        renderNewAccessPermsGrid(false);
         renderAccessUsers();
       } catch (err) { showError(err); }
     }
@@ -2657,12 +2743,12 @@
         return;
       }
 
-      const permsMeta = accessData.permsMeta || [];
-      const presets = accessData.presets || {};
+      const permsMeta = getPermsMetaList();
+      const presets = getPresetsMap();
       const users = accessData.users;
 
       if (!users.length) {
-        list.innerHTML = '<div class="msg">Сотрудников пока нет. Нажмите «➕ Добавить нового сотрудника» или пусть Руслан нажмёт «Старт» в боте.</div>';
+        list.innerHTML = '<div class="msg">Сотрудников пока нет. Нажмите «➕ Добавить нового сотрудника».</div>';
         return;
       }
 
@@ -2682,6 +2768,10 @@
         }
 
         const up = 'acc_u_' + idx + '_';
+        const isPending = !!u.isPendingUsername || String(u.tgId || '').startsWith('@');
+        const statusCls = !u.active ? 'st-rented' : (isPending ? 'st-booked' : 'st-free');
+        const statusLbl = !u.active ? '🔴 Отключён' : (isPending ? '🟡 Ждёт «Старт»' : '🟢 Активен');
+
         const permChecksHtml = permsMeta.map(pm => {
           const checked = Array.isArray(u.perms) && u.perms.includes(pm.key);
           return `
@@ -2694,9 +2784,12 @@
         card.innerHTML = `
           <div class="card-top">
             <span class="plate">${escapeHtml(u.name)}</span>
-            <span class="status-pill ${u.active ? 'st-free' : 'st-rented'}">${u.active ? '🟢 Активен' : '🔴 Отключён'}</span>
+            <span class="status-pill ${statusCls}">${statusLbl}</span>
           </div>
-          <div class="meta">Telegram ID: <strong>${escapeHtml(u.tgId)}</strong> • Включено прав: <strong class="js-perm-cnt">${(u.perms || []).length}</strong> из ${permsMeta.length}</div>
+          <div class="meta">
+            ${isPending ? 'Username' : 'Telegram ID'}: <strong>${escapeHtml(u.tgId)}</strong> • Включено прав: <strong class="js-perm-cnt">${(u.perms || []).length}</strong> из ${permsMeta.length}
+            ${isPending ? '<br><i>Попросите сотрудника открыть @Documents_TS_bot и нажать «Старт» — права включатся автоматически.</i>' : ''}
+          </div>
 
           <label class="check-row" for="${up}active" style="margin-bottom:6px;">
             <input type="checkbox" id="${up}active" ${u.active ? 'checked' : ''}>
@@ -2775,19 +2868,34 @@
     async function saveNewAccessUser(btn) {
       const tgId = document.getElementById('acc_new_tgid').value.trim();
       const name = document.getElementById('acc_new_name').value.trim();
-      const preset = document.getElementById('acc_new_preset').value;
-      if (!tgId) return notifyUser('Укажите числовой Telegram ID сотрудника.');
+      if (!tgId) return notifyUser('Укажите @username (напр. @ruslan_avto) или числовой Telegram ID.');
       if (!name) return notifyUser('Укажите имя сотрудника.');
+
+      const selected = Array.from(document.querySelectorAll('#acc_new_perms_grid .js-new-perm-chk'))
+        .filter(c => c.checked)
+        .map(c => c.dataset.key);
+      const preset = selected.length >= getPermsMetaList().length ? 'manager' : 'mechanic';
 
       const old = btn.textContent;
       btn.textContent = 'Добавляем...';
       btn.disabled = true;
       try {
-        await callApi('addAccessUser', { tgId, name, preset }, 20000);
+        const res = await callApi('addAccessUser', {
+          tgId,
+          name,
+          preset,
+          perms: selected.length ? selected.join(',') : 'NONE'
+        }, 20000);
         document.getElementById('acc_new_tgid').value = '';
         document.getElementById('acc_new_name').value = '';
+        renderNewAccessPermsGrid(true);
         document.getElementById('addAccessForm').classList.add('hidden');
-        notifyUser(`✅ Сотрудник ${name} добавлен! Теперь настройте галочки и нажмите «📩 Выслать кнопку CRM».`);
+        const addedIsUname = res && res.user && res.user.isPendingUsername;
+        notifyUser(
+          addedIsUname
+            ? `✅ ${name} добавлен (${selected.length} прав)!\nПопросите его открыть @${BOT_USERNAME} и нажать «Старт» — права и кнопка CRM подключатся автоматически.`
+            : `✅ ${name} добавлен (${selected.length} прав)! Можно сразу нажать «📩 Выслать кнопку CRM».`
+        );
         await loadAccessUsers();
       } catch (err) {
         showError(err);
