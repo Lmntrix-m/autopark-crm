@@ -181,12 +181,23 @@
       padding: 7px 9px; border-radius: 8px; background: var(--bg);
       border: 1px solid rgba(128,128,128,0.22); font-size: 12px; margin-bottom: 8px;
     }
-    .tpl-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+    .tpl-chips, .preset-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
     .tpl-chip {
       -webkit-appearance: none; appearance: none; padding: 5px 9px; border-radius: 14px;
       border: 1px solid rgba(128,128,128,0.3); background: var(--bg); color: var(--text);
       font-size: 11.5px; font-weight: 600; cursor: pointer;
     }
+    .perm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+    .perm-item {
+      display: flex; align-items: center; gap: 6px; padding: 7px 8px; border-radius: 8px;
+      background: var(--bg); border: 1px solid rgba(128,128,128,0.25);
+      font-size: 11.5px; line-height: 1.25; cursor: pointer; user-select: none;
+    }
+    .perm-item.on {
+      border-color: rgba(22, 163, 74, 0.55); background: rgba(22, 163, 74, 0.10); font-weight: 600;
+    }
+    .perm-item input[type="checkbox"] { width: 15px; height: 15px; accent-color: #16a34a; flex-shrink: 0; }
+
     .msg-textarea {
       width: 100%; min-height: 82px; padding: 8px 10px; border-radius: 8px;
       border: 1px solid rgba(128,128,128,0.3); background: var(--bg); color: var(--text);
@@ -348,7 +359,7 @@
       <span>Выбить →</span>
     </div>
 
-    <div class="stats">
+    <div class="stats" id="statsBar">
       <div class="stat-box"><div class="stat-val" id="stFree">0</div><div class="stat-lbl">Свободны</div></div>
       <div class="stat-box"><div class="stat-val" id="stRented">0</div><div class="stat-lbl">В аренде</div></div>
       <div class="stat-box"><div class="stat-val" id="stBooked">0</div><div class="stat-lbl">Бронь</div></div>
@@ -356,7 +367,7 @@
     </div>
 
     <div class="tabs" id="navTabs">
-      <button class="tab active" data-tab="fleet" onclick="switchTab('fleet')">Авто</button>
+      <button class="tab active" id="tabFleetBtn" data-tab="fleet" onclick="switchTab('fleet')">Авто</button>
       <button class="tab hidden" id="tabDriversBtn" data-tab="drivers" onclick="switchTab('drivers')">Водители</button>
       <button class="tab hidden" id="tabFinanceBtn" data-tab="finance" onclick="switchTab('finance')">
         📊 Финансы <span id="npdBadge" class="tab-badge badge-amber hidden">0</span>
@@ -373,7 +384,10 @@
       <button class="tab" id="tabOsagoBtn" data-tab="osago" onclick="switchTab('osago')">ОСАГО</button>
       <button class="tab" id="tabToBtn" data-tab="to" onclick="switchTab('to')">ТО</button>
       <button class="tab" id="tabOilBtn" data-tab="oil" onclick="switchTab('oil')">Масло</button>
+      <button class="tab hidden" id="tabAccessBtn" data-tab="access" onclick="switchTab('access')">👥 Доступы</button>
     </div>
+
+    <div id="noTabsNotice" class="msg hidden">В веб-панели CRM для вашей учётной записи пока не открыто разделов. Используйте команды бота или обратитесь к владельцу.</div>
 
     <div id="fleetSection">
       <div class="filters">
@@ -530,6 +544,38 @@
       </div>
       <div id="oilList"></div>
     </div>
+
+    <div id="accessSection" class="hidden">
+      <div class="info-tip">
+        🔑 <strong>Управление правами галочками:</strong> включайте и отключайте разделы каждому сотруднику. Также доступно в чате бота командой <strong>/access</strong>.
+      </div>
+      <div class="evening-bar">
+        <button class="btn-evening green-bar-btn" onclick="toggleAddAccessForm()">➕ Добавить нового сотрудника</button>
+      </div>
+      <div id="addAccessForm" class="card hidden">
+        <div class="pay-subhead" style="margin-top:0;">Новый сотрудник / помощник</div>
+        <div class="doc-edit">
+          <div class="field-group full">
+            <label class="field-lbl" for="acc_new_tgid">Telegram ID * (сотрудник может узнать командой /myid в боте)</label>
+            <input type="text" inputmode="numeric" id="acc_new_tgid" class="field-input" placeholder="123456789">
+          </div>
+          <div class="field-group">
+            <label class="field-lbl" for="acc_new_name">Имя *</label>
+            <input type="text" id="acc_new_name" class="field-input" placeholder="Руслан">
+          </div>
+          <div class="field-group">
+            <label class="field-lbl" for="acc_new_preset">Начальный набор</label>
+            <select id="acc_new_preset">
+              <option value="mechanic">🔧 Механик (ТО + просмотр)</option>
+              <option value="viewer">👀 Только просмотр</option>
+              <option value="manager">💼 Управляющий (все права)</option>
+            </select>
+          </div>
+          <button class="btn-oil-done btn-full" onclick="saveNewAccessUser(this)">✅ Добавить сотрудника</button>
+        </div>
+      </div>
+      <div id="accessList"></div>
+    </div>
   </div>
 
   <div id="crmToast" class="crm-toast hidden" onclick="this.classList.add('hidden')"></div>
@@ -560,6 +606,7 @@
     let allPending = [];
     let allFines = [];
     let allBlacklist = [];
+    let accessData = null;
     let currentUser = null;
     let currentFilter = 'all';
     let currentDriverFilter = 'all';
@@ -578,6 +625,18 @@
         try { window.focus(); } catch (err) {}
       }
     }, true);
+
+    function hasPerm(permKey) {
+      if (!currentUser) return false;
+      if (currentUser.role === 'admin') return true;
+      if (permKey === 'admin_only') return false;
+      const perms = Array.isArray(currentUser.perms) ? currentUser.perms : [];
+      if (perms.includes(permKey)) return true;
+      if (permKey === 'fleet_view' && perms.includes('fleet_edit')) return true;
+      if (permKey === 'drivers_view' && (perms.includes('drivers_manage') || perms.includes('payments') || perms.includes('fines'))) return true;
+      if (permKey === 'osago_to_view' && perms.includes('osago_to_edit')) return true;
+      return false;
+    }
 
     function notifyUser(message) {
       const el = document.getElementById('crmToast');
@@ -836,33 +895,32 @@
     }
 
     function updateBadges(pendingCount, newFinesCount, blacklistCount, pendingNpdCount) {
-      const canMod = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
-      const setBadge = (elId, val) => {
+      const setBadge = (elId, allowed, val) => {
         const el = document.getElementById(elId);
         if (!el) return;
         const n = Number(val || 0);
-        if (!canMod || n <= 0) { el.classList.add('hidden'); return; }
+        if (!allowed || n <= 0) { el.classList.add('hidden'); return; }
         el.textContent = String(n); el.classList.remove('hidden');
       };
-      setBadge('modBadge', pendingCount);
-      setBadge('finesBadge', newFinesCount);
-      setBadge('blBadge', blacklistCount);
-      setBadge('npdBadge', pendingNpdCount);
+      setBadge('modBadge', hasPerm('moderation'), pendingCount);
+      setBadge('finesBadge', hasPerm('fines'), newFinesCount);
+      setBadge('blBadge', hasPerm('blacklist'), blacklistCount);
+      setBadge('npdBadge', hasPerm('finance'), pendingNpdCount);
 
       const pBanner = document.getElementById('pendingBanner');
-      if (canMod && Number(pendingCount) > 0) {
+      if (hasPerm('moderation') && Number(pendingCount) > 0) {
         document.getElementById('pendingBannerText').textContent = `🕵️ Заявок на проверке: ${pendingCount}`;
         pBanner.classList.remove('hidden');
       } else pBanner.classList.add('hidden');
 
       const fBanner = document.getElementById('finesBanner');
-      if (canMod && Number(newFinesCount) > 0) {
+      if (hasPerm('fines') && Number(newFinesCount) > 0) {
         document.getElementById('finesBannerText').textContent = `🚓 Новых штрафов ГИБДД: ${newFinesCount}`;
         fBanner.classList.remove('hidden');
       } else fBanner.classList.add('hidden');
 
       const nBanner = document.getElementById('npdBanner');
-      if (canMod && Number(pendingNpdCount) > 0) {
+      if (hasPerm('finance') && Number(pendingNpdCount) > 0) {
         document.getElementById('npdBannerText').textContent = `🧾 Невыбитых чеков НПД: ${pendingNpdCount}`;
         nBanner.classList.remove('hidden');
       } else nBanner.classList.add('hidden');
@@ -929,6 +987,26 @@
       }
     }
 
+    function getAllowedTabs() {
+      const map = [
+        { tab: 'fleet',      btn: 'tabFleetBtn',   ok: hasPerm('fleet_view') },
+        { tab: 'drivers',    btn: 'tabDriversBtn', ok: hasPerm('drivers_view') },
+        { tab: 'finance',    btn: 'tabFinanceBtn', ok: hasPerm('finance') },
+        { tab: 'moderation', btn: 'tabModBtn',     ok: hasPerm('moderation') },
+        { tab: 'fines',      btn: 'tabFinesBtn',   ok: hasPerm('fines') },
+        { tab: 'blacklist',  btn: 'tabBlBtn',      ok: hasPerm('blacklist') },
+        { tab: 'osago',      btn: 'tabOsagoBtn',   ok: hasPerm('osago_to_view') },
+        { tab: 'to',         btn: 'tabToBtn',      ok: hasPerm('osago_to_view') },
+        { tab: 'oil',        btn: 'tabOilBtn',     ok: hasPerm('osago_to_view') },
+        { tab: 'access',     btn: 'tabAccessBtn',  ok: hasPerm('admin_only') }
+      ];
+      map.forEach(item => {
+        const el = document.getElementById(item.btn);
+        if (el) el.classList.toggle('hidden', !item.ok);
+      });
+      return map.filter(x => x.ok).map(x => x.tab);
+    }
+
     async function loadInitial() {
       const box = document.getElementById('statusMsg');
       box.className = 'msg'; box.textContent = 'Загрузка данных автопарка...'; box.classList.remove('hidden');
@@ -941,33 +1019,39 @@
         currentUser = data.user;
         allCars = data.cars || [];
 
-        const isAdminOrMgr = currentUser.role === 'admin' || currentUser.role === 'manager';
-        const isMechanic = currentUser.role === 'mechanic';
-
+        const roleLabels = { admin: 'владелец', manager: 'менеджер', mechanic: 'механик', viewer: 'просмотр' };
         document.getElementById('userName').textContent = currentUser.name || 'Автопарк CRM';
-        document.getElementById('userRole').textContent = isMechanic ? 'механик' : currentUser.role;
+        document.getElementById('userRole').textContent = roleLabels[currentUser.role] || currentUser.role;
         document.getElementById('stFree').textContent = data.counts.free;
         document.getElementById('stRented').textContent = data.counts.rented;
         document.getElementById('stBooked').textContent = data.counts.booked;
         document.getElementById('stService').textContent = data.counts.service;
+        document.getElementById('statsBar').classList.toggle('hidden', !(hasPerm('fleet_view') || hasPerm('osago_to_view')));
 
-        document.getElementById('btnNewForm').classList.toggle('hidden', !isAdminOrMgr);
-        document.getElementById('driversEveningBar').classList.toggle('hidden', !isAdminOrMgr);
-        document.getElementById('drvFilterDebt').classList.toggle('hidden', !isAdminOrMgr);
+        document.getElementById('btnNewForm').classList.toggle('hidden', !(hasPerm('drivers_manage') || hasPerm('moderation')));
+        document.getElementById('driversEveningBar').classList.toggle('hidden', !hasPerm('payments'));
+        document.getElementById('drvFilterDebt').classList.toggle('hidden', !(hasPerm('drivers_manage') || hasPerm('payments')));
+        document.getElementById('osagoSyncBar').classList.toggle('hidden', !hasPerm('osago_to_edit'));
+        document.getElementById('oilBroadcastBar').classList.toggle('hidden', !hasPerm('osago_to_edit'));
 
-        ['tabFinanceBtn', 'tabModBtn', 'tabFinesBtn', 'tabBlBtn', 'osagoSyncBar', 'oilBroadcastBar']
-          .forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('hidden', !isAdminOrMgr); });
-        document.getElementById('tabDriversBtn').classList.toggle('hidden', !(isAdminOrMgr || isMechanic));
-
+        const allowedTabs = getAllowedTabs();
         updateBadges(data.pendingCount || 0, data.newFinesCount || 0, data.blacklistCount || 0, data.pendingNpdCount || 0);
         initFinanceSelectors();
 
+        if (!allowedTabs.length) {
+          document.getElementById('noTabsNotice').classList.remove('hidden');
+          ['fleet', 'drivers', 'finance', 'moderation', 'fines', 'blacklist', 'osago', 'to', 'oil', 'access']
+            .forEach(t => document.getElementById(t + 'Section').classList.add('hidden'));
+          return;
+        }
+        document.getElementById('noTabsNotice').classList.add('hidden');
+
+        if (!allowedTabs.includes(currentTab)) {
+          currentTab = allowedTabs[0];
+        }
+
         renderCars(); renderOsago(); renderTo(); renderOil();
-        if (currentTab === 'drivers') loadDrivers();
-        if (currentTab === 'finance' && isAdminOrMgr) loadFinance();
-        if (currentTab === 'moderation' && isAdminOrMgr) loadPendingReviews();
-        if (currentTab === 'fines' && isAdminOrMgr) loadFines();
-        if (currentTab === 'blacklist' && isAdminOrMgr) loadBlacklist();
+        switchTab(currentTab);
       } catch (err) { showError(err); }
     }
 
@@ -1016,7 +1100,9 @@
 
     function renderCars() {
       const list = document.getElementById('carsList'); list.innerHTML = '';
-      const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
+      if (!hasPerm('fleet_view')) return;
+      const canFleetEdit = hasPerm('fleet_edit');
+      const canAddExpense = hasPerm('finance');
       const filtered = allCars.map((c, idx) => ({ car: c, order: idx + 1 })).filter(item => currentFilter === 'all' || String(item.car.status || '').toLowerCase().trim() === currentFilter);
       if (!filtered.length) { list.innerHTML = '<div class="msg">Нет автомобилей с выбранным статусом</div>'; return; }
 
@@ -1031,16 +1117,21 @@
         const pcBadge = c.lastPhotoControl ? ` • 📸 ${escapeHtml(c.lastPhotoControl)}` : '';
 
         let editHtml = '';
-        if (canEdit) {
+        if (canFleetEdit) {
           const opts = ['Свободен', 'В аренде', 'Бронь', 'На ТО'].map(s => `<option value="${s}" ${s === c.status ? 'selected' : ''}>${s}</option>`).join('');
-          editHtml = `
-            <div class="actions"><select id="${selectId}">${opts}</select><button class="btn-save js-st-save">Сохранить</button></div>
-            <div class="actions">
-              <button class="btn-copy js-car-toggle" style="flex:1;">✏️ ТС</button>
-              <button class="btn-warn js-exp-toggle" style="flex:1;">🔧 Расход</button>
-              <button class="btn-tg js-gps-toggle" style="flex:1;">🛰️ GPS${hasGps ? ' ✓' : ''}</button>
-            </div>
+          editHtml += `<div class="actions"><select id="${selectId}">${opts}</select><button class="btn-save js-st-save">Сохранить</button></div>`;
+        }
 
+        if (canFleetEdit || canAddExpense) {
+          editHtml += `<div class="actions">
+            ${canFleetEdit ? `<button class="btn-copy js-car-toggle" style="flex:1;">✏️ ТС</button>` : ''}
+            ${canAddExpense ? `<button class="btn-warn js-exp-toggle" style="flex:1;">🔧 Расход</button>` : ''}
+            ${canFleetEdit ? `<button class="btn-tg js-gps-toggle" style="flex:1;">🛰️ GPS${hasGps ? ' ✓' : ''}</button>` : ''}
+          </div>`;
+        }
+
+        if (canAddExpense) {
+          editHtml += `
             <div class="expand-panel hidden js-exp-panel">
               <div class="pay-subhead" style="margin-top:0;">🔧 Записать расход / ремонт (${escapeHtml(c.plate)})</div>
               <div class="doc-edit">
@@ -1051,8 +1142,11 @@
                 <div class="field-group full"><label class="field-lbl" for="${ep}desc">Что сделано / сервис</label><input type="text" id="${ep}desc" class="field-input" placeholder="Напр. Замена масла + фильтр"></div>
                 <button class="btn-oil-done btn-full js-exp-save">💾 Сохранить расход</button>
               </div>
-            </div>
+            </div>`;
+        }
 
+        if (canFleetEdit) {
+          editHtml += `
             <div class="expand-panel hidden js-gps-panel">
               <div class="pay-subhead" style="margin-top:0;">🛰️ GPS-трекер SinoTrack ST-907M (Tele2)</div>
               <div class="doc-edit">
@@ -1090,7 +1184,8 @@
             </div>`;
         }
 
-        const secondMetaLine = canEdit
+        const showRates = !!(c.dailyRate || c.deposit);
+        const secondMetaLine = showRates
           ? `Тариф: <strong>${escapeHtml(fmtUnit(c.dailyRate, '₽'))}/сут</strong> • Депозит: <strong>${escapeHtml(fmtUnit(c.deposit, '₽'))}</strong> • Пробег: <strong>${escapeHtml(fmtKm(c.currentMileage))}</strong>${pcBadge}`
           : `Пробег: <strong>${escapeHtml(fmtKm(c.currentMileage))}</strong>${c.driverName ? ` • 👤 <strong>${escapeHtml(c.driverName)}</strong>` : ''}${pcBadge}`;
 
@@ -1101,25 +1196,23 @@
           ${editHtml}`;
         list.appendChild(card);
 
-        if (canEdit) {
-          const panels = {
-            car: card.querySelector('.js-car-panel'),
-            exp: card.querySelector('.js-exp-panel'),
-            gps: card.querySelector('.js-gps-panel')
-          };
-          const toggleCarPanel = (key) => {
-            const opening = panels[key].classList.contains('hidden');
-            Object.keys(panels).forEach(k => panels[k].classList.add('hidden'));
-            if (opening) panels[key].classList.remove('hidden');
-          };
+        const panels = {
+          car: card.querySelector('.js-car-panel'),
+          exp: card.querySelector('.js-exp-panel'),
+          gps: card.querySelector('.js-gps-panel')
+        };
+        const toggleCarPanel = (key) => {
+          if (!panels[key]) return;
+          const opening = panels[key].classList.contains('hidden');
+          Object.keys(panels).forEach(k => { if (panels[k]) panels[k].classList.add('hidden'); });
+          if (opening) panels[key].classList.remove('hidden');
+        };
 
+        if (canFleetEdit) {
           card.querySelector('.js-st-save').addEventListener('click', (e) => changeStatus(c.plate, selectId, e.target));
           card.querySelector('.js-car-toggle').addEventListener('click', () => toggleCarPanel('car'));
-          card.querySelector('.js-exp-toggle').addEventListener('click', () => toggleCarPanel('exp'));
           card.querySelector('.js-gps-toggle').addEventListener('click', () => toggleCarPanel('gps'));
-
           card.querySelector('.js-car-save').addEventListener('click', (e) => saveCarCard(c, p, e.target));
-          card.querySelector('.js-exp-save').addEventListener('click', (e) => saveCarExpense(c, ep, e.target));
           card.querySelector('.js-gps-save').addEventListener('click', (e) => saveCarGps(c, gp, e.target));
 
           const getGpsCreds = () => ({
@@ -1131,6 +1224,10 @@
           card.querySelector('.js-gps-stop').addEventListener('click', () => { const g = getGpsCreds(); launchGpsSms(g.sim, `940${g.pass}`, `БЛОКИРОВКА ДВИГАТЕЛЯ ${c.plate}`, true); });
           card.querySelector('.js-gps-start').addEventListener('click', () => { const g = getGpsCreds(); launchGpsSms(g.sim, `941${g.pass}`, `Разблокировка двигателя ${c.plate}`, true); });
           card.querySelector('.js-gps-web').addEventListener('click', () => openExternalUrl('https://www.sinotrack.com/'));
+        }
+        if (canAddExpense) {
+          card.querySelector('.js-exp-toggle').addEventListener('click', () => toggleCarPanel('exp'));
+          card.querySelector('.js-exp-save').addEventListener('click', (e) => saveCarExpense(c, ep, e.target));
         }
       });
     }
@@ -1670,7 +1767,7 @@
       document.getElementById('finesList').innerHTML = '<div class="msg">Загрузка штрафов ГИБДД...</div>';
       try {
         const tasks = [callApi('fines')];
-        if (!allDrivers.length) tasks.push(callApi('drivers'));
+        if (!allDrivers.length && hasPerm('drivers_view')) tasks.push(callApi('drivers'));
         const res = await Promise.all(tasks);
         allFines = res[0] || [];
         if (res[1]) allDrivers = res[1] || [];
@@ -1891,7 +1988,8 @@
 
     function renderOsago() {
       const list = document.getElementById('osagoList'); list.innerHTML = '';
-      const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
+      if (!hasPerm('osago_to_view')) return;
+      const canEdit = hasPerm('osago_to_edit');
       const filtered = buildFilteredDocsList('osagoExpiry', currentOsagoFilter);
       if (!filtered.length) { list.innerHTML = '<div class="msg">Нет страховок по выбранному фильтру</div>'; return; }
 
@@ -1900,7 +1998,7 @@
         const polId = 'osago_pol_' + idx, expId = 'osago_exp_' + idx;
         const stsText = (c.sts || 'Не указан') + (c.stsDate ? (' от ' + c.stsDate) : '');
         const driverLine = c.driverName
-          ? `<br>Водитель: <strong>${escapeHtml(c.driverName)}</strong>${canEdit && c.driverExpYear ? ' (стаж ' + escapeHtml(formatDriverExpText(c.driverExpYear)) + ')' : ''}`
+          ? `<br>Водитель: <strong>${escapeHtml(c.driverName)}</strong>${c.driverExpYear ? ' (стаж ' + escapeHtml(formatDriverExpText(c.driverExpYear)) + ')' : ''}`
           : '';
         const editHtml = canEdit
           ? `<div class="doc-edit"><input type="text" id="${polId}" class="field-input" value="${escapeHtml(c.osagoPolicy || '')}" placeholder="Номер полиса"><input type="date" id="${expId}" class="field-input" value="${escapeHtml(info.iso)}"><button class="btn-save js-osago-save">Сохранить ОСАГО</button><button class="btn-copy js-osago-copy">📋 Сводка менеджеру</button></div>`
@@ -1916,7 +2014,8 @@
 
     function renderTo() {
       const list = document.getElementById('toList'); list.innerHTML = '';
-      const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
+      if (!hasPerm('osago_to_view')) return;
+      const canEdit = hasPerm('osago_to_edit');
       const filtered = buildFilteredDocsList('toExpiry', currentToFilter);
       if (!filtered.length) { list.innerHTML = '<div class="msg">Нет техосмотров по выбранному фильтру</div>'; return; }
 
@@ -1970,7 +2069,8 @@
 
     function renderOil() {
       const list = document.getElementById('oilList'); list.innerHTML = '';
-      const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
+      if (!hasPerm('osago_to_view')) return;
+      const canEdit = hasPerm('osago_to_edit');
       const enriched = allCars.map((c, idx) => ({ car: c, order: idx + 1, info: parseOilInfo(c) }));
       let filtered = enriched;
       if (currentOilFilter === 'urgent') {
@@ -1992,19 +2092,21 @@
               <button class="btn-copy btn-full js-mh-toggle">📈 История пробега и фотоконтроля</button>
             </div>
             <div class="expand-panel hidden js-mh-panel"></div>`
-          : '';
+          : `<div class="actions"><button class="btn-copy js-mh-toggle" style="width:100%;">📈 История пробега и фотоконтроля</button></div>
+            <div class="expand-panel hidden js-mh-panel"></div>`;
         card.innerHTML = `<div class="card-top"><span class="plate"><span class="order-num">${item.order}.</span>${escapeHtml(c.plate)}</span><span class="status-pill ${info.pillClass}">${escapeHtml(info.label)}</span></div><div class="model">${escapeHtml(c.model || '')}${c.code ? ' • ' + escapeHtml(c.code) : ''} (${escapeHtml(c.status || '—')})</div><div class="meta">Текущий пробег: <strong>${escapeHtml(fmtKm(info.cur))}</strong><br>Последняя замена: <strong>${escapeHtml(fmtKm(info.last))}</strong> → След.: <strong>${escapeHtml(fmtKm(info.next))}</strong>${pcNote}</div>${editHtml}`;
         list.appendChild(card);
+
+        const mhBtn = card.querySelector('.js-mh-toggle'), mhPanel = card.querySelector('.js-mh-panel');
+        mhBtn.addEventListener('click', () => {
+          const opening = mhPanel.classList.contains('hidden');
+          mhPanel.classList.toggle('hidden');
+          if (opening) loadCarMileageHistory(c.plate, mhPanel);
+        });
         if (canEdit) {
           const sBtn = card.querySelector('.js-oil-save'), dBtn = card.querySelector('.js-oil-done');
-          const mhBtn = card.querySelector('.js-mh-toggle'), mhPanel = card.querySelector('.js-mh-panel');
           sBtn.addEventListener('click', () => saveOil(c.plate, curId, lastId, false, sBtn, dBtn));
           dBtn.addEventListener('click', () => saveOil(c.plate, curId, lastId, true, dBtn, sBtn));
-          mhBtn.addEventListener('click', () => {
-            const opening = mhPanel.classList.contains('hidden');
-            mhPanel.classList.toggle('hidden');
-            if (opening) loadCarMileageHistory(c.plate, mhPanel);
-          });
         }
       });
     }
@@ -2028,7 +2130,8 @@
     function switchTab(tab) {
       clearError(); currentTab = tab;
       document.querySelectorAll('#navTabs .tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
-      ['fleet', 'drivers', 'finance', 'moderation', 'fines', 'blacklist', 'osago', 'to', 'oil'].forEach(t => document.getElementById(t + 'Section').classList.toggle('hidden', tab !== t));
+      ['fleet', 'drivers', 'finance', 'moderation', 'fines', 'blacklist', 'osago', 'to', 'oil', 'access']
+        .forEach(t => document.getElementById(t + 'Section').classList.toggle('hidden', tab !== t));
       if (tab === 'drivers') loadDrivers();
       if (tab === 'finance') loadFinance();
       if (tab === 'moderation') loadPendingReviews();
@@ -2037,6 +2140,7 @@
       if (tab === 'osago') renderOsago();
       if (tab === 'to') renderTo();
       if (tab === 'oil') renderOil();
+      if (tab === 'access') loadAccessUsers();
     }
 
     /* ==================== ВОДИТЕЛИ ==================== */
@@ -2079,12 +2183,16 @@
       const list = document.getElementById('driversList'); list.innerHTML = '';
       if (!allDrivers.length) { list.innerHTML = '<div class="msg">Список водителей пуст</div>'; return; }
 
-      const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager');
+      const canManage = hasPerm('drivers_manage');
+      const canPay = hasPerm('payments');
+      const canBl = hasPerm('blacklist');
+      const showDebtInfo = canManage || canPay;
+
       const sorted = [...allDrivers].sort((a, b) => (String(a.rentalStatus || '').toLowerCase() === 'сдал' ? 1 : 0) - (String(b.rentalStatus || '').toLowerCase() === 'сдал' ? 1 : 0));
       const filtered = sorted.filter(d => {
         const st = String(d.rentalStatus || 'ездит').toLowerCase().trim();
         if (currentDriverFilter === 'all') return true;
-        if (currentDriverFilter === 'debt') return canEdit && ((Number(d.debt) || 0) > 0 || (Number(d.fines) || 0) > 0);
+        if (currentDriverFilter === 'debt') return showDebtInfo && ((Number(d.debt) || 0) > 0 || (Number(d.fines) || 0) > 0);
         return st === currentDriverFilter;
       });
       if (!filtered.length) { list.innerHTML = '<div class="msg">Нет водителей по выбранному фильтру</div>'; return; }
@@ -2109,178 +2217,216 @@
         const dateId = 'drv_date_' + idx, timeId = 'drv_time_' + idx, numId = 'drv_num_' + idx, fileChkId = 'drv_file_' + idx;
         const pp = 'pay_' + idx + '_', dp = 'debt_' + idx + '_', mp = 'msg_' + idx + '_', bp = 'blc_' + idx + '_';
 
-        const debtBarHtml = canEdit
+        const debtBarHtml = showDebtInfo
           ? `<div class="debt-bar ${hasDebtOrFines ? 'has-debt' : ''}">
               <div class="debt-info">
                 <div>💸 Долг: <strong class="${debtVal > 0 ? 'amt-bad' : 'amt-ok'}">${fmtMoney(debtVal)} ₽</strong> &nbsp;•&nbsp; 🚓 Штрафы: <strong class="${finesVal > 0 ? 'amt-bad' : 'amt-ok'}">${fmtMoney(finesVal)} ₽</strong></div>
                 ${d.debtNote ? `<div class="debt-note">💬 ${escapeHtml(d.debtNote)}</div>` : ''}
               </div>
-              ${d.row ? `<button class="btn-mini js-debt-toggle">✏️ Изменить</button>` : ''}
+              ${canManage && d.row ? `<button class="btn-mini js-debt-toggle">✏️ Изменить</button>` : ''}
             </div>`
           : '';
 
         let editBlocksHtml = '';
-        if (canEdit && d.row) {
-          editBlocksHtml = `
-            <div class="expand-panel hidden js-debt-panel">
-              <div class="pay-subhead" style="margin-top:0;">Задолженность и штрафы водителя</div>
-              <div class="doc-edit">
-                <div class="field-group"><label class="field-lbl" for="${dp}debt">Задолженность (₽)</label><input type="text" inputmode="numeric" id="${dp}debt" class="field-input" value="${debtVal}"></div>
-                <div class="field-group"><label class="field-lbl" for="${dp}fines">Штрафы ГИБДД (₽)</label><input type="text" inputmode="numeric" id="${dp}fines" class="field-input" value="${finesVal}"></div>
-                <div class="field-group full"><label class="field-lbl" for="${dp}note">Примечание</label><input type="text" id="${dp}note" class="field-input" value="${escapeHtml(d.debtNote || '')}" placeholder="Напр. Долг за 19.11 + камера 750 ₽"></div>
-                <button class="btn-save js-debt-save">💾 Сохранить</button>
-                <button class="btn-oil-done js-debt-clear">✅ Погашено (0 ₽)</button>
-              </div>
-            </div>
+        if (d.row && (canManage || canPay || canBl)) {
+          if (canManage) {
+            editBlocksHtml += `
+              <div class="expand-panel hidden js-debt-panel">
+                <div class="pay-subhead" style="margin-top:0;">Задолженность и штрафы водителя</div>
+                <div class="doc-edit">
+                  <div class="field-group"><label class="field-lbl" for="${dp}debt">Задолженность (₽)</label><input type="text" inputmode="numeric" id="${dp}debt" class="field-input" value="${debtVal}"></div>
+                  <div class="field-group"><label class="field-lbl" for="${dp}fines">Штрафы ГИБДД (₽)</label><input type="text" inputmode="numeric" id="${dp}fines" class="field-input" value="${finesVal}"></div>
+                  <div class="field-group full"><label class="field-lbl" for="${dp}note">Примечание</label><input type="text" id="${dp}note" class="field-input" value="${escapeHtml(d.debtNote || '')}" placeholder="Напр. Долг за 19.11 + камера 750 ₽"></div>
+                  <button class="btn-save js-debt-save">💾 Сохранить</button>
+                  <button class="btn-oil-done js-debt-clear">✅ Погашено (0 ₽)</button>
+                </div>
+              </div>`;
+          }
 
-            <div class="actions">
-              <button class="btn-oil-done js-pay-toggle" style="flex:1;">💰 Оплата</button>
-              <button class="btn-save js-msg-toggle" style="flex:1;">✉️ Сообщение</button>
-              <button class="btn-copy js-docs-toggle" style="flex:1;">📅 3 PDF</button>
-              <button class="btn-danger-outline js-bl-toggle" title="В чёрный список">⛔</button>
-            </div>
-            <div class="actions" style="margin-top:6px;">
-              <button class="btn-tg js-files-toggle" style="width:100%;">📁 Файлы: Договор • Фото • Акты</button>
-            </div>
-            <div class="expand-panel hidden js-files-panel"></div>
+          editBlocksHtml += `<div class="actions">
+            ${canPay ? `<button class="btn-oil-done js-pay-toggle" style="flex:1;">💰 Оплата</button>` : ''}
+            ${canManage ? `<button class="btn-save js-msg-toggle" style="flex:1;">✉️ Сообщение</button>` : ''}
+            ${canManage ? `<button class="btn-copy js-docs-toggle" style="flex:1;">📅 3 PDF</button>` : ''}
+            ${canBl ? `<button class="btn-danger-outline js-bl-toggle" title="В чёрный список">⛔</button>` : ''}
+          </div>`;
 
-            <div class="expand-panel hidden js-bl-panel">
-              <div class="pay-subhead" style="margin-top:0;color:#dc2626;">⛔ Добавить в Чёрный список</div>
-              <div class="doc-edit">
-                <div class="field-group full"><label class="field-lbl" for="${bp}reason">Причина *</label><input type="text" id="${bp}reason" class="field-input" placeholder="Не оплатил аренду / бросил авто / скрыл ДТП"></div>
-                <div class="field-group full"><label class="field-lbl" for="${bp}debt">Сумма долга / ущерба (₽)</label><input type="text" inputmode="numeric" id="${bp}debt" class="field-input" value="${debtVal + finesVal}"></div>
-                <button class="btn-danger btn-full js-bl-save">⛔ Подтвердить внесение в ЧС</button>
+          if (canManage) {
+            editBlocksHtml += `
+              <div class="actions" style="margin-top:6px;">
+                <button class="btn-tg js-files-toggle" style="width:100%;">📁 Файлы: Договор • Фото • Акты</button>
               </div>
-            </div>
+              <div class="expand-panel hidden js-files-panel"></div>`;
+          }
 
-            <div class="expand-panel hidden js-msg-panel">
-              <div class="bot-status-row">
-                <span>${hasBot ? '🟢 <strong>Бот подключён</strong>' : '⚪ <strong>Бот не подключён</strong>'}</span>
-                <button class="btn-mini js-bot-link">🔗 Ссылка для бота</button>
-              </div>
-              <div class="tpl-chips">
-                <button type="button" class="tpl-chip js-tpl-pay">💸 Оплата</button>
-                <button type="button" class="tpl-chip js-tpl-fine">🚓 Штраф</button>
-                <button type="button" class="tpl-chip js-tpl-photo">📸 Фотоконтроль</button>
-                <button type="button" class="tpl-chip js-tpl-debt">⚠️ Долг</button>
-              </div>
-              <textarea id="${mp}text" class="msg-textarea">${escapeHtml(buildDriverTemplate('pay', d, defaultRate))}</textarea>
-              <div class="doc-edit">
-                <button class="btn-save btn-full js-send-bot">🤖 Отправить в бот Telegram</button>
-                <button class="btn-wa js-send-wa">💬 WhatsApp</button>
-                <button class="btn-tg js-send-tg">✈️ Telegram чат</button>
-                <button class="btn-warn btn-full js-send-claim">⚖️ PDF Претензия о долге (в мой Telegram)</button>
-              </div>
-            </div>
+          if (canBl) {
+            editBlocksHtml += `
+              <div class="expand-panel hidden js-bl-panel">
+                <div class="pay-subhead" style="margin-top:0;color:#dc2626;">⛔ Добавить в Чёрный список</div>
+                <div class="doc-edit">
+                  <div class="field-group full"><label class="field-lbl" for="${bp}reason">Причина *</label><input type="text" id="${bp}reason" class="field-input" placeholder="Не оплатил аренду / бросил авто / скрыл ДТП"></div>
+                  <div class="field-group full"><label class="field-lbl" for="${bp}debt">Сумма долга / ущерба (₽)</label><input type="text" inputmode="numeric" id="${bp}debt" class="field-input" value="${debtVal + finesVal}"></div>
+                  <button class="btn-danger btn-full js-bl-save">⛔ Подтвердить внесение в ЧС</button>
+                </div>
+              </div>`;
+          }
 
-            <div class="expand-panel hidden js-pay-panel">
-              <div class="pay-summary js-pay-summary">Загрузка баланса и оплат...</div>
-              <div class="pay-subhead">1. Принять оплату (СБП / Наличные)</div>
-              <div class="doc-edit">
-                <div class="field-group"><label class="field-lbl" for="${pp}amount">Сумма (₽)</label><input type="text" inputmode="numeric" id="${pp}amount" class="field-input" value="${defaultRate}"></div>
-                <div class="field-group"><label class="field-lbl" for="${pp}method">Способ оплаты</label><select id="${pp}method"><option value="СБП">СБП</option><option value="Наличные">Наличные</option><option value="Перевод на карту">Перевод на карту</option><option value="Взаимозачёт">Взаимозачёт</option></select></div>
-                <div class="field-group"><label class="field-lbl" for="${pp}cat">Категория</label><select id="${pp}cat"><option value="Аренда">Аренда</option><option value="Погашение долга">Погашение долга</option><option value="Штраф / Доплата">Штраф / Доплата</option><option value="Залог">Залог</option><option value="ОСАГО">ОСАГО</option><option value="Возврат залога">Возврат залога</option></select></div>
-                <div class="field-group"><label class="field-lbl" for="${pp}date">Дата платежа</label><input type="date" id="${pp}date" class="field-input" value="${todayIso}"></div>
-                <div class="field-group full"><label class="field-lbl" for="${pp}check">Чек НПД / подтверждение</label><select id="${pp}check"><option value="Ожидает чек НПД">Ожидает чек НПД</option><option value="Чек НПД выдан">Чек НПД выдан</option><option value="Расписка в мессенджере">Расписка в мессенджере</option></select></div>
-                <div class="field-group full"><label class="field-lbl" for="${pp}comment">Комментарий / за какой день</label><input type="text" id="${pp}comment" class="field-input" placeholder="Напр. За ${parseExpiryInfo(todayIso).ru}"></div>
-                <label class="check-row" for="${pp}deduct"><input type="checkbox" id="${pp}deduct"><span>🔄 Автоматически списать эту сумму с долга / штрафа</span></label>
-                <button class="btn-oil-done js-pay-save">💰 Записать оплату</button>
-                <button class="btn-tg js-pay-npd">🧾 Текст + Мой налог</button>
-                <button class="btn-copy btn-full js-pay-receipt">📋 Скопировать расписку водителю</button>
-              </div>
-              <div class="pay-subhead">2. Выгрузить PDF Акт сверки в Telegram</div>
-              <div class="doc-edit">
-                <div class="field-group"><label class="field-lbl" for="${pp}from">Период с</label><input type="date" id="${pp}from" class="field-input" value="${escapeHtml(tsInfo.dateIso)}"></div>
-                <div class="field-group"><label class="field-lbl" for="${pp}to">Период по</label><input type="date" id="${pp}to" class="field-input" value="${todayIso}"></div>
-                <div class="field-group"><label class="field-lbl" for="${pp}days">Дней аренды</label><input type="text" inputmode="numeric" id="${pp}days" class="field-input" value="${defaultDays}"></div>
-                <div class="field-group"><label class="field-lbl" for="${pp}rate">Тариф (₽/сут)</label><input type="text" inputmode="numeric" id="${pp}rate" class="field-input" value="${defaultRate}"></div>
-                <button class="btn-save btn-full js-pay-pdf">📄 Выгрузить PDF Акт сверки в Telegram</button>
-              </div>
-              <div class="pay-history js-pay-history"></div>
-            </div>
+          if (canManage) {
+            editBlocksHtml += `
+              <div class="expand-panel hidden js-msg-panel">
+                <div class="bot-status-row">
+                  <span>${hasBot ? '🟢 <strong>Бот подключён</strong>' : '⚪ <strong>Бот не подключён</strong>'}</span>
+                  <button class="btn-mini js-bot-link">🔗 Ссылка для бота</button>
+                </div>
+                <div class="tpl-chips">
+                  <button type="button" class="tpl-chip js-tpl-pay">💸 Оплата</button>
+                  <button type="button" class="tpl-chip js-tpl-fine">🚓 Штраф</button>
+                  <button type="button" class="tpl-chip js-tpl-photo">📸 Фотоконтроль</button>
+                  <button type="button" class="tpl-chip js-tpl-debt">⚠️ Долг</button>
+                </div>
+                <textarea id="${mp}text" class="msg-textarea">${escapeHtml(buildDriverTemplate('pay', d, defaultRate))}</textarea>
+                <div class="doc-edit">
+                  <button class="btn-save btn-full js-send-bot">🤖 Отправить в бот Telegram</button>
+                  <button class="btn-wa js-send-wa">💬 WhatsApp</button>
+                  <button class="btn-tg js-send-tg">✈️ Telegram чат</button>
+                  <button class="btn-warn btn-full js-send-claim">⚖️ PDF Претензия о долге (в мой Telegram)</button>
+                </div>
+              </div>`;
+          }
 
-            <div class="expand-panel hidden js-docs-panel">
-              <div class="doc-edit">
-                <div class="field-group"><label class="field-lbl" for="${dateId}">Дата выдачи</label><input type="date" id="${dateId}" class="field-input" value="${escapeHtml(tsInfo.dateIso)}"></div>
-                <div class="field-group"><label class="field-lbl" for="${timeId}">Время выдачи</label><input type="time" id="${timeId}" class="field-input" value="${escapeHtml(tsInfo.timeStr)}"></div>
-                <div class="field-group full"><label class="field-lbl" for="${numId}">Номер договора</label><input type="text" id="${numId}" class="field-input" value="${escapeHtml(d.contractNo || '')}"></div>
-                <label class="check-row" for="${fileChkId}"><input type="checkbox" id="${fileChkId}" checked><span>Создать личный файл-таблицу водителя</span></label>
-                <button class="btn-save js-docs-send">📄 Сохранить и 3 PDF</button>
-                <button class="btn-oil-done js-docs-file">📁 Только личный файл</button>
-              </div>
-            </div>`;
+          if (canPay) {
+            editBlocksHtml += `
+              <div class="expand-panel hidden js-pay-panel">
+                <div class="pay-summary js-pay-summary">Загрузка баланса и оплат...</div>
+                <div class="pay-subhead">1. Принять оплату (СБП / Наличные)</div>
+                <div class="doc-edit">
+                  <div class="field-group"><label class="field-lbl" for="${pp}amount">Сумма (₽)</label><input type="text" inputmode="numeric" id="${pp}amount" class="field-input" value="${defaultRate}"></div>
+                  <div class="field-group"><label class="field-lbl" for="${pp}method">Способ оплаты</label><select id="${pp}method"><option value="СБП">СБП</option><option value="Наличные">Наличные</option><option value="Перевод на карту">Перевод на карту</option><option value="Взаимозачёт">Взаимозачёт</option></select></div>
+                  <div class="field-group"><label class="field-lbl" for="${pp}cat">Категория</label><select id="${pp}cat"><option value="Аренда">Аренда</option><option value="Погашение долга">Погашение долга</option><option value="Штраф / Доплата">Штраф / Доплата</option><option value="Залог">Залог</option><option value="ОСАГО">ОСАГО</option><option value="Возврат залога">Возврат залога</option></select></div>
+                  <div class="field-group"><label class="field-lbl" for="${pp}date">Дата платежа</label><input type="date" id="${pp}date" class="field-input" value="${todayIso}"></div>
+                  <div class="field-group full"><label class="field-lbl" for="${pp}check">Чек НПД / подтверждение</label><select id="${pp}check"><option value="Ожидает чек НПД">Ожидает чек НПД</option><option value="Чек НПД выдан">Чек НПД выдан</option><option value="Расписка в мессенджере">Расписка в мессенджере</option></select></div>
+                  <div class="field-group full"><label class="field-lbl" for="${pp}comment">Комментарий / за какой день</label><input type="text" id="${pp}comment" class="field-input" placeholder="Напр. За ${parseExpiryInfo(todayIso).ru}"></div>
+                  <label class="check-row" for="${pp}deduct"><input type="checkbox" id="${pp}deduct"><span>🔄 Автоматически списать эту сумму с долга / штрафа</span></label>
+                  <button class="btn-oil-done js-pay-save">💰 Записать оплату</button>
+                  <button class="btn-tg js-pay-npd">🧾 Текст + Мой налог</button>
+                  <button class="btn-copy btn-full js-pay-receipt">📋 Скопировать расписку водителю</button>
+                </div>
+                <div class="pay-subhead">2. Выгрузить PDF Акт сверки в Telegram</div>
+                <div class="doc-edit">
+                  <div class="field-group"><label class="field-lbl" for="${pp}from">Период с</label><input type="date" id="${pp}from" class="field-input" value="${escapeHtml(tsInfo.dateIso)}"></div>
+                  <div class="field-group"><label class="field-lbl" for="${pp}to">Период по</label><input type="date" id="${pp}to" class="field-input" value="${todayIso}"></div>
+                  <div class="field-group"><label class="field-lbl" for="${pp}days">Дней аренды</label><input type="text" inputmode="numeric" id="${pp}days" class="field-input" value="${defaultDays}"></div>
+                  <div class="field-group"><label class="field-lbl" for="${pp}rate">Тариф (₽/сут)</label><input type="text" inputmode="numeric" id="${pp}rate" class="field-input" value="${defaultRate}"></div>
+                  <button class="btn-save btn-full js-pay-pdf">📄 Выгрузить PDF Акт сверки в Telegram</button>
+                </div>
+                <div class="pay-history js-pay-history"></div>
+              </div>`;
+          }
+
+          if (canManage) {
+            editBlocksHtml += `
+              <div class="expand-panel hidden js-docs-panel">
+                <div class="doc-edit">
+                  <div class="field-group"><label class="field-lbl" for="${dateId}">Дата выдачи</label><input type="date" id="${dateId}" class="field-input" value="${escapeHtml(tsInfo.dateIso)}"></div>
+                  <div class="field-group"><label class="field-lbl" for="${timeId}">Время выдачи</label><input type="time" id="${timeId}" class="field-input" value="${escapeHtml(tsInfo.timeStr)}"></div>
+                  <div class="field-group full"><label class="field-lbl" for="${numId}">Номер договора</label><input type="text" id="${numId}" class="field-input" value="${escapeHtml(d.contractNo || '')}"></div>
+                  <label class="check-row" for="${fileChkId}"><input type="checkbox" id="${fileChkId}" checked><span>Создать личный файл-таблицу водителя</span></label>
+                  <button class="btn-save js-docs-send">📄 Сохранить и 3 PDF</button>
+                  <button class="btn-oil-done js-docs-file">📁 Только личный файл</button>
+                </div>
+              </div>`;
+          }
         }
 
-        const actionBtnHtml = (!isReturned && canEdit && d.row) ? '<button class="btn-return">🔓 Сдал авто (Акт возврата)</button>' : '';
+        const actionBtnHtml = (!isReturned && canManage && d.row) ? '<button class="btn-return">🔓 Сдал авто (Акт возврата)</button>' : '';
         const phoneIntl = formatPhoneIntl(d.phone);
         const phoneLinkHtml = phoneIntl
           ? `<a href="tel:+${phoneIntl}" style="color:var(--btn);text-decoration:none;font-weight:600;">${escapeHtml(d.phone)}</a>`
           : escapeHtml(d.phone || '—');
-        const driverMetaHtml = canEdit
-          ? `Договор №: <strong>${escapeHtml(d.contractNo || '—')}</strong> • Выдача: <strong>${escapeHtml(tsInfo.ruDisplay)}</strong><br>Тел: ${escapeHtml(d.phone || '—')} • Гражданство: ${escapeHtml(d.nationality || '—')} • Срок: ${escapeHtml(d.rentDays || '365')} сут.`
+        const driverMetaHtml = showDebtInfo
+          ? `Договор №: <strong>${escapeHtml(d.contractNo || '—')}</strong> • Выдача: <strong>${escapeHtml(tsInfo.ruDisplay)}</strong><br>Тел: ${escapeHtml(d.phone || '—')}${d.nationality ? ' • Гражданство: ' + escapeHtml(d.nationality) : ''} • Срок: ${escapeHtml(d.rentDays || '365')} сут.`
           : `📱 Телефон: ${phoneLinkHtml}`;
 
         card.innerHTML = `
           <div class="card-top"><span class="plate">${escapeHtml(d.name || 'Без имени')}</span><span class="status-pill ${pillClass}">${escapeHtml(statusText)}</span></div>
-          <div class="model"><strong>${escapeHtml(d.plate || '—')}</strong> • ${escapeHtml(d.car || '')} ${canEdit && hasBot ? '🤖' : ''}</div>
+          <div class="model"><strong>${escapeHtml(d.plate || '—')}</strong> • ${escapeHtml(d.car || '')} ${canManage && hasBot ? '🤖' : ''}</div>
           <div class="meta">${driverMetaHtml}</div>
           ${debtBarHtml}${editBlocksHtml}${actionBtnHtml}`;
         list.appendChild(card);
 
-        if (canEdit && d.row) {
-          const panels = { debt: card.querySelector('.js-debt-panel'), bl: card.querySelector('.js-bl-panel'), msg: card.querySelector('.js-msg-panel'), pay: card.querySelector('.js-pay-panel'), docs: card.querySelector('.js-docs-panel'), files: card.querySelector('.js-files-panel') };
-          const toggleOnly = (key) => { const opening = panels[key].classList.contains('hidden'); Object.keys(panels).forEach(k => panels[k].classList.add('hidden')); if (opening) panels[key].classList.remove('hidden'); return opening; };
+        if (d.row && (canManage || canPay || canBl)) {
+          const panels = {
+            debt: card.querySelector('.js-debt-panel'),
+            bl: card.querySelector('.js-bl-panel'),
+            msg: card.querySelector('.js-msg-panel'),
+            pay: card.querySelector('.js-pay-panel'),
+            docs: card.querySelector('.js-docs-panel'),
+            files: card.querySelector('.js-files-panel')
+          };
+          const toggleOnly = (key) => {
+            if (!panels[key]) return false;
+            const opening = panels[key].classList.contains('hidden');
+            Object.keys(panels).forEach(k => { if (panels[k]) panels[k].classList.add('hidden'); });
+            if (opening) panels[key].classList.remove('hidden');
+            return opening;
+          };
 
-          card.querySelector('.js-debt-toggle').addEventListener('click', () => toggleOnly('debt'));
-          card.querySelector('.js-bl-toggle').addEventListener('click', () => toggleOnly('bl'));
-          card.querySelector('.js-msg-toggle').addEventListener('click', () => toggleOnly('msg'));
-          card.querySelector('.js-docs-toggle').addEventListener('click', () => toggleOnly('docs'));
-          card.querySelector('.js-pay-toggle').addEventListener('click', () => { if (toggleOnly('pay')) loadDriverPayments(d, panels.pay, pp); });
-          card.querySelector('.js-files-toggle').addEventListener('click', () => { if (toggleOnly('files')) loadDriverDossier(d, panels.files); });
+          if (canManage) {
+            card.querySelector('.js-debt-toggle').addEventListener('click', () => toggleOnly('debt'));
+            card.querySelector('.js-msg-toggle').addEventListener('click', () => toggleOnly('msg'));
+            card.querySelector('.js-docs-toggle').addEventListener('click', () => toggleOnly('docs'));
+            card.querySelector('.js-files-toggle').addEventListener('click', () => { if (toggleOnly('files')) loadDriverDossier(d, panels.files); });
 
-          const debtInp = card.querySelector('#' + dp + 'debt'), finesInp = card.querySelector('#' + dp + 'fines'), noteInp = card.querySelector('#' + dp + 'note');
-          const dSave = card.querySelector('.js-debt-save'), dClr = card.querySelector('.js-debt-clear');
-          dSave.addEventListener('click', () => saveDriverDebtFines(d, debtInp, finesInp, noteInp, false, dSave, dClr));
-          dClr.addEventListener('click', () => saveDriverDebtFines(d, debtInp, finesInp, noteInp, true, dClr, dSave));
-          card.querySelector('.js-bl-save').addEventListener('click', (e) => addDriverToBlacklist(d, bp, e.target));
+            const debtInp = card.querySelector('#' + dp + 'debt'), finesInp = card.querySelector('#' + dp + 'fines'), noteInp = card.querySelector('#' + dp + 'note');
+            const dSave = card.querySelector('.js-debt-save'), dClr = card.querySelector('.js-debt-clear');
+            dSave.addEventListener('click', () => saveDriverDebtFines(d, debtInp, finesInp, noteInp, false, dSave, dClr));
+            dClr.addEventListener('click', () => saveDriverDebtFines(d, debtInp, finesInp, noteInp, true, dClr, dSave));
 
-          const msgTa = card.querySelector('#' + mp + 'text');
-          card.querySelector('.js-tpl-pay').addEventListener('click', () => { msgTa.value = buildDriverTemplate('pay', d, defaultRate); });
-          card.querySelector('.js-tpl-fine').addEventListener('click', () => { msgTa.value = buildDriverTemplate('fine', d, defaultRate); });
-          card.querySelector('.js-tpl-photo').addEventListener('click', () => { msgTa.value = buildDriverTemplate('photo', d, defaultRate); });
-          card.querySelector('.js-tpl-debt').addEventListener('click', () => { msgTa.value = buildDriverTemplate('debt', d, defaultRate); });
+            const msgTa = card.querySelector('#' + mp + 'text');
+            card.querySelector('.js-tpl-pay').addEventListener('click', () => { msgTa.value = buildDriverTemplate('pay', d, defaultRate); });
+            card.querySelector('.js-tpl-fine').addEventListener('click', () => { msgTa.value = buildDriverTemplate('fine', d, defaultRate); });
+            card.querySelector('.js-tpl-photo').addEventListener('click', () => { msgTa.value = buildDriverTemplate('photo', d, defaultRate); });
+            card.querySelector('.js-tpl-debt').addEventListener('click', () => { msgTa.value = buildDriverTemplate('debt', d, defaultRate); });
 
-          card.querySelector('.js-bot-link').addEventListener('click', async (e) => {
-            const inviteText = `Здравствуйте! Подключите, пожалуйста, уведомления нашего автопарка (нажмите «Старт»): ${botInviteLink}`;
-            if (await copyToClipboard(inviteText)) { const old = e.target.textContent; e.target.textContent = '✅ Скопировано!'; setTimeout(() => { e.target.textContent = old; }, 1800); }
-            else notifyUser(botInviteLink);
-          });
-          card.querySelector('.js-send-bot').addEventListener('click', (e) => sendDriverBotMessage(d, msgTa, e.target));
-          card.querySelector('.js-send-wa').addEventListener('click', () => { const ph = formatPhoneIntl(d.phone); if (!ph) return notifyUser('У водителя не указан номер телефона.'); openExternalUrl(`https://wa.me/${ph}?text=${encodeURIComponent(msgTa.value.trim())}`); });
-          card.querySelector('.js-send-tg').addEventListener('click', async () => { const ph = formatPhoneIntl(d.phone); if (!ph) return notifyUser('У водителя не указан номер телефона.'); await copyToClipboard(msgTa.value.trim()); openExternalUrl(`https://t.me/+${ph}?text=${encodeURIComponent(msgTa.value.trim())}`); });
-          card.querySelector('.js-send-claim').addEventListener('click', (e) => sendDriverClaimPdf(d, e.target));
+            card.querySelector('.js-bot-link').addEventListener('click', async (e) => {
+              const inviteText = `Здравствуйте! Подключите, пожалуйста, уведомления нашего автопарка (нажмите «Старт»): ${botInviteLink}`;
+              if (await copyToClipboard(inviteText)) { const old = e.target.textContent; e.target.textContent = '✅ Скопировано!'; setTimeout(() => { e.target.textContent = old; }, 1800); }
+              else notifyUser(botInviteLink);
+            });
+            card.querySelector('.js-send-bot').addEventListener('click', (e) => sendDriverBotMessage(d, msgTa, e.target));
+            card.querySelector('.js-send-wa').addEventListener('click', () => { const ph = formatPhoneIntl(d.phone); if (!ph) return notifyUser('У водителя не указан номер телефона.'); openExternalUrl(`https://wa.me/${ph}?text=${encodeURIComponent(msgTa.value.trim())}`); });
+            card.querySelector('.js-send-tg').addEventListener('click', async () => { const ph = formatPhoneIntl(d.phone); if (!ph) return notifyUser('У водителя не указан номер телефона.'); await copyToClipboard(msgTa.value.trim()); openExternalUrl(`https://t.me/+${ph}?text=${encodeURIComponent(msgTa.value.trim())}`); });
+            card.querySelector('.js-send-claim').addEventListener('click', (e) => sendDriverClaimPdf(d, e.target));
 
-          const catSel = card.querySelector('#' + pp + 'cat'), deductChk = card.querySelector('#' + pp + 'deduct');
-          const fromInp = card.querySelector('#' + pp + 'from'), toInp = card.querySelector('#' + pp + 'to'), daysInp = card.querySelector('#' + pp + 'days');
-          catSel.addEventListener('change', () => { deductChk.checked = (catSel.value === 'Погашение долга' || catSel.value === 'Штраф / Доплата'); });
-          const recalcDays = () => { if (fromInp.value && toInp.value) daysInp.value = diffDaysInclusive(fromInp.value, toInp.value); };
-          fromInp.addEventListener('change', recalcDays); toInp.addEventListener('change', recalcDays);
+            const sDoc = card.querySelector('.js-docs-send'), fDoc = card.querySelector('.js-docs-file');
+            sDoc.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, true, sDoc, fDoc));
+            fDoc.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, false, fDoc, sDoc));
+          }
 
-          card.querySelector('.js-pay-save').addEventListener('click', (e) => saveDriverPayment(d, pp, panels.pay, e.target));
-          card.querySelector('.js-pay-npd').addEventListener('click', (e) => {
-            const amt = cleanNumStr(document.getElementById(pp + 'amount').value);
-            const title = buildLocalNpdTitle(catSel.value, carModel, d.plate, d.contractNo);
-            copyNpdAndOpenMyNalog(title, amt, e.target);
-          });
-          card.querySelector('.js-pay-receipt').addEventListener('click', (e) => copyDriverReceipt(d, pp, e.target, panels.pay));
-          card.querySelector('.js-pay-pdf').addEventListener('click', (e) => exportDriverReconciliation(d, pp, e.target));
+          if (canBl) {
+            card.querySelector('.js-bl-toggle').addEventListener('click', () => toggleOnly('bl'));
+            card.querySelector('.js-bl-save').addEventListener('click', (e) => addDriverToBlacklist(d, bp, e.target));
+          }
 
-          const sDoc = card.querySelector('.js-docs-send'), fDoc = card.querySelector('.js-docs-file');
-          sDoc.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, true, sDoc, fDoc));
-          fDoc.addEventListener('click', () => updateDriverDocs(d, dateId, timeId, numId, fileChkId, false, fDoc, sDoc));
+          if (canPay) {
+            card.querySelector('.js-pay-toggle').addEventListener('click', () => { if (toggleOnly('pay')) loadDriverPayments(d, panels.pay, pp); });
+            const catSel = card.querySelector('#' + pp + 'cat'), deductChk = card.querySelector('#' + pp + 'deduct');
+            const fromInp = card.querySelector('#' + pp + 'from'), toInp = card.querySelector('#' + pp + 'to'), daysInp = card.querySelector('#' + pp + 'days');
+            catSel.addEventListener('change', () => { deductChk.checked = (catSel.value === 'Погашение долга' || catSel.value === 'Штраф / Доплата'); });
+            const recalcDays = () => { if (fromInp.value && toInp.value) daysInp.value = diffDaysInclusive(fromInp.value, toInp.value); };
+            fromInp.addEventListener('change', recalcDays); toInp.addEventListener('change', recalcDays);
+
+            card.querySelector('.js-pay-save').addEventListener('click', (e) => saveDriverPayment(d, pp, panels.pay, e.target));
+            card.querySelector('.js-pay-npd').addEventListener('click', (e) => {
+              const amt = cleanNumStr(document.getElementById(pp + 'amount').value);
+              const title = buildLocalNpdTitle(catSel.value, carModel, d.plate, d.contractNo);
+              copyNpdAndOpenMyNalog(title, amt, e.target);
+            });
+            card.querySelector('.js-pay-receipt').addEventListener('click', (e) => copyDriverReceipt(d, pp, e.target, panels.pay));
+            card.querySelector('.js-pay-pdf').addEventListener('click', (e) => exportDriverReconciliation(d, pp, e.target));
+          }
         }
 
-        if (!isReturned && canEdit && d.row) card.querySelector('.btn-return').addEventListener('click', (e) => returnDriverCar(d, e.target));
+        if (!isReturned && canManage && d.row) card.querySelector('.btn-return').addEventListener('click', (e) => returnDriverCar(d, e.target));
       });
     }
 
@@ -2479,6 +2625,202 @@
         notifyUser(cnt > 0
           ? `✅ Отправлено в Telegram: ${cnt} файл(ов)!`
           : 'ℹ️ По этому разделу готовых PDF/фото не найдено.');
+      } catch (err) {
+        showError(err);
+      } finally {
+        btn.textContent = old;
+        btn.disabled = false;
+      }
+    }
+
+    /* ==================== УПРАВЛЕНИЕ ДОСТУПАМИ (👥 ДОСТУПЫ — ТОЛЬКО ВЛАДЕЛЕЦ) ==================== */
+
+    function toggleAddAccessForm() {
+      document.getElementById('addAccessForm').classList.toggle('hidden');
+    }
+
+    async function loadAccessUsers() {
+      if (!hasPerm('admin_only')) return;
+      clearError();
+      document.getElementById('accessList').innerHTML = '<div class="msg">Загрузка списка сотрудников и прав...</div>';
+      try {
+        accessData = await callApi('accessUsers', {}, 20000);
+        renderAccessUsers();
+      } catch (err) { showError(err); }
+    }
+
+    function renderAccessUsers() {
+      const list = document.getElementById('accessList');
+      list.innerHTML = '';
+      if (!accessData || !Array.isArray(accessData.users)) {
+        list.innerHTML = '<div class="msg">Нет данных о сотрудниках.</div>';
+        return;
+      }
+
+      const permsMeta = accessData.permsMeta || [];
+      const presets = accessData.presets || {};
+      const users = accessData.users;
+
+      if (!users.length) {
+        list.innerHTML = '<div class="msg">Сотрудников пока нет. Нажмите «➕ Добавить нового сотрудника» или пусть Руслан нажмёт «Старт» в боте.</div>';
+        return;
+      }
+
+      users.forEach((u, idx) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        if (u.isOwner) {
+          card.innerHTML = `
+            <div class="card-top">
+              <span class="plate">👑 ${escapeHtml(u.name)}</span>
+              <span class="status-pill st-free">Владелец (все права)</span>
+            </div>
+            <div class="meta" style="margin-bottom:0;">Telegram ID: <strong>${escapeHtml(u.tgId)}</strong></div>`;
+          list.appendChild(card);
+          return;
+        }
+
+        const up = 'acc_u_' + idx + '_';
+        const permChecksHtml = permsMeta.map(pm => {
+          const checked = Array.isArray(u.perms) && u.perms.includes(pm.key);
+          return `
+            <label class="perm-item ${checked ? 'on' : ''}">
+              <input type="checkbox" class="js-perm-chk" data-key="${escapeHtml(pm.key)}" ${checked ? 'checked' : ''}>
+              <span>${pm.icon} ${escapeHtml(pm.shortLabel)}</span>
+            </label>`;
+        }).join('');
+
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="plate">${escapeHtml(u.name)}</span>
+            <span class="status-pill ${u.active ? 'st-free' : 'st-rented'}">${u.active ? '🟢 Активен' : '🔴 Отключён'}</span>
+          </div>
+          <div class="meta">Telegram ID: <strong>${escapeHtml(u.tgId)}</strong> • Включено прав: <strong class="js-perm-cnt">${(u.perms || []).length}</strong> из ${permsMeta.length}</div>
+
+          <label class="check-row" for="${up}active" style="margin-bottom:6px;">
+            <input type="checkbox" id="${up}active" ${u.active ? 'checked' : ''}>
+            <span><strong>Доступ к CRM и боту включён</strong></span>
+          </label>
+
+          <div class="preset-row">
+            <button type="button" class="tpl-chip js-pr-mech">🔧 Механик</button>
+            <button type="button" class="tpl-chip js-pr-view">👀 Просмотр</button>
+            <button type="button" class="tpl-chip js-pr-mgr">💼 Управляющий</button>
+            <button type="button" class="tpl-chip js-pr-none">⬜ Снять все</button>
+          </div>
+
+          <div class="perm-grid">${permChecksHtml}</div>
+
+          <div class="doc-edit">
+            <button type="button" class="btn-oil-done btn-full js-acc-save">💾 Сохранить права</button>
+            <button type="button" class="btn-tg js-acc-notify">📩 Выслать кнопку CRM</button>
+            <button type="button" class="btn-danger-outline js-acc-del">🗑 Удалить</button>
+          </div>`;
+        list.appendChild(card);
+
+        const chks = Array.from(card.querySelectorAll('.js-perm-chk'));
+        const cntEl = card.querySelector('.js-perm-cnt');
+        const refreshChecksUi = () => {
+          let n = 0;
+          chks.forEach(c => {
+            c.parentElement.classList.toggle('on', c.checked);
+            if (c.checked) n++;
+          });
+          cntEl.textContent = String(n);
+        };
+        chks.forEach(c => c.addEventListener('change', refreshChecksUi));
+
+        const applyPreset = (keys) => {
+          const set = new Set(keys || []);
+          chks.forEach(c => { c.checked = set.has(c.dataset.key); });
+          refreshChecksUi();
+        };
+        card.querySelector('.js-pr-mech').addEventListener('click', () => applyPreset(presets.mechanic));
+        card.querySelector('.js-pr-view').addEventListener('click', () => applyPreset(presets.viewer));
+        card.querySelector('.js-pr-mgr').addEventListener('click', () => applyPreset(presets.manager));
+        card.querySelector('.js-pr-none').addEventListener('click', () => applyPreset([]));
+
+        card.querySelector('.js-acc-save').addEventListener('click', (e) => saveAccessUser(u, card, up, e.target));
+        card.querySelector('.js-acc-notify').addEventListener('click', (e) => notifyAccessUserNow(u, e.target));
+        card.querySelector('.js-acc-del').addEventListener('click', (e) => deleteAccessUserNow(u, e.target));
+      });
+    }
+
+    async function saveAccessUser(u, card, up, btn) {
+      const active = document.getElementById(up + 'active').checked;
+      const selected = Array.from(card.querySelectorAll('.js-perm-chk'))
+        .filter(c => c.checked)
+        .map(c => c.dataset.key);
+
+      const old = btn.textContent;
+      btn.textContent = 'Сохранение...';
+      btn.disabled = true;
+      try {
+        await callApi('saveAccessUser', {
+          row: u.row,
+          active: active ? 'true' : 'false',
+          perms: selected.length ? selected.join(',') : 'NONE'
+        }, 20000);
+        notifyUser(`✅ Права для ${u.name} сохранены (${selected.length} разд.)!`);
+        await loadAccessUsers();
+      } catch (err) {
+        showError(err);
+      } finally {
+        btn.textContent = old;
+        btn.disabled = false;
+      }
+    }
+
+    async function saveNewAccessUser(btn) {
+      const tgId = document.getElementById('acc_new_tgid').value.trim();
+      const name = document.getElementById('acc_new_name').value.trim();
+      const preset = document.getElementById('acc_new_preset').value;
+      if (!tgId) return notifyUser('Укажите числовой Telegram ID сотрудника.');
+      if (!name) return notifyUser('Укажите имя сотрудника.');
+
+      const old = btn.textContent;
+      btn.textContent = 'Добавляем...';
+      btn.disabled = true;
+      try {
+        await callApi('addAccessUser', { tgId, name, preset }, 20000);
+        document.getElementById('acc_new_tgid').value = '';
+        document.getElementById('acc_new_name').value = '';
+        document.getElementById('addAccessForm').classList.add('hidden');
+        notifyUser(`✅ Сотрудник ${name} добавлен! Теперь настройте галочки и нажмите «📩 Выслать кнопку CRM».`);
+        await loadAccessUsers();
+      } catch (err) {
+        showError(err);
+      } finally {
+        btn.textContent = old;
+        btn.disabled = false;
+      }
+    }
+
+    async function notifyAccessUserNow(u, btn) {
+      const old = btn.textContent;
+      btn.textContent = 'Отправка...';
+      btn.disabled = true;
+      try {
+        await callApi('notifyAccessUser', { row: u.row }, 20000);
+        notifyUser(`✅ Сообщение с кнопкой CRM отправлено ${u.name} в бот!`);
+      } catch (err) {
+        notifyUser(err.message || String(err));
+      } finally {
+        btn.textContent = old;
+        btn.disabled = false;
+      }
+    }
+
+    async function deleteAccessUserNow(u, btn) {
+      if (!(await askConfirm(`Удалить сотрудника ${u.name} (${u.tgId}) и полностью закрыть ему доступ?`))) return;
+      const old = btn.textContent;
+      btn.textContent = 'Удаление...';
+      btn.disabled = true;
+      try {
+        await callApi('deleteAccessUser', { row: u.row }, 20000);
+        notifyUser(`🗑 Доступ для ${u.name} удалён.`);
+        await loadAccessUsers();
       } catch (err) {
         showError(err);
       } finally {
