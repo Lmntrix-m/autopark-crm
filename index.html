@@ -606,6 +606,7 @@
       { key: 'drivers_view',   icon: '👤', shortLabel: 'Водит.: просм.' },
       { key: 'drivers_manage', icon: '📋', shortLabel: 'Водит.: управл.' },
       { key: 'payments',       icon: '💰', shortLabel: 'Оплаты' },
+      { key: 'dayoff',         icon: '🏖️', shortLabel: 'Выходные/опл.' },
       { key: 'finance',        icon: '📊', shortLabel: 'Финансы / НПД' },
       { key: 'moderation',     icon: '🕵️', shortLabel: 'Проверка анкет' },
       { key: 'fines',          icon: '🚓', shortLabel: 'Штрафы ГИБДД' },
@@ -615,7 +616,7 @@
       { key: 'service_bot',    icon: '🔩', shortLabel: 'Бот: ТО и чеки' }
     ];
     const FALLBACK_PRESETS = {
-      mechanic: ['fleet_view', 'drivers_view', 'osago_to_view', 'service_bot'],
+      mechanic: ['fleet_view', 'drivers_view', 'osago_to_view', 'service_bot', 'dayoff'],
       viewer:   ['fleet_view', 'drivers_view', 'osago_to_view'],
       manager:  FALLBACK_PERMS_META.map(p => p.key)
     };
@@ -657,6 +658,7 @@
       if (permKey === 'fleet_view' && perms.includes('fleet_edit')) return true;
       if (permKey === 'drivers_view' && (perms.includes('drivers_manage') || perms.includes('payments') || perms.includes('fines'))) return true;
       if (permKey === 'osago_to_view' && perms.includes('osago_to_edit')) return true;
+      if (permKey === 'dayoff' && perms.includes('payments')) return true;
       return false;
     }
 
@@ -699,10 +701,23 @@
     }
 
     function formatPhoneIntl(raw) {
-      let d = String(raw || '').replace(/\D/g, '');
+      const firstPart = String(raw || '').split(/[,;\n/|]+/)[0] || '';
+      const m = firstPart.match(/(?:\+7|8|7)[\s\-()]*\d{3}[\s\-()]*\d{3}[\s\-()]*\d{2}[\s\-()]*\d{2}|\b9\d{2}[\s\-()]*\d{3}[\s\-()]*\d{2}[\s\-()]*\d{2}\b/);
+      let d = (m ? m[0] : firstPart).replace(/\D/g, '');
       if (d.length === 11 && d.startsWith('8')) d = '7' + d.slice(1);
       else if (d.length === 10) d = '7' + d;
       return d;
+    }
+
+    function renderPhoneLinksHtml(raw) {
+      const parts = String(raw || '').split(/[,;\n/|]+/).map(s => s.trim()).filter(Boolean);
+      if (!parts.length) return '—';
+      return parts.map(p => {
+        const intl = formatPhoneIntl(p);
+        return intl
+          ? `<a href="tel:+${intl}" style="color:var(--btn);text-decoration:none;font-weight:600;">${escapeHtml(p)}</a>`
+          : escapeHtml(p);
+      }).join(', ');
     }
 
     async function copyToClipboard(text) {
@@ -2362,12 +2377,9 @@
         }
 
         const actionBtnHtml = (!isReturned && canManage && d.row) ? '<button class="btn-return">🔓 Сдал авто (Акт возврата)</button>' : '';
-        const phoneIntl = formatPhoneIntl(d.phone);
-        const phoneLinkHtml = phoneIntl
-          ? `<a href="tel:+${phoneIntl}" style="color:var(--btn);text-decoration:none;font-weight:600;">${escapeHtml(d.phone)}</a>`
-          : escapeHtml(d.phone || '—');
+        const phoneLinkHtml = renderPhoneLinksHtml(d.phone);
         const driverMetaHtml = showDebtInfo
-          ? `Договор №: <strong>${escapeHtml(d.contractNo || '—')}</strong> • Выдача: <strong>${escapeHtml(tsInfo.ruDisplay)}</strong><br>Тел: ${escapeHtml(d.phone || '—')}${d.nationality ? ' • Гражданство: ' + escapeHtml(d.nationality) : ''} • Срок: ${escapeHtml(d.rentDays || '365')} сут.`
+          ? `Договор №: <strong>${escapeHtml(d.contractNo || '—')}</strong> • Выдача: <strong>${escapeHtml(tsInfo.ruDisplay)}</strong><br>Тел: ${phoneLinkHtml}${d.nationality ? ' • Гражданство: ' + escapeHtml(d.nationality) : ''} • Срок: ${escapeHtml(d.rentDays || '365')} сут.`
           : `📱 Телефон: ${phoneLinkHtml}`;
 
         card.innerHTML = `
